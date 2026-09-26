@@ -32,6 +32,7 @@ jobs:
       ci_scripts: >-
         ci/patch_signing.py
         ci/patch_manifest.py
+        ci/patch_updater.py
         ci/set_version.py
         ci/set_icons.py
     secrets: inherit

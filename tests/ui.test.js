@@ -32,7 +32,7 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'morceaux.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'apk-update.js', 'morceaux.js', 'lecons.js',
  'accordeur.js', 'oreille.js', 'store.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
@@ -165,6 +165,23 @@ function verifie(nom, cond, detail) {
   verifie('identifiant valide reconnu', w.Cast.configure() === true);
   w.Store.reglage('castAppId', 'oups');
   verifie('identifiant invalide refusé', w.Cast.configure() === false);
+
+  console.log('\n— Mise à jour automatique —');
+  {
+    const fs2 = require('fs'), path2 = require('path');
+    const lire = (f) => fs2.readFileSync(path2.join(__dirname, '..', 'www', f), 'utf8');
+    const html = lire('index.html');
+    const version = JSON.parse(lire('version.json')).version;
+    verifie('le dépôt à interroger est déclaré', /UPDATE_REPO = 'laurentsar\/guitare'/.test(html));
+    verifie('la version affichée est celle de version.json',
+            html.indexOf("APP_VERSION = '" + version + "'") !== -1, version);
+    verifie('le cache du service worker suit la version',
+            lire('sw.js').indexOf('guitare-v' + version) !== -1);
+    // Comparer les BALISES, pas le texte : les commentaires du fichier citent
+    // update-check.js bien avant la balise, et le test se trompait de position.
+    verifie('l’installateur d’APK est chargé avant la bannière',
+            html.indexOf('<script src="apk-update.js">') < html.indexOf('<script src="update-check.js">'));
+  }
 
   console.log('\n— Erreurs JS pendant le test —');
   verifie('aucune erreur', erreurs.length === 0, erreurs.join(' | '));

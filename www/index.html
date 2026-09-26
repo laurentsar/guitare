@@ -183,7 +183,11 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.4';
+  window.APP_VERSION = '1.5';
+  // Mise à jour automatique : update-check.js interroge la dernière release
+  // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
+  // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.
+  window.UPDATE_REPO = 'laurentsar/guitare';
 </script>
 <script src="theorie.js"></script>
 <script src="audio.js"></script>
@@ -200,6 +204,7 @@
 <script src="tv.js"></script>
 <script src="cast.js"></script>
 <script src="autobackup.js"></script>
+<script src="apk-update.js"></script>
 <script src="update-check.js"></script>
 <script src="app.js"></script>
 </body>

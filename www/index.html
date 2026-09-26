@@ -127,6 +127,9 @@
     <div class="carte">
       <h2>Réglages</h2>
       <label class="ligne">Volume <input id="regVolume" type="range" min="0" max="100" value="90"></label>
+      <label class="ligne">Mon instrument
+        <input id="regInstrument" type="text" maxlength="40" placeholder="Prodipe Primera 4/4">
+      </label>
       <label class="ligne">Timbre
         <select id="regTimbre">
           <option value="nylon">Nylon (classique)</option>
@@ -183,7 +186,7 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.5';
+  window.APP_VERSION = '1.6';
   // Mise à jour automatique : update-check.js interroge la dernière release
   // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
   // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.

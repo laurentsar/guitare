@@ -11,10 +11,42 @@ const ctx = { console, Math, Date, JSON, parseInt, parseFloat, isFinite, Object,
 ctx.window = ctx;
 ctx.globalThis = ctx;
 vm.createContext(ctx);
-['theorie.js', 'accords.js', 'tablature.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js']
+/* AudioContext de test : on ne peut pas écouter dans un CI, mais on peut
+ * MESURER. Le stub capture les buffers produits par la synthèse, qu'on passe
+ * ensuite dans le détecteur de hauteur de l'accordeur : si la corde
+ * synthétisée ne sonne pas juste, le test le dit. */
+const buffersProduits = [];
+function noeud() {
+  return { connect: (n) => n, frequency: { value: 0 }, Q: { value: 0 }, gain: { value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {}, cancelScheduledValues() {} }, type: '' };
+}
+ctx.AudioContext = function () {
+  this.sampleRate = 44100;
+  this.currentTime = 0;
+  this.state = 'running';
+  this.destination = noeud();
+  this.createGain = noeud;
+  this.createBiquadFilter = noeud;
+  this.createOscillator = () => Object.assign(noeud(), { start() {}, stop() {} });
+  this.createBufferSource = () => {
+    const n = noeud();
+    n.start = () => {}; n.stop = () => {};
+    // defineProperty, pas Object.assign : assign COPIE la valeur d'un
+    // accesseur au lieu de l'accesseur lui-même, et le buffer n'était donc
+    // jamais capturé.
+    Object.defineProperty(n, 'buffer', { set(b) { buffersProduits.push(b); }, get() { return null; } });
+    return n;
+  };
+  this.createBuffer = (canaux, n) => {
+    const data = new Float32Array(n);
+    return { length: n, getChannelData: () => data };
+  };
+  this.resume = () => {};
+};
+
+['theorie.js', 'accords.js', 'tablature.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
-const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations } = ctx;
+const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5 } = ctx;
 
 let ok = 0, ko = 0;
 function verifie(nom, cond, detail) {
@@ -124,6 +156,40 @@ verifie('chaque leçon a un texte et une validation',
         Lecons.tous().every(l => l.texte && l.texte.length > 80 && l.validation));
 verifie('la première leçon non faite est la première de la liste',
         Lecons.suivante([]).id === Lecons.tous()[0].id);
+
+console.log('\n— Synthèse des cordes —');
+[[6, 0], [5, 0], [3, 0], [1, 0], [1, 5]].forEach(([corde, frette]) => {
+  buffersProduits.length = 0;
+  Audio5.jouerCase(corde, frette, { duree: 1.2, timbre: 'nylon' });
+  const buf = buffersProduits[0] && buffersProduits[0].getChannelData(0);
+  const attendue = Theorie.freqDeCase(corde, frette);
+  if (!buf) { verifie('corde ' + corde + ' case ' + frette + ' : buffer produit', false); return; }
+  // On analyse une fenêtre prise après l'attaque, là où la corde est établie.
+  const fenetre = buf.slice(4096, 4096 + 4096);
+  const mesure = Accordeur.detecter(fenetre, 44100);
+  verifie('corde ' + corde + ' case ' + frette + ' sonne à la bonne hauteur',
+          mesure && Math.abs(Theorie.cents(mesure.freq, attendue)) < 15,
+          mesure ? mesure.freq.toFixed(1) + ' Hz au lieu de ' + attendue.toFixed(1) : 'aucune hauteur détectée');
+  const crete = buf.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+  verifie('corde ' + corde + ' case ' + frette + ' : niveau exploitable, sans saturation',
+          crete > 0.05 && crete <= 1.0, 'crête ' + crete.toFixed(3));
+  const fini = buf.every((v) => isFinite(v));
+  verifie('corde ' + corde + ' case ' + frette + ' : aucun échantillon aberrant', fini);
+});
+{
+  // Le nylon doit s'éteindre plus vite que l'acier : c'est le repère qui
+  // distingue les deux timbres à l'oreille, et il se mesure.
+  function energieFin(timbre) {
+    buffersProduits.length = 0;
+    Audio5.jouerCase(3, 0, { duree: 2.0, timbre: timbre });
+    const b = buffersProduits[0].getChannelData(0);
+    const fin = b.slice(b.length - 8192);
+    return Math.sqrt(fin.reduce((t, v) => t + v * v, 0) / fin.length);
+  }
+  const nylon = energieFin('nylon'), acier = energieFin('acier');
+  verifie('le nylon s’éteint plus vite que l’acier', nylon < acier,
+          'nylon ' + nylon.toFixed(4) + ' vs acier ' + acier.toFixed(4));
+}
 
 console.log('\n— Schémas —');
 verifie('chaque schéma rend du SVG avec un titre accessible',

@@ -604,6 +604,7 @@
     var r = Store.reglages();
     $('regVolume').value = Math.round(r.volume * 100);
     $('regTimbre').value = r.timbre;
+    $('regInstrument').value = r.instrument || '';
     $('regObjectif').value = String(r.objectifMinutes);
     $('regTv').value = r.modeTv == null ? 'auto' : (r.modeTv ? 'oui' : 'non');
     $('regCast').value = r.castAppId || '';
@@ -638,6 +639,8 @@
   function init() {
     Tv.appliquer();
     $('chipVersion').textContent = 'v' + (window.APP_VERSION || '1.0');
+    var inst = (Store.reglages().instrument || '').trim();
+    $('sousTitre').textContent = (inst ? inst + ' · ' : '') + 'guitare classique · débutant';
     var r = Store.reglages();
     Audio5.volume(r.volume);
     $('metroSlider').value = r.tempo;
@@ -692,6 +695,11 @@
     // Réglages
     $('regVolume').oninput = function () { Audio5.volume(this.value / 100); Store.reglage('volume', this.value / 100); };
     $('regTimbre').onchange = function () { Store.reglage('timbre', this.value); };
+    $('regInstrument').onchange = function () {
+      Store.reglage('instrument', this.value.trim());
+      var i = this.value.trim();
+      $('sousTitre').textContent = (i ? i + ' · ' : '') + 'guitare classique · débutant';
+    };
     $('regObjectif').onchange = function () { Store.reglage('objectifMinutes', parseInt(this.value, 10)); };
     $('regTv').onchange = function () {
       Store.reglage('modeTv', this.value === 'auto' ? null : this.value === 'oui');

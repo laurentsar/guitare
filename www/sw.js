@@ -5,7 +5,7 @@
  * le cache en priorité. Le nom du cache porte la version — le changer est ce
  * qui déclenche la mise à jour chez l'utilisateur.
  */
-const CACHE = 'guitare-v1.5';
+const CACHE = 'guitare-v1.6';
 const FICHIERS = [
   './', './index.html', './styles.css', './app.js',
   './theorie.js', './audio.js', './accords.js', './illustrations.js', './tablature.js', './portee.js', './morceaux.js',

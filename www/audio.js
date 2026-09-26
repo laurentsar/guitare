@@ -34,7 +34,33 @@
       ctx = new AC();
       maitre = ctx.createGain();
       maitre.gain.value = 0.9;
-      maitre.connect(ctx.destination);
+
+      /* La caisse de résonance.
+       *
+       * Une corde pincée seule sonne « électrique » : maigre, brillante, sans
+       * corps. Sur une guitare classique, l'essentiel du son vient de la table
+       * et du volume d'air, qui remontent quelques bandes précises :
+       * la résonance de Helmholtz (l'air de la caisse par la rosace, ~100 Hz),
+       * le premier mode de la table (~200 Hz), un mode du fond (~400 Hz), plus
+       * une zone médium qui donne le « bois » (~1 kHz).
+       *
+       * Trois cloches et un passe-bas suffisent à en donner l'impression — une
+       * vraie convolution demanderait un fichier de réponse impulsionnelle,
+       * c'est-à-dire exactement ce que cette app évite.
+       */
+      var corps = ctx.createBiquadFilter();
+      corps.type = 'peaking'; corps.frequency.value = 100; corps.Q.value = 3.5; corps.gain.value = 7;
+      var table = ctx.createBiquadFilter();
+      table.type = 'peaking'; table.frequency.value = 205; table.Q.value = 3; table.gain.value = 5;
+      var bois = ctx.createBiquadFilter();
+      bois.type = 'peaking'; bois.frequency.value = 420; bois.Q.value = 2.2; bois.gain.value = 3.5;
+      // Les nylons n'ont presque rien au-dessus de 5 kHz : ce qui reste est
+      // précisément ce qui fait « électrique » à l'oreille.
+      var doux = ctx.createBiquadFilter();
+      doux.type = 'lowpass'; doux.frequency.value = 4800; doux.Q.value = 0.7;
+
+      maitre.connect(corps); corps.connect(table); table.connect(bois);
+      bois.connect(doux); doux.connect(ctx.destination);
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
@@ -59,31 +85,57 @@
     var L = Math.max(2, Math.round(sr / freq));
     var ligne = new Float32Array(L);
 
-    // Excitation. Le nylon attaque moins « claquant » que l'acier : on adoucit
-    // la salve de bruit par une moyenne glissante, ce qui retire les aigus les
-    // plus durs avant même la boucle.
-    var doux = timbre === 'acier' ? 1 : 3;
+    /* Excitation.
+     *
+     * Trois choses distinguent une nylon d'une corde d'acier, et elles se
+     * jouent toutes ici :
+     *
+     * 1. Le doigt est LARGE et MOU. Il n'excite pas les harmoniques aiguës :
+     *    on lisse fortement le bruit de départ (fenêtre proportionnelle à la
+     *    longueur de la corde, pas un nombre fixe d'échantillons, sinon les
+     *    notes graves restent brillantes et les aiguës deviennent sourdes).
+     * 2. On pince à un ENDROIT précis, autour du cinquième de la corde : les
+     *    harmoniques dont un nœud tombe là sont absentes. C'est le peigne
+     *    ci-dessous, et c'est lui qui donne le timbre « creux » reconnaissable.
+     * 3. L'attaque n'est pas un clic : une rampe de quelques millisecondes.
+     */
+    var acier = timbre === 'acier';
+    var lissage = Math.max(1, Math.round(L * (acier ? 0.02 : 0.08)));
     var brut = new Float32Array(L);
     for (var i = 0; i < L; i++) brut[i] = Math.random() * 2 - 1;
+    var lisse = new Float32Array(L);
     for (i = 0; i < L; i++) {
-      var s = 0;
-      for (var k = 0; k < doux; k++) s += brut[(i + k) % L];
-      ligne[i] = s / doux;
+      var somme = 0;
+      for (var k = 0; k < lissage; k++) somme += brut[(i + k) % L];
+      lisse[i] = somme / lissage;
     }
+    var pincement = Math.max(1, Math.round(L * (acier ? 0.12 : 0.2)));
+    for (i = 0; i < L; i++) ligne[i] = lisse[i] - lisse[(i + pincement) % L];
 
-    // Amortissement : < 1, d'autant plus bas que la corde doit mourir vite.
-    var amorti = timbre === 'acier' ? 0.998 : 0.994;
+    /* Boucle.
+     *
+     * Le nylon perd ses aigus beaucoup plus vite que l'acier, et les notes
+     * hautes s'éteignent plus vite que les basses — d'où un amortissement qui
+     * dépend de la fréquence. Sans cette dépendance, les aiguës « tiennent »
+     * comme une corde d'acier neuve, ce qui s'entend tout de suite.
+     */
+    var amorti = acier ? 0.9975 : (0.9965 - Math.min(0.004, freq / 180000));
+    var brillance = acier ? 0.62 : 0.42;   // part du courant dans le filtre
     var idx = 0;
     var precedent = 0;
     for (i = 0; i < n; i++) {
       var courant = ligne[idx];
-      // Passe-bas d'ordre 1 dans la boucle = la brillance décroît avec le temps.
-      var filtre = (courant + precedent) * 0.5 * amorti;
+      var filtre = (brillance * courant + (1 - brillance) * precedent) * amorti;
       precedent = courant;
       ligne[idx] = filtre;
       out[i] = courant;
       idx = (idx + 1) % L;
     }
+
+    // Attaque : 4 ms de rampe. Un départ net produit un clic qui s'entend
+    // comme une attaque au médiator — l'inverse du geste recherché.
+    var attaque = Math.min(n, Math.floor(sr * 0.004));
+    for (i = 0; i < attaque; i++) out[i] *= i / attaque;
 
     // Fondu de fin : couper net une corde encore vibrante fait un « clic ».
     var fondu = Math.min(n, Math.floor(sr * 0.05));

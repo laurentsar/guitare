@@ -29,7 +29,8 @@
     modeTv: null,        // null = détection automatique
     castAppId: '',       // récepteur Chromecast personnalisé, voir cast.js
     objectifMinutes: 15,
-    vuePartition: 'deux'   // 'portee' | 'tablature' | 'deux'
+    vuePartition: 'deux',  // 'portee' | 'tablature' | 'deux'
+    instrument: 'Prodipe Primera 4/4'
   };
 
   function reglages() {

@@ -32,7 +32,7 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'tablature.js', 'morceaux.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'morceaux.js', 'lecons.js',
  'accordeur.js', 'oreille.js', 'store.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
@@ -77,6 +77,19 @@ function verifie(nom, cond, detail) {
           $('listeParcours').querySelectorAll('.ligne-lecon.faite').length === 1,
           'n=' + $('listeParcours').querySelectorAll('.ligne-lecon.faite').length);
 
+  w.AppGuitare.ouvrirLecon('tenue');
+  verifie('une leçon illustrée montre ses schémas',
+          $('detailLecon').querySelectorAll('svg.schema').length === 2,
+          'n=' + $('detailLecon').querySelectorAll('svg.schema').length);
+  verifie('le schéma est placé avant le texte',
+          $('detailLecon').querySelector('svg.schema').compareDocumentPosition($('detailLecon').querySelector('.lecon-texte')) & 4);
+  w.AppGuitare.aller('accordeur');
+  verifie('l’accordeur montre la tête et la méthode sans micro',
+          $('ecran-accordeur').querySelectorAll('svg.schema').length === 2,
+          'n=' + $('ecran-accordeur').querySelectorAll('svg.schema').length);
+  verifie('la méthode de la 5e case est repliée par défaut',
+          $('ecran-accordeur').querySelector('details') && !$('ecran-accordeur').querySelector('details').open);
+
   console.log('\n— Accords —');
   w.AppGuitare.aller('accords');
   const vignettes = $('grilleAccords').querySelectorAll('.accord-vignette');
@@ -98,6 +111,8 @@ function verifie(nom, cond, detail) {
   verifie('la tablature contient toutes les notes',
           notesTab.length === w.Morceaux.get('ode-joie').notes.length, 'n=' + notesTab.length);
   verifie('le morceau affiche son tempo', /♩ = 88/.test($('detailMorceau').textContent));
+  verifie('la légende de lecture est disponible, repliée',
+          $('detailMorceau').querySelector('details') && $('detailMorceau').querySelector('details svg.schema'));
 
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');

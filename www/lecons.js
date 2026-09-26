@@ -14,6 +14,10 @@
  *   oreille      un jeu d'écoute
  * `validation` est ce que l'élève coche lui-même, sauf pour `changements` où
  * l'app compte.
+ *
+ * `images` liste des schémas d'illustrations.js, affichés AVANT le texte :
+ * pour une position de main, un dessin dit en une seconde ce qu'un paragraphe
+ * explique en trois phrases.
  */
 (function (global) {
   'use strict';
@@ -22,24 +26,28 @@
     // ---------------------------------------------------------------- Bases
     {
       id: 'tenue', chapitre: 'Prendre la guitare', titre: 'S’asseoir et tenir l’instrument', minutes: 10,
+      images: ['posture', 'anatomie'],
       texte: 'Guitare classique : la caisse repose sur la cuisse GAUCHE, pied gauche surélevé (un gros livre suffit), manche incliné vers le haut à 45°. Le bras droit tombe sur la table d’harmonie, l’avant-bras touche l’arête. Le manche ne s’appuie jamais sur la main gauche : si tu lâches la main gauche, la guitare ne doit pas bouger.\n\nPourquoi c’est la première leçon : une mauvaise position rend les barrés impossibles trois mois plus tard, et c’est l’erreur la plus coûteuse à corriger.',
       exercice: { type: 'metronome', consigne: 'Tiens la position une minute, respiration calme, épaules basses. Le métronome à 60 sert juste à mesurer le temps.', tempo: 60 },
       validation: 'Je tiens la position sans crisper l’épaule droite.'
     },
     {
       id: 'accorder', chapitre: 'Prendre la guitare', titre: 'Accorder au micro', minutes: 10,
+      images: ['tete', 'accordage'],
       texte: 'Une guitare fausse rend tout faux — y compris ton oreille, qui apprend ce qu’elle entend. Accorde AVANT chaque séance.\n\nDe la plus grave à la plus aiguë : Mi (6), La (5), Ré (4), Sol (3), Si (2), Mi (1). Tourne toujours en MONTANT vers la note : une corde détendue puis tendue tient mieux l’accord. Va doucement sur la 1re et la 3e, ce sont celles qui cassent.',
       exercice: { type: 'accordeur', consigne: 'Accorde les six cordes. Vise le vert : à moins de 5 centièmes, c’est juste.' },
       validation: 'Mes six cordes sont vertes.'
     },
     {
       id: 'main-droite', chapitre: 'Prendre la guitare', titre: 'La main droite : p i m a', minutes: 15,
+      images: ['mainDroite'],
       texte: 'Les doigts de la main droite portent des noms espagnols : p (pulgar, pouce), i (índice), m (medio), a (anular). L’auriculaire ne joue pas.\n\nLe pouce joue les cordes graves (6, 5, 4) et va VERS LE BAS en s’éloignant de la paume. i, m, a jouent les cordes 3, 2, 1 et tirent vers la paume. Les ongles courts et limés donnent un son net ; sans ongles, on joue à la pulpe, c’est plus doux et parfaitement valable.',
       exercice: { type: 'morceau', ref: 'pima-vide', consigne: 'Cordes à vide, très lentement. Le but n’est pas la vitesse mais l’égalité : chaque note au même volume.' },
       validation: 'Mes quatre doigts sonnent au même volume.'
     },
     {
       id: 'main-gauche', chapitre: 'Prendre la guitare', titre: 'La main gauche : un doigt par case', minutes: 15,
+      images: ['mainGauche', 'placement'],
       texte: 'Le pouce se place DERRIÈRE le manche, en face du majeur, jamais par-dessus. Les doigts appuient juste derrière la barrette (pas dessus, pas au milieu de la case) et restent arrondis : la dernière phalange tombe à la verticale.\n\nSi ça frise, c’est presque toujours l’une de ces trois choses : doigt trop loin de la barrette, doigt trop à plat qui touche la corde voisine, ou pression insuffisante.',
       exercice: { type: 'morceau', ref: 'chromatique', consigne: 'Un doigt par case, et surtout : ne lève pas les doigts déjà posés.' },
       validation: 'Aucune note ne frise sur les six cordes.'
@@ -88,6 +96,7 @@
     // ------------------------------------------------------------- Mélodies
     {
       id: 'melodie-1', chapitre: 'Jouer des mélodies', titre: 'Lire une tablature', minutes: 10,
+      images: ['tablature'],
       texte: 'Six lignes = six cordes, la ligne du HAUT est la corde la plus AIGUË (l’inverse du diagramme d’accord, oui). Le chiffre est la case, 0 = corde à vide.\n\nLa tablature ne dit pas le rythme : ici, l’app te le joue. Écoute d’abord, joue ensuite.',
       exercice: { type: 'morceau', ref: 'au-clair', consigne: 'Écoute une fois, puis joue avec le métronome à 70.' },
       validation: 'Je joue la mélodie de mémoire.'
@@ -128,6 +137,7 @@
     // ------------------------------------------------------------------ Barré
     {
       id: 'barre', chapitre: 'Le barré', titre: 'Fa majeur, enfin', minutes: 25,
+      images: ['barre'],
       texte: 'Le barré n’est pas une question de force mais de placement : l’index se pose sur son CÔTÉ (celui du pouce), pas à plat — la tranche est dure, la pulpe est molle et laisse passer les cordes. Le pouce descend au milieu du manche, derrière l’index.\n\nCommence par un demi-barré sur les trois cordes aiguës, puis ajoute les autres. Si ça frise après dix minutes, arrête : c’est un muscle à construire, pas une technique à arracher.',
       exercice: { type: 'accord', ref: 'F', consigne: 'Pose, joue corde par corde, repère LA corde qui frise, corrige seulement celle-là.' },
       validation: 'Au moins quatre cordes sonnent clair.'

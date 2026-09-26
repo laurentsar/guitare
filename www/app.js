@@ -156,6 +156,13 @@
     var hote = vide($('detailLecon'));
     hote.appendChild(el('h2', null, l.titre));
     hote.appendChild(el('p', 'aide', l.chapitre + ' · ' + l.minutes + ' min'));
+    // Le schéma d'abord : sur une position de main, un dessin fait en une
+    // seconde ce que le paragraphe met trois phrases à dire.
+    (l.images || []).forEach(function (id) {
+      var boite = el('div');
+      boite.innerHTML = Illustrations.rendre(id);
+      hote.appendChild(boite);
+    });
     hote.appendChild(el('div', 'lecon-texte', l.texte));
 
     var carteEx = el('div', 'carte');
@@ -464,6 +471,12 @@
     h.appendChild(actions);
     h.appendChild(el('p', 'aide', 'La note en cours de lecture s’allume dans la tablature. Écoute d’abord, joue ensuite : imiter un modèle sonore va beaucoup plus vite que déchiffrer.'));
 
+    // Rappel de lecture, replié : utile les premières semaines, encombrant
+    // ensuite — <details> laisse l'élève décider, sans code de notre part.
+    var aide = document.createElement('details');
+    aide.innerHTML = '<summary>Comment lire cette tablature ?</summary>' + Illustrations.rendre('tablature');
+    h.appendChild(aide);
+
     function surligner(note) {
       Array.prototype.forEach.call(zone.querySelectorAll('.tab-note'), function (g) {
         g.classList.toggle('en-cours', parseFloat(g.dataset.temps) === note.temps);
@@ -603,6 +616,16 @@
       }
     };
     rendreCordes(null);
+    var schemaTete = document.createElement('div');
+    schemaTete.innerHTML = Illustrations.rendre('tete');
+    $('ecran-accordeur').querySelector('.carte').appendChild(schemaTete);
+    // Accorder sans micro : replié, parce que ça ne sert qu'en dépannage —
+    // mais indispensable quand le micro est refusé ou la pièce bruyante.
+    var oreilleTuning = document.createElement('details');
+    oreilleTuning.innerHTML = '<summary>Accorder à l’oreille, sans micro</summary>' +
+      Illustrations.rendre('accordage') +
+      '<p class="aide">Appuie sur la case indiquée et compare avec la corde du dessus jouée à vide : les deux doivent sonner pareil. Les boutons ronds ci-dessus jouent chaque corde à vide comme référence.</p>';
+    $('ecran-accordeur').querySelector('.carte').appendChild(oreilleTuning);
 
     // Métronome
     $('btnMetro').onclick = function () { Audio5.metronomeActif() ? arreterMetro() : demarrerMetro(); };

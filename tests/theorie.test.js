@@ -11,10 +11,10 @@ const ctx = { console, Math, Date, JSON, parseInt, parseFloat, isFinite, Object,
 ctx.window = ctx;
 ctx.globalThis = ctx;
 vm.createContext(ctx);
-['theorie.js', 'accords.js', 'tablature.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js']
+['theorie.js', 'accords.js', 'tablature.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
-const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur } = ctx;
+const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations } = ctx;
 
 let ok = 0, ko = 0;
 function verifie(nom, cond, detail) {
@@ -124,6 +124,27 @@ verifie('chaque leçon a un texte et une validation',
         Lecons.tous().every(l => l.texte && l.texte.length > 80 && l.validation));
 verifie('la première leçon non faite est la première de la liste',
         Lecons.suivante([]).id === Lecons.tous()[0].id);
+
+console.log('\n— Schémas —');
+verifie('chaque schéma rend du SVG avec un titre accessible',
+        Illustrations.liste().every((id) => {
+          const s = Illustrations.rendre(id);
+          return s.startsWith('<svg') && s.indexOf('aria-label') !== -1 && s.indexOf('<title>') !== -1;
+        }));
+verifie('les schémas cités par les leçons existent tous',
+        Lecons.tous().every((l) => (l.images || []).every((i) => Illustrations.liste().indexOf(i) !== -1)),
+        Lecons.tous().flatMap((l) => (l.images || []).filter((i) => Illustrations.liste().indexOf(i) === -1)).join(','));
+verifie('aucun schéma orphelin (tous servent quelque part)',
+        (() => {
+          const cites = new Set(Lecons.tous().flatMap((l) => l.images || []));
+          // 'tete' et 'tablature' sont aussi posés par app.js (accordeur, morceau)
+          ['tete', 'tablature'].forEach((i) => cites.add(i));
+          return Illustrations.liste().every((i) => cites.has(i));
+        })(),
+        Illustrations.liste().join(','));
+verifie('les schémas n’utilisent que des classes du thème',
+        Illustrations.liste().every((id) => !/fill="#|stroke="#/.test(Illustrations.rendre(id))),
+        Illustrations.liste().filter((id) => /fill="#|stroke="#/.test(Illustrations.rendre(id))).join(','));
 
 console.log(`\n=== ${ok} réussis, ${ko} échoués ===`);
 process.exit(ko ? 1 : 0);

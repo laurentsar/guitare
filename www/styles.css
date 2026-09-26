@@ -256,3 +256,43 @@ html.tv :focus-visible { outline: 4px solid var(--accent) !important; outline-of
   .onglets button span { font-size: 17px; }
   .grille-raccourcis { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ------------------------------------------------------------- schémas */
+/* Dessinés par illustrations.js. Toutes les couleurs sont ici : le schéma
+ * suit le thème, et un seul endroit à toucher pour les retoucher tous. */
+.schema { width: 100%; height: auto; max-width: 460px; display: block; margin: 12px auto; }
+.schema .sch-bois { fill: var(--bois); }
+.schema .sch-manche { fill: var(--bois-sombre); }
+.schema .sch-piece { fill: #3B4557; }
+.schema .sch-piece-trait { stroke: #3B4557; stroke-width: 4; }
+.schema .sch-trou { fill: var(--fond); }
+.schema .sch-rosace { fill: none; stroke: var(--bois-sombre); stroke-width: 2.5; }
+.schema .sch-corde { stroke: var(--corde); stroke-width: 1.6; }
+.schema .sch-corde-pt { fill: var(--corde); }
+.schema .sch-frette { stroke: #6B7791; stroke-width: 1.6; }
+.schema .sch-barrette { stroke: #8892A8; stroke-width: 3; }
+.schema .sch-sillet { stroke: var(--corde); stroke-width: 4; }
+.schema .sch-corps { fill: #2E3648; }
+.schema .sch-accent { fill: var(--accent); }
+.schema .sch-doigt { fill: var(--bois); }
+.schema .sch-doigt.sch-faux { fill: var(--faux); }
+.schema .sch-doigt-nom { fill: #22180C; font-weight: 700; font-size: 17px; }
+.schema .sch-trait-doigt { fill: none; stroke: var(--bois); stroke-width: 9; stroke-linecap: round; }
+.schema .sch-trait-doigt.sch-faux { stroke: var(--faux); }
+.schema .sch-repere { fill: none; stroke: var(--texte-2); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.schema .sch-fleche { stroke: var(--texte-2); stroke-width: 1.6; }
+.schema .sch-pointe { fill: var(--texte-2); }
+.schema .sch-txt { fill: var(--texte); font-size: 13px; }
+.schema .sch-petit { fill: var(--texte-2); font-size: 12px; }
+.schema .sch-case { fill: var(--fond); }
+.schema .sch-chiffre { fill: var(--texte); font-size: 14px; font-weight: 700; }
+.schema .sch-croix { fill: var(--faux); font-size: 20px; font-weight: 700; }
+.schema .sch-ok { fill: var(--ok); font-size: 20px; font-weight: 700; }
+.schema-legende { text-align: center; color: var(--texte-2); font-size: 12px; margin: -4px 0 14px; }
+html.tv .schema { max-width: 760px; }
+details { background: var(--fond-3); border: 1px solid var(--trait); border-radius: 10px; padding: 10px 14px; margin-top: 12px; }
+details summary { cursor: pointer; color: var(--accent); }
+.schema .sch-rotation { fill: none; stroke: var(--accent); stroke-width: 2.4; }
+.schema .sch-doigt.sch-exception { fill: var(--presque); }
+.schema .sch-vide { fill: none; stroke: var(--corde); stroke-width: 2; }
+.schema .sch-exception-txt { fill: var(--presque); font-size: 12px; }

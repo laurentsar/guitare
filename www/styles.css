@@ -1,0 +1,258 @@
+/* Ma Guitare — feuille de style unique.
+ *
+ * Deux contextes, une seule feuille : téléphone au doigt, et téléviseur à
+ * trois mètres avec une télécommande. Le mode TV n'est pas une autre page mais
+ * la classe .tv sur <html> : tout grossit, les cibles de focus deviennent
+ * visibles, et la barre d'onglets passe sur le côté (un pouce remonte vers le
+ * bas de l'écran, une télécommande non).
+ */
+
+:root {
+  --fond: #0E121B;
+  --fond-2: #161C29;
+  --fond-3: #1E2637;
+  --trait: #2A3344;
+  --texte: #EEF2F8;
+  --texte-2: #9AA7BD;
+  --bois: #D6A86A;
+  --bois-sombre: #B07842;
+  --corde: #E7ECF5;
+  --ok: #58D08B;
+  --presque: #E8C766;
+  --faux: #E87A7A;
+  --accent: #7FB8FF;
+  --rayon: 14px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding-bottom: 88px;
+  padding-top: env(safe-area-inset-top, 0);
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1 { font-size: 19px; margin: 0; }
+h2 { font-size: 17px; margin: 0 0 10px; }
+h3 { font-size: 15px; margin: 18px 0 8px; color: var(--bois); }
+
+/* ---------------------------------------------------------------- en-tête */
+.entete {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px; background: var(--fond-2); border-bottom: 1px solid var(--trait);
+  position: sticky; top: 0; z-index: 20;
+}
+.titre-bloc p { margin: 2px 0 0; color: var(--texte-2); font-size: 12px; }
+.chip {
+  font-size: 11px; background: var(--bois); color: #22180C; border-radius: 999px;
+  padding: 1px 7px; vertical-align: middle; font-weight: 700;
+}
+.entete-droite { display: flex; align-items: center; gap: 14px; }
+.compteur { text-align: center; line-height: 1.1; }
+.compteur b { display: block; font-size: 18px; color: var(--bois); }
+.compteur span { font-size: 10px; color: var(--texte-2); }
+.btn-cast {
+  background: none; border: 1px solid var(--trait); color: var(--texte);
+  border-radius: 10px; font-size: 18px; padding: 4px 9px; cursor: pointer;
+}
+.btn-cast.on { border-color: var(--accent); color: var(--accent); }
+
+/* ----------------------------------------------------------------- écrans */
+.ecran { display: none; padding: 14px 14px 20px; max-width: 900px; margin: 0 auto; }
+.ecran.actif { display: block; }
+
+.carte {
+  background: var(--fond-2); border: 1px solid var(--trait); border-radius: var(--rayon);
+  padding: 16px; margin-bottom: 14px;
+}
+.carte.accent { border-color: var(--bois-sombre); }
+.carte.conseil { background: var(--fond-3); }
+.aide { color: var(--texte-2); font-size: 13px; margin: 8px 0 0; }
+.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
+
+.btn {
+  background: var(--fond-3); color: var(--texte); border: 1px solid var(--trait);
+  border-radius: 10px; padding: 10px 14px; font-size: 15px; cursor: pointer;
+}
+.btn:focus-visible, .raccourci:focus-visible, .onglets button:focus-visible,
+.accord-vignette:focus-visible, .ligne-lecon:focus-visible, .ligne-morceau:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 2px;
+}
+.btn.primaire { background: var(--bois); color: #22180C; border-color: var(--bois); font-weight: 700; }
+.btn.large { width: 100%; margin-top: 10px; }
+.btn[disabled] { opacity: .45; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; margin-top: 12px; }
+.retour { background: none; border: none; color: var(--accent); font-size: 15px; padding: 4px 0 10px; cursor: pointer; }
+
+/* ---------------------------------------------------------------- accueil */
+.grille-raccourcis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.raccourci {
+  background: var(--fond-2); border: 1px solid var(--trait); border-radius: var(--rayon);
+  color: var(--texte); padding: 14px 6px; font-size: 13px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.raccourci span { font-size: 24px; }
+.barre-objectif { height: 8px; background: var(--fond-3); border-radius: 99px; overflow: hidden; margin: 10px 0 4px; }
+.barre-objectif i { display: block; height: 100%; background: var(--ok); }
+
+/* --------------------------------------------------------------- parcours */
+.chapitre { margin-bottom: 18px; }
+.ligne-lecon {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--fond-2); border: 1px solid var(--trait); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 8px; color: var(--texte); cursor: pointer;
+}
+.ligne-lecon .puce {
+  width: 26px; height: 26px; flex: 0 0 26px; border-radius: 50%; border: 2px solid var(--trait);
+  display: grid; place-items: center; font-size: 13px; color: var(--texte-2);
+}
+.ligne-lecon.faite .puce { background: var(--ok); border-color: var(--ok); color: #0C2416; }
+.ligne-lecon b { display: block; font-size: 15px; }
+.ligne-lecon small { color: var(--texte-2); }
+.lecon-texte { white-space: pre-line; margin: 12px 0; }
+
+/* ---------------------------------------------------------------- accords */
+.filtres { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.filtres button { background: var(--fond-2); border: 1px solid var(--trait); color: var(--texte-2); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.filtres button.actif { background: var(--bois); color: #22180C; border-color: var(--bois); font-weight: 700; }
+.grille-accords { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px; }
+.accord-vignette {
+  background: var(--fond-2); border: 1px solid var(--trait); border-radius: 12px;
+  padding: 10px 6px 6px; text-align: center; color: var(--texte); cursor: pointer;
+}
+.accord-vignette b { display: block; font-size: 16px; }
+.accord-vignette small { color: var(--texte-2); font-size: 11px; }
+
+/* diagrammes */
+.diagramme { width: 100%; height: auto; }
+.diagramme .sillet { fill: var(--corde); }
+.diagramme .frette { stroke: #4A5670; stroke-width: 1.4; }
+.diagramme .corde { stroke: #7C88A0; stroke-width: 1.4; }
+.diagramme .doigt { fill: var(--bois); }
+.diagramme .barre { fill: var(--bois); }
+.diagramme .vide { fill: none; stroke: var(--corde); stroke-width: 1.6; }
+.diagramme .diag-mute { fill: var(--texte-2); font-size: 11px; }
+.diagramme .diag-doigt { fill: #22180C; font-size: 11px; font-weight: 700; }
+.diagramme .diag-frette { fill: var(--texte-2); font-size: 11px; }
+.grand-diagramme { max-width: 280px; margin: 0 auto; }
+
+/* -------------------------------------------------------------- accordeur */
+.accordeur { text-align: center; }
+.accordeur-etat { color: var(--texte-2); font-size: 13px; min-height: 20px; }
+.aiguille-boite {
+  position: relative; height: 92px; margin: 14px auto 6px; max-width: 420px;
+  background: var(--fond-3); border-radius: 12px; overflow: hidden;
+}
+.aiguille-graduation {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, #2A3344 0 1px, transparent 1px 10%);
+}
+.aiguille-centre { position: absolute; left: 50%; top: 8px; bottom: 8px; width: 2px; background: var(--ok); transform: translateX(-1px); }
+.aiguille {
+  position: absolute; top: 10px; bottom: 10px; width: 6px; border-radius: 3px;
+  background: var(--faux); left: 50%; transform: translateX(-3px);
+  transition: left .12s linear, background .2s;
+}
+.accordeur-note { font-size: 42px; font-weight: 700; line-height: 1.1; }
+.accordeur-cents { color: var(--texte-2); min-height: 22px; }
+.cordes-etat { display: flex; justify-content: center; gap: 8px; margin: 12px 0 4px; flex-wrap: wrap; }
+.cordes-etat button {
+  width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--trait);
+  background: var(--fond-3); color: var(--texte); font-size: 13px; cursor: pointer;
+}
+.cordes-etat button.ok { background: var(--ok); color: #0C2416; border-color: var(--ok); }
+.cordes-etat button.vise { border-color: var(--accent); color: var(--accent); }
+
+/* -------------------------------------------------------------- métronome */
+.metronome { text-align: center; }
+.metro-tempo { font-size: 58px; font-weight: 700; line-height: 1; color: var(--bois); }
+.metro-unite { color: var(--texte-2); font-size: 12px; margin-bottom: 14px; }
+.metro-points { display: flex; justify-content: center; gap: 12px; margin: 16px 0; }
+.metro-points i {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--fond-3);
+  border: 2px solid var(--trait); transition: transform .05s, background .05s;
+}
+.metro-points i.actif { background: var(--bois); border-color: var(--bois); transform: scale(1.35); }
+.metro-points i.fort.actif { background: var(--ok); border-color: var(--ok); }
+.curseur { width: 100%; margin: 6px 0; }
+label.ligne { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0; }
+label.ligne input[type=text], label.ligne select, label.ligne input[type=range] { flex: 0 1 55%; }
+select, input[type=text] {
+  background: var(--fond-3); color: var(--texte); border: 1px solid var(--trait);
+  border-radius: 8px; padding: 8px 10px; font-size: 15px;
+}
+
+/* ------------------------------------------------------------- tablature */
+.ligne-morceau {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--fond-2); border: 1px solid var(--trait); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 8px; color: var(--texte); cursor: pointer;
+}
+.ligne-morceau .niveau { font-size: 11px; color: #22180C; background: var(--bois); border-radius: 999px; padding: 2px 8px; }
+.tab-ligne { overflow-x: auto; margin: 10px 0; }
+.tab { width: 100%; min-width: 420px; height: auto; }
+.tab-corde { stroke: #56607A; stroke-width: 1; }
+.tab-mesure { stroke: #6C7790; stroke-width: 1.5; }
+.tab-clef { fill: var(--texte-2); font-size: 9px; letter-spacing: 1px; }
+.tab-fond { fill: var(--fond); }
+.tab-chiffre { fill: var(--texte); font-size: 12px; font-weight: 600; }
+.tab-main { fill: var(--bois); font-size: 10px; font-style: italic; }
+.tab-note.en-cours .tab-chiffre { fill: #22180C; }
+.tab-note.en-cours .tab-fond { fill: var(--bois); }
+
+/* ---------------------------------------------------------------- oreille */
+.choix-oreille { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 14px; }
+.choix-oreille button { padding: 16px 10px; font-size: 16px; }
+.choix-oreille button.bon { background: var(--ok); color: #0C2416; border-color: var(--ok); }
+.choix-oreille button.mauvais { background: var(--faux); color: #2A0E0E; border-color: var(--faux); }
+.score { font-size: 15px; color: var(--texte-2); text-align: center; margin-top: 12px; }
+
+/* --------------------------------------------------------------- onglets */
+.onglets {
+  position: fixed; left: 0; right: 0; bottom: 0; display: flex; z-index: 30;
+  background: var(--fond-2); border-top: 1px solid var(--trait);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.onglets button {
+  flex: 1; background: none; border: none; color: var(--texte-2); cursor: pointer;
+  font-size: 10px; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.onglets button span { font-size: 19px; }
+.onglets button.actif { color: var(--bois); }
+
+/* ------------------------------------------------------------- mode télé */
+/* Trois mètres de recul : on grossit tout, on épaissit les repères de focus,
+ * et la barre de navigation passe à gauche — le bas de l'écran d'un
+ * téléviseur est souvent mangé par le surbalayage. */
+html.tv body { font-size: 22px; padding-bottom: 0; padding-left: 190px; }
+html.tv .entete { padding: 18px 28px; }
+html.tv h1 { font-size: 28px; }
+html.tv .ecran { max-width: 1400px; padding: 24px 32px; }
+html.tv .compteur b { font-size: 26px; }
+html.tv .onglets {
+  top: 0; right: auto; width: 190px; flex-direction: column; justify-content: center;
+  border-top: none; border-right: 1px solid var(--trait); padding: 0;
+}
+html.tv .onglets button { flex: 0 0 auto; flex-direction: row; gap: 12px; font-size: 17px; padding: 14px 18px; justify-content: flex-start; }
+html.tv .onglets button span { font-size: 24px; }
+html.tv .onglets button.actif { background: var(--fond-3); }
+html.tv .grille-raccourcis { grid-template-columns: repeat(6, 1fr); }
+html.tv .grille-accords { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+html.tv .grand-diagramme { max-width: 460px; }
+html.tv .metro-tempo { font-size: 92px; }
+html.tv .metro-points i { width: 34px; height: 34px; }
+html.tv .accordeur-note { font-size: 76px; }
+html.tv .aiguille-boite { height: 140px; max-width: 760px; }
+html.tv .tab { min-width: 0; }
+html.tv .cordes-etat button { width: 70px; height: 70px; font-size: 17px; }
+html.tv :focus-visible { outline: 4px solid var(--accent) !important; outline-offset: 3px; }
+
+@media (max-width: 380px) {
+  .onglets button { font-size: 9px; }
+  .onglets button span { font-size: 17px; }
+  .grille-raccourcis { grid-template-columns: repeat(2, 1fr); }
+}

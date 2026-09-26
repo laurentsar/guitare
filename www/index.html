@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E121B">
+<title>Ma Guitare</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="entete">
+  <div class="titre-bloc">
+    <h1>Ma Guitare <span id="chipVersion" class="chip">v1.0</span></h1>
+    <p id="sousTitre">Guitare classique · débutant</p>
+  </div>
+  <div class="entete-droite">
+    <button id="btnCast" class="btn-cast" hidden aria-label="Diffuser sur la télé">📺</button>
+    <div class="compteur"><b id="statSerie">0</b><span>jours</span></div>
+    <div class="compteur"><b id="statMinutes">0</b><span>min aujourd’hui</span></div>
+  </div>
+</header>
+
+<main id="ecrans">
+
+  <section id="ecran-accueil" class="ecran actif">
+    <div class="carte accent" id="carteReprendre"></div>
+    <div class="grille-raccourcis">
+      <button class="raccourci" data-aller="accordeur"><span>🎯</span>Accorder</button>
+      <button class="raccourci" data-aller="metronome"><span>🥁</span>Métronome</button>
+      <button class="raccourci" data-aller="accords"><span>🎸</span>Accords</button>
+      <button class="raccourci" data-aller="morceaux"><span>🎼</span>Morceaux</button>
+      <button class="raccourci" data-aller="oreille"><span>👂</span>Oreille</button>
+      <button class="raccourci" data-aller="parcours"><span>📘</span>Parcours</button>
+    </div>
+    <div class="carte" id="carteProgression"></div>
+    <div class="carte conseil" id="carteConseil"></div>
+  </section>
+
+  <section id="ecran-parcours" class="ecran">
+    <div id="listeParcours"></div>
+  </section>
+
+  <section id="ecran-lecon" class="ecran">
+    <button class="retour" data-aller="parcours">‹ Parcours</button>
+    <div id="detailLecon"></div>
+  </section>
+
+  <section id="ecran-accords" class="ecran">
+    <div class="filtres" id="filtresAccords"></div>
+    <div class="grille-accords" id="grilleAccords"></div>
+  </section>
+
+  <section id="ecran-accord" class="ecran">
+    <button class="retour" data-aller="accords">‹ Accords</button>
+    <div id="detailAccord"></div>
+  </section>
+
+  <section id="ecran-accordeur" class="ecran">
+    <div class="carte accordeur">
+      <div id="accordeurEtat" class="accordeur-etat">Appuie sur « Écouter » et joue une corde à vide.</div>
+      <div class="aiguille-boite">
+        <div class="aiguille-graduation"></div>
+        <div id="aiguille" class="aiguille"></div>
+        <div class="aiguille-centre"></div>
+      </div>
+      <div id="accordeurNote" class="accordeur-note">—</div>
+      <div id="accordeurCents" class="accordeur-cents"></div>
+      <div class="cordes-etat" id="cordesEtat"></div>
+      <div class="actions">
+        <button id="btnAccordeur" class="btn primaire">Écouter</button>
+        <button id="btnRef" class="btn">Jouer la référence</button>
+      </div>
+      <p class="aide">Les six cordes, de la plus grave à la plus aiguë : Mi La Ré Sol Si Mi. Monte toujours vers la note plutôt que de descendre.</p>
+    </div>
+  </section>
+
+  <section id="ecran-metronome" class="ecran">
+    <div class="carte metronome">
+      <div id="metroTempo" class="metro-tempo">70</div>
+      <div class="metro-unite">battements par minute</div>
+      <div id="metroPoints" class="metro-points"></div>
+      <input id="metroSlider" class="curseur" type="range" min="40" max="200" value="70" aria-label="Tempo">
+      <div class="actions">
+        <button class="btn" data-tempo="-5">−5</button>
+        <button id="btnMetro" class="btn primaire">Démarrer</button>
+        <button class="btn" data-tempo="5">+5</button>
+      </div>
+      <div class="actions">
+        <label>Mesure
+          <select id="metroMesure">
+            <option value="2">2 temps</option>
+            <option value="3">3 temps</option>
+            <option value="4" selected>4 temps</option>
+            <option value="6">6 temps</option>
+          </select>
+        </label>
+        <label>Subdivision
+          <select id="metroSub">
+            <option value="1" selected>noires</option>
+            <option value="2">croches</option>
+            <option value="3">triolets</option>
+          </select>
+        </label>
+      </div>
+      <button id="btnTap" class="btn large">Battre le tempo</button>
+    </div>
+  </section>
+
+  <section id="ecran-morceaux" class="ecran">
+    <div id="listeMorceaux"></div>
+  </section>
+
+  <section id="ecran-morceau" class="ecran">
+    <button class="retour" data-aller="morceaux">‹ Morceaux</button>
+    <div id="detailMorceau"></div>
+  </section>
+
+  <section id="ecran-oreille" class="ecran">
+    <div id="oreilleAccueil"></div>
+    <div id="oreilleJeu" hidden></div>
+  </section>
+
+  <section id="ecran-reglages" class="ecran">
+    <div class="carte">
+      <h2>Réglages</h2>
+      <label class="ligne">Volume <input id="regVolume" type="range" min="0" max="100" value="90"></label>
+      <label class="ligne">Timbre
+        <select id="regTimbre">
+          <option value="nylon">Nylon (classique)</option>
+          <option value="acier">Acier (folk)</option>
+        </select>
+      </label>
+      <label class="ligne">Objectif quotidien
+        <select id="regObjectif">
+          <option value="10">10 min</option>
+          <option value="15" selected>15 min</option>
+          <option value="20">20 min</option>
+          <option value="30">30 min</option>
+        </select>
+      </label>
+      <label class="ligne">Mode télévision
+        <select id="regTv">
+          <option value="auto">Automatique</option>
+          <option value="oui">Toujours</option>
+          <option value="non">Jamais</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="carte">
+      <h2>Diffusion sur la télé</h2>
+      <p class="aide" id="castAide"></p>
+      <label class="ligne">Identifiant du récepteur
+        <input id="regCast" type="text" maxlength="8" placeholder="ABCD1234" autocapitalize="characters">
+      </label>
+      <p class="aide">À créer une seule fois sur <b>cast.google.com/publish</b> (récepteur personnalisé), avec l’adresse de la page récepteur : <span id="castUrl" class="mono"></span></p>
+    </div>
+
+    <div class="carte" id="carteBackup"></div>
+
+    <div class="carte">
+      <h2>À propos</h2>
+      <p class="aide">Mélodies du domaine public (traditionnel, Beethoven) et études écrites pour l’app. Sons entièrement synthétisés : aucun enregistrement, aucune donnée envoyée nulle part. L’accordeur écoute le micro sur l’appareil, rien n’en sort.</p>
+      <p class="aide" id="aproposVersion"></p>
+    </div>
+  </section>
+
+</main>
+
+<nav class="onglets" id="onglets">
+  <button data-aller="accueil" class="actif"><span>🏠</span>Accueil</button>
+  <button data-aller="parcours"><span>📘</span>Parcours</button>
+  <button data-aller="accords"><span>🎸</span>Accords</button>
+  <button data-aller="accordeur"><span>🎯</span>Accordeur</button>
+  <button data-aller="metronome"><span>🥁</span>Tempo</button>
+  <button data-aller="morceaux"><span>🎼</span>Morceaux</button>
+  <button data-aller="oreille"><span>👂</span>Oreille</button>
+  <button data-aller="reglages"><span>⚙️</span>Réglages</button>
+</nav>
+
+<script>
+  window.BACKUP_APP = 'guitare';
+  window.APP_VERSION = '1.0';
+</script>
+<script src="theorie.js"></script>
+<script src="audio.js"></script>
+<script src="accords.js"></script>
+<script src="tablature.js"></script>
+<script src="morceaux.js"></script>
+<script src="lecons.js"></script>
+<script src="accordeur.js"></script>
+<script src="oreille.js"></script>
+<script src="store.js"></script>
+<script src="dpad-nav.js"></script>
+<script src="tv.js"></script>
+<script src="cast.js"></script>
+<script src="autobackup.js"></script>
+<script src="update-check.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

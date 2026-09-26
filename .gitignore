@@ -1,0 +1,8 @@
+node_modules/
+android/
+*.log
+.DS_Store
+
+# les clés de signature ne vivent QUE dans ~/app-kit/keys
+*.p12
+*.jks

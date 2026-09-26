@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ma Guitare — écran télé</title>
+<!--
+  Récepteur Chromecast.
+
+  Cette page tourne SUR la télé. Le téléphone reste la télécommande et lui
+  envoie des données (quel accord, quelle tablature, quel battement), jamais du
+  HTML : le récepteur dessine lui-même, ce qui le rend inoffensif même si le
+  message est malformé, et lisible à trois mètres puisque c'est lui qui choisit
+  les tailles.
+
+  Pour l'utiliser : créer un récepteur personnalisé sur cast.google.com/publish
+  en pointant l'URL de cette page (HTTPS obligatoire — GitHub Pages convient),
+  puis coller l'identifiant obtenu dans les réglages de l'app.
+-->
+<style>
+  :root { --fond:#0E121B; --bois:#D6A86A; --texte:#EEF2F8; --texte-2:#9AA7BD; --ok:#58D08B; --faux:#E87A7A; --trait:#2A3344; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fond); color:var(--texte); font:24px/1.4 system-ui, sans-serif;
+         height:100vh; display:grid; place-items:center; overflow:hidden; }
+  #scene { width:92vw; height:88vh; display:grid; place-items:center; text-align:center; }
+  h1 { font-size:4vw; margin:0 0 2vh; color:var(--bois); }
+  .attente { color:var(--texte-2); font-size:2vw; }
+  svg { max-height:70vh; }
+  .diagramme .sillet{fill:var(--texte)} .diagramme .frette{stroke:#4A5670;stroke-width:1.4}
+  .diagramme .corde{stroke:#7C88A0;stroke-width:1.4} .diagramme .doigt,.diagramme .barre{fill:var(--bois)}
+  .diagramme .vide{fill:none;stroke:var(--texte);stroke-width:1.6}
+  .diagramme .diag-mute{fill:var(--texte-2);font-size:11px}
+  .diagramme .diag-doigt{fill:#22180C;font-size:11px;font-weight:700}
+  .diagramme .diag-frette{fill:var(--texte-2);font-size:11px}
+  .tab-corde{stroke:#56607A;stroke-width:1} .tab-mesure{stroke:#6C7790;stroke-width:1.5}
+  .tab-clef{fill:var(--texte-2);font-size:9px} .tab-fond{fill:var(--fond)}
+  .tab-chiffre{fill:var(--texte);font-size:12px;font-weight:600}
+  .tab-main{fill:var(--bois);font-size:10px;font-style:italic}
+  .tab-note.en-cours .tab-chiffre{fill:#22180C} .tab-note.en-cours .tab-fond{fill:var(--bois)}
+  .points { display:flex; gap:3vw; justify-content:center; margin-top:4vh; }
+  .points i { width:6vh; height:6vh; border-radius:50%; background:#1E2637; border:0.4vh solid var(--trait); }
+  .points i.actif { background:var(--bois); border-color:var(--bois); transform:scale(1.25); }
+  .points i.fort.actif { background:var(--ok); border-color:var(--ok); }
+  .tempo { font-size:9vw; font-weight:700; color:var(--bois); line-height:1; }
+  .jauge { width:70vw; height:12vh; background:#1E2637; border-radius:2vh; position:relative; margin:3vh auto; }
+  .jauge .centre { position:absolute; left:50%; top:1vh; bottom:1vh; width:0.4vw; background:var(--ok); }
+  .jauge .aig { position:absolute; top:1vh; bottom:1vh; width:1vw; border-radius:0.5vw; background:var(--faux); transition:left .12s linear; }
+</style>
+</head>
+<body>
+<div id="scene"><div><h1>Ma Guitare</h1><p class="attente">En attente du téléphone…</p></div></div>
+
+<script src="theorie.js"></script>
+<script src="accords.js"></script>
+<script src="tablature.js"></script>
+<script src="//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+<script>
+(function () {
+  'use strict';
+  var NAMESPACE = 'urn:x-cast:com.laurent.guitare';
+  var scene = document.getElementById('scene');
+
+  function html(s) { scene.innerHTML = s; }
+
+  function affiche(m) {
+    if (!m || !m.type) return;
+    if (m.type === 'accord' && m.accord) {
+      html('<div><h1>' + m.accord.id + ' — ' + m.accord.fr + '</h1>' +
+           Accords.svg(m.accord, { largeur: 420 }) +
+           '<p class="attente">' + Accords.notes(m.accord).join(' · ') + '</p></div>');
+    } else if (m.type === 'morceau' && m.piece) {
+      var tab = Tablature.svg(m.piece, { mesuresParLigne: 4, pxParTemps: 40, interligne: 22 });
+      html('<div style="width:100%"><h1>' + m.piece.titre + '</h1>' + tab + '</div>');
+      // Surlignage de la note en cours : le téléphone envoie son index.
+      var notes = scene.querySelectorAll('.tab-note');
+      if (m.index != null && notes[m.index]) notes[m.index].classList.add('en-cours');
+    } else if (m.type === 'metronome') {
+      var pts = '';
+      for (var i = 0; i < (m.parMesure || 4); i++) {
+        pts += '<i class="' + (i === 0 ? 'fort ' : '') + (i === m.temps ? 'actif' : '') + '"></i>';
+      }
+      html('<div><div class="tempo">' + m.tempo + '</div><p class="attente">battements par minute</p>' +
+           '<div class="points">' + pts + '</div></div>');
+    } else if (m.type === 'accordeur' && m.mesure) {
+      var c = Math.max(-50, Math.min(50, m.mesure.cents));
+      var couleur = Math.abs(m.mesure.cents) < 5 ? 'var(--ok)' : (Math.abs(m.mesure.cents) < 15 ? '#E8C766' : 'var(--faux)');
+      html('<div style="width:100%"><h1>Corde ' + m.mesure.corde + ' — ' + Theorie.CORDES[m.mesure.corde].nom + '</h1>' +
+           '<div class="jauge"><div class="centre"></div><div class="aig" style="left:' + (50 + c) + '%;background:' + couleur + '"></div></div>' +
+           '<p class="attente">' + (m.mesure.cents > 0 ? '+' : '') + m.mesure.cents.toFixed(0) + ' centièmes · ' + m.mesure.freq.toFixed(1) + ' Hz</p></div>');
+    }
+  }
+
+  if (window.cast && cast.framework) {
+    var ctx = cast.framework.CastReceiverContext.getInstance();
+    ctx.addCustomMessageListener(NAMESPACE, function (e) { affiche(e.data); });
+    // Pas de lecture média : sans ça, le récepteur se ferme au bout de
+    // quelques minutes faute de flux.
+    var options = new cast.framework.CastReceiverOptions();
+    options.disableIdleTimeout = true;
+    ctx.start(options);
+  }
+})();
+</script>
+</body>
+</html>

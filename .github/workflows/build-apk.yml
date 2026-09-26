@@ -1,0 +1,37 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  # La théorie (fréquences, diagrammes, tablatures) et l'interface sont
+  # vérifiées avant de produire une APK : une app de musique qui affiche un
+  # mauvais doigté est pire qu'une app qui ne se construit pas.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+
+  build:
+    needs: test
+    permissions:
+      contents: write
+    uses: laurentsar/app-kit/.github/workflows/build-apk.yml@57a5df8c62ecbd78c1ae89849c4398c0b7a2b408
+    with:
+      apk_name: guitare
+      release_name: Ma Guitare
+      regen_android: true
+      pillow: true
+      ci_scripts: >-
+        ci/patch_signing.py
+        ci/patch_manifest.py
+        ci/set_version.py
+        ci/set_icons.py
+    secrets: inherit

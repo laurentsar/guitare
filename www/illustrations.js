@@ -175,18 +175,23 @@
     c += '<rect x="120" y="20" width="110" height="200" rx="14" class="sch-piece"/>';
     c += '<rect x="148" y="220" width="54" height="40" class="sch-manche"/>';
     c += '<line x1="148" y1="222" x2="202" y2="222" class="sch-sillet"/>';
+    // i = 0 est la corde 6 (la plus grave), côté gauche de la tête. Le NUMÉRO
+    // se déduit donc de l'index (6 - i) : l'afficher comme « i + 1 » donnait
+    // « 1 Mi » en face de la mécanique de la 6e corde, et un débutant aurait
+    // tourné la mauvaise cheville.
     var noms = ['Mi', 'La', 'Ré', 'Sol', 'Si', 'Mi'];   // cordes 6→1
     for (var i = 0; i < 6; i++) {
+      var numero = 6 - i;
       var cote = i < 3 ? -1 : 1;
       var rang = i < 3 ? i : 5 - i;
       var y = 56 + rang * 56;
       var x = cote < 0 ? 112 : 238;
       c += '<circle cx="' + x + '" cy="' + y + '" r="13" class="sch-accent"/>';
       c += '<line x1="' + (x + cote * 13) + '" y1="' + y + '" x2="' + (x + cote * 30) + '" y2="' + y + '" class="sch-piece-trait"/>';
-      c += txt(x + cote * 48, y + 5, (i + 1) + ' ' + noms[i], 'sch-petit');
-      // corde jusqu'au sillet
-      var xs = 152 + (i < 3 ? i : 5 - i + 3) * 8;
-      c += '<line x1="' + x + '" y1="' + y + '" x2="' + xs + '" y2="224" class="sch-corde"/>';
+      c += txt(x + cote * 48, y + 5, numero + ' ' + noms[i], 'sch-petit');
+      // Position au sillet : la 6e à gauche, la 1re à droite, dans l'ordre.
+      // Calculer autrement faisait se croiser les cordes sur le dessin.
+      c += '<line x1="' + x + '" y1="' + y + '" x2="' + (152 + i * 8) + '" y2="224" class="sch-corde"/>';
     }
     // Sens de rotation. Sur une classique, la mécanique tend la corde quand
     // l'axe l'enroule vers l'intérieur de la tête : côté gauche (cordes 6-5-4)

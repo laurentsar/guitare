@@ -296,3 +296,12 @@ details summary { cursor: pointer; color: var(--accent); }
 .schema .sch-doigt.sch-exception { fill: var(--presque); }
 .schema .sch-vide { fill: none; stroke: var(--corde); stroke-width: 2; }
 .schema .sch-exception-txt { fill: var(--presque); font-size: 12px; }
+
+/* Une glissière capte les flèches de la télécommande : le focus s'y retrouve
+ * piégé, et chaque flèche change le tempo au lieu de déplacer le curseur.
+ * Sur télé on la retire — les boutons −5 / +5 et « Battre le tempo » font le
+ * même travail, eux, sans piéger personne. */
+html.tv .curseur { display: none; }
+
+.tv-seulement { display: none; }
+html.tv .tv-seulement { display: block; }

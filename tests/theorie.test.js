@@ -142,6 +142,23 @@ verifie('aucun schéma orphelin (tous servent quelque part)',
           return Illustrations.liste().every((i) => cites.has(i));
         })(),
         Illustrations.liste().join(','));
+// La tête d'une guitare est le seul schéma où une erreur fait AGIR à tort :
+// on tourne la mauvaise mécanique. D'où ce contrôle sur la place des numéros.
+{
+  const tete = Illustrations.rendre('tete');
+  const etiquettes = [...tete.matchAll(/<text x="(-?[\d.]+)" y="(-?[\d.]+)"[^>]*>(\d) ([^<]+)</g)]
+    .map((m) => ({ x: +m[1], y: +m[2], num: +m[3], note: m[4] }));
+  const gauche = etiquettes.filter((e) => e.x < 175).sort((a, b) => a.y - b.y);
+  const droite = etiquettes.filter((e) => e.x > 175).sort((a, b) => a.y - b.y);
+  verifie('tête : les graves (6-5-4) à gauche, de haut en bas',
+          gauche.map((e) => e.num).join('') === '654', gauche.map((e) => e.num + e.note).join(' '));
+  verifie('tête : les aiguës (1-2-3) à droite, de haut en bas',
+          droite.map((e) => e.num).join('') === '123', droite.map((e) => e.num + e.note).join(' '));
+  verifie('tête : chaque numéro porte le bon nom de note',
+          etiquettes.every((e) => e.note === ['', 'Mi', 'Si', 'Sol', 'Ré', 'La', 'Mi'][e.num]),
+          etiquettes.map((e) => e.num + e.note).join(' '));
+}
+
 verifie('les schémas n’utilisent que des classes du thème',
         Illustrations.liste().every((id) => !/fill="#|stroke="#/.test(Illustrations.rendre(id))),
         Illustrations.liste().filter((id) => /fill="#|stroke="#/.test(Illustrations.rendre(id))).join(','));

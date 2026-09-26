@@ -305,3 +305,46 @@ html.tv .curseur { display: none; }
 
 .tv-seulement { display: none; }
 html.tv .tv-seulement { display: block; }
+
+/* -------------------------------------------------------------- portée */
+/* Notation classique, dessinée par portee.js. Les notes partagent
+ * data-temps avec la tablature : un seul surlignage pour les deux. */
+.portee-ligne-bloc { overflow-x: auto; margin: 6px 0; }
+.portee { width: 100%; min-width: 420px; height: auto; }
+.portee-ligne { stroke: #6B7791; stroke-width: 1; }
+.portee-mesure { stroke: #8892A8; stroke-width: 1.5; }
+.portee-trait { fill: none; stroke: var(--texte); stroke-width: 1.8; stroke-linecap: round; }
+.portee-cle .portee-trait { stroke-width: 2.4; }
+.portee-tete { fill: var(--texte); }
+.portee-tete-creuse { fill: none; stroke: var(--texte); stroke-width: 2; }
+.portee-alteration { fill: var(--texte); font-size: 15px; }
+.portee-chiffrage { fill: var(--texte); font-size: 15px; font-weight: 700; }
+.portee-octave { fill: var(--texte-2); font-size: 11px; }
+.portee-note.en-cours .portee-tete { fill: var(--bois); }
+.portee-note.en-cours .portee-tete-creuse { stroke: var(--bois); }
+.portee-note.en-cours .portee-trait { stroke: var(--bois); }
+html.tv .portee { min-width: 0; }
+
+/* Vue « main » d'un accord : un doigt, une couleur, du diagramme au dessin. */
+.schema .sch-sillet-plein { fill: var(--corde); }
+.schema .sch-paume { fill: #2E3648; stroke: #48536B; stroke-width: 2; }
+.schema .sch-pouce { fill: none; stroke: var(--texte-2); stroke-width: 7; stroke-dasharray: 7 6; stroke-linecap: round; }
+.schema .sch-doigt-tube { fill: none; stroke-width: 13; stroke-linecap: round; opacity: .9; }
+.schema .sch-doigt-bout { stroke: none; }
+.schema .sch-doigt-1 { stroke: #7FB8FF; fill: #7FB8FF; }
+.schema .sch-doigt-2 { stroke: #58D08B; fill: #58D08B; }
+.schema .sch-doigt-3 { stroke: #E8C766; fill: #E8C766; }
+.schema .sch-doigt-4 { stroke: #C79BFF; fill: #C79BFF; }
+.schema .sch-mute { fill: var(--texte-2); font-size: 13px; }
+.diagramme .doigt-1 { fill: #7FB8FF; }
+.diagramme .doigt-2 { fill: #58D08B; }
+.diagramme .doigt-3 { fill: #E8C766; }
+.diagramme .doigt-4 { fill: #C79BFF; }
+.schema .sch-zone { fill: rgba(127,184,255,.13); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
+.schema .sch-repere-touche { fill: #8A7355; }
+.schema .sch-doigt-mini { fill: #22180C; font-size: 11px; font-weight: 700; }
+/* Titre et sous-titre d'une ligne de liste se collaient : ils sont en ligne
+ * dans le même <span>. */
+.ligne-morceau b, .ligne-morceau small { display: block; }
+.ligne-morceau small { color: var(--texte-2); }
+.ligne-morceau > span:first-child { flex: 1; }

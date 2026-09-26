@@ -19,6 +19,11 @@
   var maitre = null;
   var cache = {};       // buffers déjà calculés, indexés par note + timbre
   var suspendu = false;
+  // Tout ce qui est programmé mais pas encore terminé. Un morceau est
+  // programmé EN ENTIER d'avance sur l'horloge audio (c'est ce qui le garde
+  // juste) : sans ce registre, le bouton « Arrêter » ne pouvait qu'arrêter le
+  // surlignage, et la musique continuait toute seule jusqu'au bout.
+  var enCours = [];
 
   // Un AudioContext créé hors d'un geste de l'utilisateur démarre « suspended »
   // sur mobile et reste muet : on le crée au premier son demandé.
@@ -102,6 +107,12 @@
     src.connect(g).connect(maitre);
     var quand = c.currentTime + (opts.retard || 0);
     src.start(quand);
+    var entree = { src: src, gain: g, fin: quand + duree };
+    enCours.push(entree);
+    src.onended = function () {
+      var i = enCours.indexOf(entree);
+      if (i !== -1) enCours.splice(i, 1);
+    };
     // Note « étouffée » explicitement (changement d'accord) : on coupe en 80 ms.
     if (opts.couperApres) {
       g.gain.setValueAtTime(g.gain.value, quand + opts.couperApres);
@@ -212,12 +223,37 @@
 
   function metronomeActif() { return metro.actif; }
 
+  /* Coupe tout ce qui sonne ou attend son tour.
+   *
+   * Fondu de 60 ms plutôt qu'un stop() sec : couper une corde en pleine
+   * vibration produit un clic très audible. Les sources dont le départ est
+   * encore dans le futur sont simplement arrêtées — rien à fondre. */
+  function couperTout() {
+    var c = ctx;
+    if (!c) return 0;
+    var n = enCours.length;
+    enCours.slice().forEach(function (e) {
+      try {
+        if (e.gain) {
+          var maintenant = c.currentTime;
+          e.gain.gain.cancelScheduledValues(maintenant);
+          e.gain.gain.setValueAtTime(e.gain.gain.value, maintenant);
+          e.gain.gain.linearRampToValueAtTime(0.0001, maintenant + 0.06);
+        }
+        e.src.stop(c.currentTime + 0.07);
+      } catch (err) { /* source déjà terminée : rien à faire */ }
+    });
+    enCours = [];
+    return n;
+  }
+
   function silence(v) { suspendu = !!v; }
 
   global.Audio5 = {
     pret: pret, volume: volume, silence: silence,
     contexte: contexte,
     jouerFreq: jouerFreq, jouerNote: jouerNote, jouerCase: jouerCase, jouerAccord: jouerAccord,
+    couperTout: couperTout,
     demarrerMetronome: demarrerMetronome, arreterMetronome: arreterMetronome,
     tempoMetronome: tempoMetronome, metronomeActif: metronomeActif
   };

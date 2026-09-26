@@ -105,7 +105,7 @@
       var xa = marge + (6 - accord.barre.a) * pasCorde;
       var xb = marge + (6 - accord.barre.de) * pasCorde;
       var yb = y0 + (accord.barre.frette - depart + 0.5) * hauteurCase;
-      p.push('<rect x="' + (xa - pasCorde * 0.3) + '" y="' + (yb - pasCorde * 0.3) + '" width="' + (xb - xa + pasCorde * 0.6) + '" height="' + (pasCorde * 0.6) + '" rx="' + (pasCorde * 0.3) + '" class="barre"/>');
+      p.push('<rect x="' + (xa - pasCorde * 0.3) + '" y="' + (yb - pasCorde * 0.3) + '" width="' + (xb - xa + pasCorde * 0.6) + '" height="' + (pasCorde * 0.6) + '" rx="' + (pasCorde * 0.3) + '" class="barre doigt-1"/>');
     }
 
     for (c = 0; c < 6; c++) {
@@ -122,7 +122,9 @@
         var dansBarre = accord.barre && frette === accord.barre.frette &&
                         corde >= accord.barre.de && corde <= accord.barre.a;
         if (!dansBarre) {
-          p.push('<circle cx="' + xc + '" cy="' + yc + '" r="' + (pasCorde * 0.32) + '" class="doigt"/>');
+          // La pastille porte la couleur du doigt : c'est ce qui relie ce
+          // diagramme au dessin de main, où l'on retrouve les mêmes couleurs.
+          p.push('<circle cx="' + xc + '" cy="' + yc + '" r="' + (pasCorde * 0.32) + '" class="doigt doigt-' + (doigt || 0) + '"/>');
         }
         if (doigt > 0) {
           p.push('<text x="' + xc + '" y="' + (yc + 4) + '" class="diag-doigt" text-anchor="middle">' + doigt + '</text>');

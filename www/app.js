@@ -191,6 +191,10 @@
       var d = el('div', 'grand-diagramme');
       d.innerHTML = Accords.svg(a, { largeur: 200 });
       boite.appendChild(d);
+      var m = el('div');
+      m.innerHTML = Illustrations.mainAccord(a, { largeur: 300 }) +
+                    Illustrations.positionSurGuitare(a, { largeur: 620 });
+      boite.appendChild(m);
       boite.appendChild(boutonJouerAccord(a));
     } else if (ex.type === 'morceau') {
       var b = el('button', 'btn primaire large', 'Ouvrir « ' + Morceaux.get(ex.ref).titre + ' »');
@@ -230,7 +234,7 @@
     ex.ref.forEach(function (id) {
       var d = el('div');
       d.style.width = '46%';
-      d.innerHTML = Accords.svg(Accords.get(id), { largeur: 150 }) +
+      d.innerHTML = Illustrations.mainAccord(Accords.get(id), { largeur: 260 }) +
         '<div style="text-align:center;font-weight:700">' + id + '</div>';
       diag.appendChild(d);
     });
@@ -298,6 +302,19 @@
     var d = el('div', 'grand-diagramme');
     d.innerHTML = Accords.svg(a, { largeur: 260 });
     h.appendChild(d);
+    // Le diagramme dit quelle case ; le dessin de main dit comment s'y poser.
+    // Les deux côte à côte, parce que c'est le passage de l'un à l'autre qui
+    // pose problème au début.
+    var main = el('div');
+    main.innerHTML = Illustrations.mainAccord(a, { largeur: 320 });
+    h.appendChild(main);
+    h.appendChild(el('p', 'schema-legende', 'Position de la main gauche. Le pouce reste derrière le manche (en pointillé) : on ne le voit pas de face.'));
+    // Et où tout cela tombe sur l'instrument : « case 2 » ne veut rien dire
+    // tant qu'on n'a pas vu que c'est juste après la tête.
+    var surGuitare = el('div');
+    surGuitare.innerHTML = Illustrations.positionSurGuitare(a, { largeur: 640 });
+    h.appendChild(surGuitare);
+    h.appendChild(el('p', 'schema-legende', 'La même position, replacée sur la guitare entière.'));
     h.appendChild(el('p', 'aide', 'Notes : ' + Accords.notes(a).join(' · ')));
     if (a.barre) h.appendChild(el('p', 'aide', 'Barré : index à plat sur la case ' + a.barre.frette + ', cordes ' + a.barre.de + ' à ' + a.barre.a + '.'));
     var muettes = a.frettes.map(function (f, i) { return f === -1 ? (i + 1) : null; }).filter(Boolean);
@@ -459,9 +476,29 @@
     ligneTempo.appendChild(moins); ligneTempo.appendChild(affiche); ligneTempo.appendChild(plus);
     h.appendChild(ligneTempo);
 
+    /* Portée, tablature, ou les deux. Le choix est mémorisé : un élève qui
+     * apprend à lire la portée veut la portée SEULE, et rebasculer à chaque
+     * morceau serait pénible. */
+    var barreVue = el('div', 'filtres');
     var zone = el('div');
-    zone.innerHTML = Tablature.svg(p, { mesuresParLigne: 2 });
+    function dessiner() {
+      var vue = Store.reglages().vuePartition;
+      zone.innerHTML =
+        (vue !== 'tablature' ? Portee.svg(p, { mesuresParLigne: 2 }) : '') +
+        (vue !== 'portee' ? Tablature.svg(p, { mesuresParLigne: 2 }) : '');
+      Array.prototype.forEach.call(barreVue.children, function (b) {
+        b.classList.toggle('actif', b.dataset.vue === vue);
+      });
+    }
+    [['portee', 'Portée'], ['tablature', 'Tablature'], ['deux', 'Les deux']].forEach(function (v) {
+      var b = el('button', '', v[1]);
+      b.dataset.vue = v[0];
+      b.onclick = function () { Store.reglage('vuePartition', v[0]); dessiner(); };
+      barreVue.appendChild(b);
+    });
+    h.appendChild(barreVue);
     h.appendChild(zone);
+    dessiner();
 
     var actions = el('div', 'actions');
     var bJouer = el('button', 'btn primaire', '▶ Écouter');
@@ -478,7 +515,7 @@
     h.appendChild(aide);
 
     function surligner(note) {
-      Array.prototype.forEach.call(zone.querySelectorAll('.tab-note'), function (g) {
+      Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) {
         g.classList.toggle('en-cours', parseFloat(g.dataset.temps) === note.temps);
       });
     }
@@ -487,11 +524,14 @@
         tempo: tempo,
         surNote: function (n, i) { surligner(n); if (Cast.connecte()) Cast.afficherMorceau(p, i); },
         surFin: function () {
-          Array.prototype.forEach.call(zone.querySelectorAll('.tab-note'), function (g) { g.classList.remove('en-cours'); });
+          Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) { g.classList.remove('en-cours'); });
         }
       });
     };
-    bStop.onclick = function () { Tablature.arreter(); };
+    bStop.onclick = function () {
+      Tablature.arreter();
+      Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) { g.classList.remove('en-cours'); });
+    };
     bMetro.onclick = function () { reglerTempo(tempo); aller('metronome'); demarrerMetro(); };
 
     aller('morceau');

@@ -28,7 +28,8 @@
     gaucher: false,
     modeTv: null,        // null = détection automatique
     castAppId: '',       // récepteur Chromecast personnalisé, voir cast.js
-    objectifMinutes: 15
+    objectifMinutes: 15,
+    vuePartition: 'deux'   // 'portee' | 'tablature' | 'deux'
   };
 
   function reglages() {

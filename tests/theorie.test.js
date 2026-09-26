@@ -182,6 +182,32 @@ verifie('aucun schéma orphelin (tous servent quelque part)',
   verifie('aucune étiquette ne déborde de son cadre', debords.length === 0, debords.join(' · '));
 }
 
+// Vues paramétrées (une par accord) : elles ne sont pas dans la liste des
+// schémas fixes, mais elles doivent tenir pour LES 23 accords, barrés compris.
+verifie('la vue « main » existe pour chaque accord et place tous les doigts',
+        Accords.tous().every((a) => {
+          const svg = Illustrations.mainAccord(a);
+          if (svg.indexOf('<svg') !== 0) return false;
+          const attendus = a.barre
+            ? a.frettes.filter((f, i) => f > 0 && a.doigts[i] > 1).length + 1
+            : a.frettes.filter((f) => f > 0).length;
+          const dessines = (svg.match(/sch-doigt-bout/g) || []).length + (a.barre ? 1 : 0);
+          return dessines === attendus;
+        }),
+        Accords.tous().filter((a) => {
+          const svg = Illustrations.mainAccord(a);
+          const attendus = a.barre
+            ? a.frettes.filter((f, i) => f > 0 && a.doigts[i] > 1).length + 1
+            : a.frettes.filter((f) => f > 0).length;
+          return (svg.match(/sch-doigt-bout/g) || []).length + (a.barre ? 1 : 0) !== attendus;
+        }).map((a) => a.id).join(','));
+verifie('la vue « sur la guitare » situe la zone et marque chaque corde',
+        Accords.tous().every((a) => {
+          const svg = Illustrations.positionSurGuitare(a);
+          const marques = (svg.match(/sch-doigt-bout|sch-vide|sch-mute/g) || []).length;
+          return svg.indexOf('<svg') === 0 && marques >= 6;   // une marque par corde au moins
+        }));
+
 verifie('les schémas n’utilisent que des classes du thème',
         Illustrations.liste().every((id) => !/fill="#|stroke="#/.test(Illustrations.rendre(id))),
         Illustrations.liste().filter((id) => /fill="#|stroke="#/.test(Illustrations.rendre(id))).join(','));

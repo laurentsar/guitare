@@ -129,11 +129,12 @@
   function arreter() {
     lecture.timers.forEach(clearTimeout);
     lecture.timers = [];
-    if (lecture.actif) {
-      lecture.actif = false;
-      // Le son déjà programmé continue : couper l'AudioContext ferait un clic
-      // et casserait le métronome s'il tourne. Les notes s'éteignent seules.
-    }
+    lecture.actif = false;
+    // Le morceau entier est programmé d'avance sur l'horloge audio : il faut
+    // donc couper les sources, sinon « Arrêter » n'arrêtait que le surlignage
+    // et la musique continuait jusqu'au bout. Le métronome n'est pas touché :
+    // il vit sur son propre programmateur.
+    Audio5.couperTout();
   }
 
   function enLecture() { return lecture.actif; }

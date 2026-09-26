@@ -283,11 +283,193 @@
     return svg('0 0 490 290', c, 'Accorder à l’oreille : méthode de la cinquième case');
   };
 
+  /* Vue « main gauche » d'un accord : le diagramme dit QUELLE case, ce dessin
+   * dit COMMENT la main s'y pose. Les quatre doigts partent d'une même paume
+   * et gardent chacun sa couleur et son numéro, du diagramme jusqu'ici.
+   *
+   * Orientation : manche vu de face, corde 6 (grave) à gauche — comme le
+   * diagramme d'accord. La main arrive donc par la DROITE et par le bas :
+   * c'est le trajet réel des doigts, qui passent sous le manche côté aigu.
+   */
+  function mainAccord(accord, opts) {
+    opts = opts || {};
+    var L = opts.largeur || 300;
+    var marge = L * 0.15;
+    var largeurManche = L * 0.52;
+    var pasCorde = largeurManche / 5;
+    var hauteurCase = pasCorde * 1.15;
+    var cases = Math.max(4, Math.min(5, Accords.frette_max(accord)));
+    var depart = 1;
+    if (Accords.frette_max(accord) > 5) {
+      depart = Math.min.apply(null, accord.frettes.filter(function (f) { return f > 0; }));
+      cases = 4;
+    }
+    var y0 = 34;
+    var H = y0 + cases * hauteurCase + 96;   // place pour la paume sous le manche
+    var c = DEFS;
+
+    // Manche
+    c += '<rect x="' + marge + '" y="' + y0 + '" width="' + largeurManche + '" height="' + (cases * hauteurCase) + '" class="sch-manche"/>';
+    if (depart === 1) {
+      c += '<rect x="' + marge + '" y="' + (y0 - 5) + '" width="' + largeurManche + '" height="5" class="sch-sillet-plein"/>';
+    } else {
+      c += txt(marge - 8, y0 + hauteurCase * 0.6, String(depart), 'sch-petit', 'end');
+    }
+    for (var f = 0; f <= cases; f++) {
+      var y = y0 + f * hauteurCase;
+      c += '<line x1="' + marge + '" y1="' + y + '" x2="' + (marge + largeurManche) + '" y2="' + y + '" class="sch-barrette"/>';
+    }
+    for (var k = 0; k < 6; k++) {
+      var x = marge + k * pasCorde;
+      c += '<line x1="' + x + '" y1="' + y0 + '" x2="' + x + '" y2="' + (y0 + cases * hauteurCase) + '" class="sch-corde"/>';
+      var corde = 6 - k;
+      var etat = accord.frettes[corde - 1];
+      if (etat === -1) c += '<text x="' + x + '" y="' + (y0 - 11) + '" class="sch-mute" text-anchor="middle">✕</text>';
+      else if (etat === 0) c += '<circle cx="' + x + '" cy="' + (y0 - 14) + '" r="5" class="sch-vide"/>';
+    }
+
+    // Paume, sous le manche côté aigu : c'est de là que partent les doigts.
+    var paumeX = marge + largeurManche + 26;
+    var paumeY = y0 + cases * hauteurCase + 38;
+    c += '<ellipse cx="' + paumeX + '" cy="' + paumeY + '" rx="34" ry="26" class="sch-paume"/>';
+
+    // Pouce : derrière le manche, donc en pointillé — on ne le voit pas de face.
+    c += '<path d="M' + (paumeX - 20) + ' ' + (paumeY - 14) + ' Q ' + (marge + largeurManche * 0.55) + ' ' + (paumeY - 30) +
+         ' ' + (marge + largeurManche * 0.5) + ' ' + (y0 + cases * hauteurCase * 0.6) + '" class="sch-pouce"/>';
+    c += txt(marge + largeurManche * 0.5, y0 + cases * hauteurCase * 0.6 - 8, 'pouce (derrière)', 'sch-petit');
+
+    // Un doigt par case pressée. Les doigts hauts partent du bord de la paume
+    // le plus proche du manche : sans cet étagement, les quatre tubes se
+    // superposeraient en un seul trait illisible.
+    var poses = [];
+    for (k = 0; k < 6; k++) {
+      var num = k + 1;                       // numéro de corde (1 = aiguë)
+      var frette = accord.frettes[num - 1];
+      var doigt = accord.doigts ? accord.doigts[num - 1] : 0;
+      if (frette > 0 && doigt > 0) {
+        poses.push({
+          doigt: doigt,
+          x: marge + (6 - num) * pasCorde,
+          y: y0 + (frette - depart + 0.5) * hauteurCase
+        });
+      }
+    }
+    // Barré : un seul doigt couvre plusieurs cordes, on le dessine en barre.
+    if (accord.barre) {
+      var xa = marge + (6 - accord.barre.a) * pasCorde;
+      var xb = marge + (6 - accord.barre.de) * pasCorde;
+      var yb = y0 + (accord.barre.frette - depart + 0.5) * hauteurCase;
+      c += '<rect x="' + (xa - 9) + '" y="' + (yb - 9) + '" width="' + (xb - xa + 18) + '" height="18" rx="9" class="sch-doigt-1"/>';
+      poses = poses.filter(function (p) { return p.doigt !== 1; });
+    }
+
+    poses.sort(function (a, b) { return a.doigt - b.doigt; }).forEach(function (pose) {
+      var depX = paumeX - 26 + (pose.doigt - 1) * 12;
+      var depY = paumeY - 20 - (4 - pose.doigt) * 4;
+      c += '<path d="M' + depX + ' ' + depY + ' Q ' + (depX - 10) + ' ' + ((depY + pose.y) / 2) +
+           ' ' + pose.x + ' ' + pose.y + '" class="sch-doigt-tube sch-doigt-' + pose.doigt + '"/>';
+      c += '<circle cx="' + pose.x + '" cy="' + pose.y + '" r="11" class="sch-doigt-bout sch-doigt-' + pose.doigt + '"/>';
+      c += '<text x="' + pose.x + '" y="' + (pose.y + 5) + '" class="sch-doigt-nom" text-anchor="middle">' + pose.doigt + '</text>';
+    });
+
+    c += txt(L / 2, H - 8, '1 index · 2 majeur · 3 annulaire · 4 auriculaire', 'sch-petit');
+    return svg('0 0 ' + L + ' ' + H, c, 'Position de la main gauche pour l’accord ' + accord.id);
+  }
+
+  /* Où se joue l'accord SUR la guitare.
+   *
+   * Un diagramme d'accord ne dit pas où il tombe sur l'instrument : un
+   * débutant qui voit « case 2 » ne sait pas encore que c'est tout près de la
+   * tête. Cette vue montre la guitare entière, manche compris, et encadre la
+   * zone concernée.
+   *
+   * L'écartement des frettes suit la vraie règle : chaque case vaut
+   * 2^(-n/12) de la longueur de corde, d'où des cases qui se resserrent en
+   * montant. Un manche aux cases régulières donnerait une fausse idée des
+   * distances à parcourir avec la main.
+   */
+  function positionSurGuitare(accord, opts) {
+    opts = opts || {};
+    var L = opts.largeur || 640, H = 210;
+    var xSillet = 86, xDouze = 392, xChevalet = 556;
+    var yHaut = 66, yBas = 140;
+    var c = DEFS;
+
+    function xFrette(n) {
+      return xSillet + (xDouze - xSillet) * (1 - Math.pow(2, -n / 12)) / 0.5;
+    }
+
+    // Caisse
+    c += '<ellipse cx="494" cy="103" rx="66" ry="62" class="sch-bois"/>';
+    c += '<ellipse cx="420" cy="103" rx="46" ry="46" class="sch-bois"/>';
+    c += '<circle cx="452" cy="103" r="20" class="sch-trou"/>';
+    c += '<rect x="' + (xChevalet - 6) + '" y="80" width="12" height="46" rx="3" class="sch-piece"/>';
+    // Manche et tête
+    c += '<rect x="' + xSillet + '" y="' + yHaut + '" width="' + (440 - xSillet) + '" height="' + (yBas - yHaut) + '" class="sch-manche"/>';
+    c += '<rect x="20" y="' + (yHaut - 8) + '" width="' + (xSillet - 22) + '" height="' + (yBas - yHaut + 16) + '" rx="8" class="sch-piece"/>';
+    c += '<rect x="' + (xSillet - 4) + '" y="' + (yHaut - 3) + '" width="5" height="' + (yBas - yHaut + 6) + '" class="sch-sillet-plein"/>';
+
+    // Frettes et repères de touche
+    for (var n = 1; n <= 12; n++) {
+      var x = xFrette(n);
+      c += '<line x1="' + x + '" y1="' + yHaut + '" x2="' + x + '" y2="' + yBas + '" class="sch-barrette"/>';
+      if ([3, 5, 7, 9].indexOf(n) !== -1) {
+        c += '<circle cx="' + ((xFrette(n - 1) + x) / 2) + '" cy="' + ((yHaut + yBas) / 2) + '" r="4" class="sch-repere-touche"/>';
+      }
+      if (n === 12) {
+        c += '<circle cx="' + ((xFrette(11) + x) / 2) + '" cy="' + (yHaut + 18) + '" r="4" class="sch-repere-touche"/>';
+        c += '<circle cx="' + ((xFrette(11) + x) / 2) + '" cy="' + (yBas - 18) + '" r="4" class="sch-repere-touche"/>';
+      }
+    }
+    // Cordes : la 6 (grave) en haut, comme sur une tablature.
+    for (var k = 0; k < 6; k++) {
+      var y = yHaut + 6 + k * ((yBas - yHaut - 12) / 5);
+      c += '<line x1="' + (xSillet - 2) + '" y1="' + y + '" x2="' + xChevalet + '" y2="' + y + '" class="sch-corde"/>';
+    }
+    function yCorde(num) {   // num : 1 = aiguë
+      return yHaut + 6 + (6 - num) * ((yBas - yHaut - 12) / 5);
+    }
+
+    // Zone de l'accord
+    var pressees = accord.frettes.filter(function (f) { return f > 0; });
+    var minF = pressees.length ? Math.min.apply(null, pressees) : 0;
+    var maxF = pressees.length ? Math.max.apply(null, pressees) : 0;
+    if (pressees.length) {
+      var xa = xFrette(minF - 1), xb = xFrette(maxF);
+      c += '<rect x="' + (xa - 3) + '" y="' + (yHaut - 10) + '" width="' + (xb - xa + 6) + '" height="' + (yBas - yHaut + 20) + '" rx="7" class="sch-zone"/>';
+      c += fleche((xa + xb) / 2, 30, (xa + xb) / 2, yHaut - 14);
+      c += txt((xa + xb) / 2, 24, minF === maxF ? ('case ' + minF) : ('cases ' + minF + ' à ' + maxF), 'sch-txt');
+    }
+
+    // Doigts, aux vraies positions du manche
+    for (k = 0; k < 6; k++) {
+      var num = k + 1;
+      var frette = accord.frettes[num - 1];
+      var doigt = accord.doigts ? accord.doigts[num - 1] : 0;
+      var yc = yCorde(num);
+      if (frette > 0) {
+        var xc = (xFrette(frette - 1) + xFrette(frette)) / 2;
+        c += '<circle cx="' + xc + '" cy="' + yc + '" r="8" class="sch-doigt-bout sch-doigt-' + (doigt || 1) + '"/>';
+        if (doigt) c += '<text x="' + xc + '" y="' + (yc + 4) + '" class="sch-doigt-mini" text-anchor="middle">' + doigt + '</text>';
+      } else if (frette === 0) {
+        c += '<circle cx="' + (xSillet - 14) + '" cy="' + yc + '" r="5" class="sch-vide"/>';
+      } else {
+        c += '<text x="' + (xSillet - 14) + '" y="' + (yc + 4) + '" class="sch-mute" text-anchor="middle">✕</text>';
+      }
+    }
+
+    c += txt(52, yBas + 34, 'tête', 'sch-petit');
+    c += txt(xFrette(12), yBas + 34, '12e case', 'sch-petit');
+    c += txt(470, yBas + 34, 'rosace', 'sch-petit');
+    c += txt(L / 2, H - 6, 'Corde 6 (grave) en haut, comme sur une tablature. ○ corde à vide, ✕ corde non jouée.', 'sch-petit');
+    return svg('0 0 ' + L + ' ' + H, c, 'Où se joue l’accord ' + accord.id + ' sur la guitare');
+  }
+
   function rendre(id) {
     var f = S[id];
     return f ? f() : '';
   }
   function liste() { return Object.keys(S); }
 
-  global.Illustrations = { rendre: rendre, liste: liste };
+  global.Illustrations = { rendre: rendre, liste: liste, mainAccord: mainAccord, positionSurGuitare: positionSurGuitare };
 })(typeof window !== 'undefined' ? window : globalThis);

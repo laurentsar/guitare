@@ -32,7 +32,7 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'morceaux.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'morceaux.js', 'lecons.js',
  'accordeur.js', 'oreille.js', 'store.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
@@ -101,6 +101,11 @@ function verifie(nom, cond, detail) {
   verifie('fiche d’accord : le barré est expliqué', /Barré/.test($('detailAccord').textContent));
   w.AppGuitare.ouvrirAccord('Am');
   verifie('fiche d’accord : corde à ne pas jouer signalée', /ne pas jouer/.test($('detailAccord').textContent));
+  verifie('fiche d’accord : diagramme + main + guitare entière',
+          $('detailAccord').querySelectorAll('svg').length === 3,
+          'n=' + $('detailAccord').querySelectorAll('svg').length);
+  verifie('fiche d’accord : les doigts sont colorés par numéro',
+          $('detailAccord').querySelector('.diagramme .doigt-1') && $('detailAccord').querySelector('.sch-doigt-2'));
 
   console.log('\n— Morceaux —');
   w.AppGuitare.aller('morceaux');
@@ -110,6 +115,22 @@ function verifie(nom, cond, detail) {
   const notesTab = $('detailMorceau').querySelectorAll('.tab-note');
   verifie('la tablature contient toutes les notes',
           notesTab.length === w.Morceaux.get('ode-joie').notes.length, 'n=' + notesTab.length);
+  verifie('la portée contient autant de notes que la tablature',
+          $('detailMorceau').querySelectorAll('.portee-note').length === notesTab.length,
+          'n=' + $('detailMorceau').querySelectorAll('.portee-note').length);
+  verifie('la clé de sol et le chiffrage sont là',
+          $('detailMorceau').querySelector('.portee-cle') && /4/.test($('detailMorceau').querySelector('.portee-chiffrage').textContent));
+  // Basculer en tablature seule doit vraiment retirer la portée.
+  [...$('detailMorceau').querySelectorAll('.filtres button')].find((b) => b.dataset.vue === 'tablature').click();
+  verifie('vue « Tablature » : plus de portée',
+          $('detailMorceau').querySelectorAll('.portee-note').length === 0 &&
+          $('detailMorceau').querySelectorAll('.tab-note').length > 0);
+  [...$('detailMorceau').querySelectorAll('.filtres button')].find((b) => b.dataset.vue === 'portee').click();
+  verifie('vue « Portée » : plus de tablature',
+          $('detailMorceau').querySelectorAll('.tab-note').length === 0 &&
+          $('detailMorceau').querySelectorAll('.portee-note').length > 0);
+  verifie('le choix de vue est mémorisé', w.Store.reglages().vuePartition === 'portee');
+  [...$('detailMorceau').querySelectorAll('.filtres button')].find((b) => b.dataset.vue === 'deux').click();
   verifie('le morceau affiche son tempo', /♩ = 88/.test($('detailMorceau').textContent));
   verifie('la légende de lecture est disponible, repliée',
           $('detailMorceau').querySelector('details') && $('detailMorceau').querySelector('details svg.schema'));

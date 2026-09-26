@@ -159,6 +159,29 @@ verifie('aucun schéma orphelin (tous servent quelque part)',
           etiquettes.map((e) => e.num + e.note).join(' '));
 }
 
+// Un texte qui déborde du viewBox est simplement COUPÉ à l'affichage, sans
+// erreur : « cuisse gauche » s'est affiché « e gauche » sur la télé. On estime
+// donc la largeur de chaque étiquette et on vérifie qu'elle tient dans le cadre.
+{
+  const TAILLES = { 'sch-txt': 13, 'sch-petit': 12, 'sch-doigt-nom': 17, 'sch-chiffre': 14,
+                    'sch-croix': 20, 'sch-ok': 20, 'sch-exception-txt': 12 };
+  const debords = [];
+  Illustrations.liste().forEach((id) => {
+    const svg = Illustrations.rendre(id);
+    const largeur = +/viewBox="0 0 ([\d.]+) /.exec(svg)[1];
+    for (const m of svg.matchAll(/<text x="(-?[\d.]+)" y="[-\d.]+" class="([^"]+)"(?: text-anchor="(\w+)")?[^>]*>([^<]*)</g)) {
+      const x = +m[1], police = TAILLES[m[2].split(' ')[0]] || 13, ancre = m[3] || 'start';
+      // 0,55 em par caractère : approximation large pour une police système.
+      const l = m[4].length * police * 0.55;
+      const gauche = ancre === 'end' ? x - l : (ancre === 'middle' ? x - l / 2 : x);
+      if (gauche < -1 || gauche + l > largeur + 1) {
+        debords.push(id + ' « ' + m[4] + ' »');
+      }
+    }
+  });
+  verifie('aucune étiquette ne déborde de son cadre', debords.length === 0, debords.join(' · '));
+}
+
 verifie('les schémas n’utilisent que des classes du thème',
         Illustrations.liste().every((id) => !/fill="#|stroke="#/.test(Illustrations.rendre(id))),
         Illustrations.liste().filter((id) => /fill="#|stroke="#/.test(Illustrations.rendre(id))).join(','));

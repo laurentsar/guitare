@@ -60,7 +60,7 @@
     c += fleche(232, 212, 180, 212) + txt(238, 216, 'Rosace', 'sch-txt', 'start');
     c += fleche(232, 274, 192, 274) + txt(238, 278, 'Chevalet', 'sch-txt', 'start');
     c += fleche(64, 250, 78, 250) + txt(58, 254, 'Caisse', 'sch-txt', 'end');
-    return svg('0 0 340 320', c, 'Les parties de la guitare classique');
+    return svg('0 0 390 320', c, 'Les parties de la guitare classique');
   };
 
   /* Position assise. Le point à retenir tient en trois repères : cuisse
@@ -91,7 +91,7 @@
     c += '<line x1="130" y1="150" x2="196" y2="150" class="sch-repere"/>';
     c += '<path d="M150 150 a 28 28 0 0 0 -14 -24" class="sch-repere"/>';
     c += txt(168, 132, '45°', 'sch-petit');
-    c += fleche(58, 120, 96, 138) + txt(54, 118, 'cuisse gauche', 'sch-txt', 'end');
+    c += fleche(76, 122, 104, 140) + txt(6, 126, 'cuisse gauche', 'sch-txt', 'start');
     c += fleche(300, 92, 250, 92) + txt(306, 96, 'dos droit,', 'sch-txt', 'start') + txt(306, 112, 'épaules basses', 'sch-txt', 'start');
     return svg('0 0 420 260', c, 'Position assise du guitariste classique');
   };
@@ -134,7 +134,9 @@
     // pouce derrière, au milieu
     c += '<rect x="150" y="112" width="34" height="42" rx="16" class="sch-doigt"/>';
     c += txt(167, 140, 'pouce', 'sch-petit');
-    c += fleche(96, 134, 144, 130) + txt(90, 138, 'derrière, en face du majeur', 'sch-txt', 'end');
+    c += fleche(84, 134, 144, 130);
+    c += txt(6, 130, 'derrière le manche,', 'sch-txt', 'start');
+    c += txt(6, 148, 'en face du majeur', 'sch-txt', 'start');
     // doigt qui appuie, arrondi
     c += '<path d="M250 44 q-26 8 -34 26 q-4 10 6 12" class="sch-trait-doigt"/>';
     c += '<circle cx="222" cy="82" r="7" class="sch-doigt"/>';
@@ -218,8 +220,8 @@
     c += '<rect x="96" y="30" width="20" height="20" class="sch-case"/>' + txt(106, 46, '0', 'sch-chiffre');
     c += '<rect x="156" y="52" width="20" height="20" class="sch-case"/>' + txt(166, 68, '1', 'sch-chiffre');
     c += '<rect x="216" y="52" width="20" height="20" class="sch-case"/>' + txt(226, 68, '3', 'sch-chiffre');
-    c += fleche(30, 20, 56, 38) + txt(26, 18, 'corde la plus AIGUË en haut', 'sch-txt', 'end');
-    c += fleche(30, 178, 56, 160) + txt(26, 186, 'corde la plus GRAVE en bas', 'sch-txt', 'end');
+    c += fleche(150, 16, 116, 34) + txt(156, 20, 'corde la plus AIGUË en haut', 'sch-txt', 'start');
+    c += fleche(150, 190, 116, 162) + txt(156, 194, 'corde la plus GRAVE en bas', 'sch-txt', 'start');
     c += fleche(106, 206, 106, 58) + txt(106, 224, '0 = corde à vide', 'sch-petit');
     c += fleche(226, 206, 226, 80) + txt(226, 224, 'chiffre = numéro de case', 'sch-petit');
     return svg('0 0 400 240', c, 'Comment lire une tablature');

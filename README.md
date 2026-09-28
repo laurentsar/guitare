@@ -13,6 +13,9 @@ le téléviseur.
 | **Métronome** | Tempo, mesure, subdivisions, battement du tempo à la main, accent sur le premier temps. |
 | **Accords** | 23 positions avec diagramme, doigté, notes produites, barrés signalés, écoute grattée / arpégée / corde par corde. |
 | **Morceaux** | 8 pièces en tablature, jouées par l'app avec la note en cours surlignée : deux exercices, quatre mélodies du domaine public, deux études d'arpèges. |
+| **Lecteur** | Inspiré de Guitar Pro 8 : boucle sur une section (mesures A → B), entraîneur de vitesse (60 % → 100 %, +5 % par tour), décompte, clic, capodastre, guitare muette (on joue seul, l'app tient le temps), manche virtuel qui suit la lecture, portée + tablature, export en tablature texte. |
+| **Éditeur** | Écrire ses propres tablatures (corde, case, durée, accords), ou coller une tab texte trouvée sur internet ; elles se jouent dans le même lecteur. |
+| **Gammes** | 7 gammes (majeure, mineures, pentatoniques, blues, chromatique) sur les 12 tonalités, affichées sur tout le manche et jouées. |
 | **Oreille** | Trois jeux d'écoute, dix questions, notés. |
 | **Suivi** | Minutes du jour, série de jours consécutifs, records de changements d'accords, sauvegarde vers Home Assistant. |
 
@@ -30,6 +33,16 @@ Deux chemins, indépendants :
    une fois) en pointant `www/recepteur.html` publié sur GitHub Pages, puis
    coller l'identifiant obtenu dans les réglages de l'app. Sans identifiant, le
    bouton de diffusion reste caché.
+
+## Au casque VR (Meta Quest)
+
+Ouvrir la PWA (`https://laurentsar.github.io/guitare/`) dans le navigateur du
+casque. L'interface grossit pour le rayon du contrôleur ou le pincement de la
+main. Dans un morceau, **🥽 Partition flottante** ouvre une session WebXR en
+réalité mixte : on voit sa vraie guitare à travers le casque, la tablature et
+le manche flottent devant soi et suivent la lecture. Gâchette ou pincement =
+lecture / arrêt, bouton de côté = replacer le panneau devant soi. (L'APK ne
+sert pas au casque : la WebView Android n'a pas WebXR.)
 
 ## Rien n'est téléchargé, rien n'est envoyé
 

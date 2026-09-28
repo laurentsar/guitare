@@ -32,8 +32,8 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'apk-update.js', 'morceaux.js', 'lecons.js',
- 'accordeur.js', 'oreille.js', 'store.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'app.js'].forEach(charge);
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'morceaux.js', 'lecons.js',
+ 'accordeur.js', 'oreille.js', 'store.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -54,7 +54,7 @@ function verifie(nom, cond, detail) {
   verifie('première leçon proposée', /S’asseoir|S'asseoir/.test($('carteReprendre').textContent), $('carteReprendre').textContent.slice(0, 60));
 
   console.log('\n— Navigation —');
-  ['parcours', 'accords', 'accordeur', 'metronome', 'morceaux', 'oreille', 'reglages', 'accueil'].forEach((nom) => {
+  ['parcours', 'accords', 'accordeur', 'metronome', 'morceaux', 'oreille', 'gammes', 'reglages', 'accueil'].forEach((nom) => {
     w.AppGuitare.aller(nom);
     verifie('écran ' + nom + ' affiché', $('ecran-' + nom).classList.contains('actif'));
   });
@@ -134,6 +134,58 @@ function verifie(nom, cond, detail) {
   verifie('le morceau affiche son tempo', /♩ = 88/.test($('detailMorceau').textContent));
   verifie('la légende de lecture est disponible, repliée',
           $('detailMorceau').querySelector('details') && $('detailMorceau').querySelector('details svg.schema'));
+
+  console.log('\n— Lecteur façon Guitar Pro —');
+  w.AppGuitare.ouvrirMorceau('etude-mim');
+  const det = $('detailMorceau');
+  const opt = (txt) => [...det.querySelectorAll('.options-lecture button')].find((b) => b.textContent.indexOf(txt) !== -1);
+  verifie('les options de travail sont là', ['Boucle', 'Entraîneur', 'Décompte', 'Clic', 'muette', 'Manche'].every((t) => opt(t)));
+  verifie('le manche virtuel est dessiné', det.querySelector('.manche-boite svg.manche'));
+  opt('Entraîneur').click();
+  verifie('entraîneur : démarre à 60 % et active la boucle',
+          /\(60 %\)/.test(det.textContent) && opt('Boucle').classList.contains('actif'));
+  const reglages = [...det.querySelectorAll('.reglage-lecteur')];
+  verifie('section et capo réglables', reglages.length === 3);
+  reglages[1].querySelector('button').click();           // « jusqu’à » −1
+  verifie('section réduite : les notes hors section sont estompées',
+          det.querySelectorAll('.tab-note.hors-section').length > 0);
+  reglages[2].querySelectorAll('button')[1].click();     // capo +1
+  verifie('capodastre affiché', /case 1/.test(reglages[2].textContent));
+  verifie('tablature texte proposée', /e\|/.test(det.querySelector('.tab-texte').textContent));
+
+  console.log('\n— Éditeur de tablature —');
+  w.AppGuitare.ouvrirEditeur(null);
+  verifie('écran éditeur affiché', $('ecran-editeur').classList.contains('actif'));
+  const edh = $('editeurTab');
+  const bouton = (txt) => [...edh.querySelectorAll('button')].find((b) => b.textContent.trim() === txt);
+  [...edh.querySelectorAll('.filtres button')].find((b) => /^2 · Si/.test(b.textContent)).click();
+  bouton('1').click();                                   // corde 2, case 1 = Do
+  bouton('3').click();                                   // corde 2, case 3 = Ré
+  verifie('deux notes saisies, curseur avancé', w.document.getElementById('editeurTab').textContent.indexOf('2 notes') !== -1);
+  bouton('↶ Dernière note').click();
+  verifie('annuler retire la dernière note', /1 notes|1 note/.test($('editeurTab').textContent));
+  const ta = $('editeurTab').querySelector('textarea');
+  ta.value = 'e|-0-|\nB|---|\nG|---|\nD|---|\nA|---|\nE|---|';
+  [...$('editeurTab').querySelectorAll('button')].find((b) => b.textContent === 'Importer').click();
+  verifie('import d’une tab texte ajouté à la suite', /2 notes/.test($('editeurTab').textContent));
+  [...$('editeurTab').querySelectorAll('button')].find((b) => /Enregistrer/.test(b.textContent)).click();
+  verifie('enregistrée puis ouverte dans le lecteur', $('ecran-morceau').classList.contains('actif') && w.Store.tablatures().length === 1);
+  w.AppGuitare.aller('morceaux');
+  verifie('« Mes tablatures » la liste', /Mes tablatures/.test($('listeMorceaux').textContent) &&
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === w.Morceaux.tous().length + 1);
+
+  console.log('\n— Gammes —');
+  w.AppGuitare.aller('gammes');
+  verifie('gamme par défaut : La pentatonique mineure', /: La · Do · Ré · Mi · Sol/.test($('gammesContenu').textContent));
+  verifie('pastilles sur le manche', $('gammesContenu').querySelectorAll('.manche-point').length > 20);
+  [...$('gammesContenu').querySelectorAll('.filtres button')].find((b) => b.textContent === 'Majeure').click();
+  verifie('changer de type redessine', /La · Si · Do♯ · Ré · Mi · Fa♯ · Sol♯/.test($('gammesContenu').textContent));
+
+  console.log('\n— Casque VR —');
+  verifie('pas de mode casque sur un navigateur ordinaire', !w.document.documentElement.classList.contains('casque'));
+  verifie('raccourci casque masqué hors casque', $('raccourciVR').hidden === true);
+  w.CasqueVR._etat.piece = w.Morceaux.get('ode-joie');
+  verifie('module casque exposé', typeof w.CasqueVR.brancher === 'function' && typeof w.CasqueVR.note === 'function');
 
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');

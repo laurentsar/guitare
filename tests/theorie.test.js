@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
 
-const ctx = { console, Math, Date, JSON, parseInt, parseFloat, isFinite, Object, Array, String, Number, Error };
+const ctx = { console, Math, Date, JSON, parseInt, parseFloat, isFinite, Object, Array, String, Number, Error, setTimeout, clearTimeout };
 ctx.window = ctx;
 ctx.globalThis = ctx;
 vm.createContext(ctx);
@@ -43,10 +43,10 @@ ctx.AudioContext = function () {
   this.resume = () => {};
 };
 
-['theorie.js', 'accords.js', 'tablature.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js']
+['theorie.js', 'accords.js', 'tablature.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
-const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5 } = ctx;
+const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes } = ctx;
 
 let ok = 0, ko = 0;
 function verifie(nom, cond, detail) {
@@ -277,6 +277,70 @@ verifie('la vue « sur la guitare » situe la zone et marque chaque corde',
 verifie('les schémas n’utilisent que des classes du thème',
         Illustrations.liste().every((id) => !/fill="#|stroke="#/.test(Illustrations.rendre(id))),
         Illustrations.liste().filter((id) => /fill="#|stroke="#/.test(Illustrations.rendre(id))).join(','));
+
+console.log('\n— Gammes —');
+{
+  const nomsDe = (t, g) => Gammes.noms(t, g).join(' ');
+  verifie('Do majeur = sans altération', nomsDe(0, 'majeure') === 'Do Ré Mi Fa Sol La Si', nomsDe(0, 'majeure'));
+  verifie('Sol majeur = un Fa♯', nomsDe(7, 'majeure') === 'Sol La Si Do Ré Mi Fa♯', nomsDe(7, 'majeure'));
+  verifie('La mineur naturelle = relative de Do (mêmes notes)',
+          Gammes.classes(9, 'mineure').slice().sort((a, b) => a - b).join() === Gammes.classes(0, 'majeure').slice().sort((a, b) => a - b).join());
+  verifie('La pentatonique mineure = La Do Ré Mi Sol', nomsDe(9, 'penta-min') === 'La Do Ré Mi Sol', nomsDe(9, 'penta-min'));
+  verifie('La mineure harmonique a son Sol♯', nomsDe(9, 'harmonique').split(' ')[6] === 'Sol♯');
+  verifie('Mi blues = Mi Sol La La♯ Si Ré', nomsDe(4, 'blues') === 'Mi Sol La La♯ Si Ré', nomsDe(4, 'blues'));
+  const pos = Gammes.positions(4, 'penta-min', 12);
+  verifie('Mi penta sur le manche : les 6 cordes à vide en font partie (Mi, La, Ré, Sol, Si, Mi)',
+          [1, 2, 3, 4, 5, 6].every((c) => pos.some((p) => p.corde === c && p.frette === 0)));
+  verifie('chaque position est bien une note de la gamme',
+          pos.every((p) => Gammes.classes(4, 'penta-min').indexOf(Theorie.midiDeCase(p.corde, p.frette) % 12) !== -1));
+  verifie('toniques marquées = Mi uniquement', pos.filter((p) => p.tonique).every((p) => p.nom === 'Mi'));
+  const seq = Gammes.aJouer(9, 'majeure', 2);
+  verifie('gamme jouée : part de la tonique la plus grave (La2 = 45)', seq[0] === 45, seq[0]);
+  verifie('gamme jouée : monte deux octaves puis redescend', Math.max(...seq) === 69 && seq[seq.length - 1] === 45 && seq.length === 29, seq.length);
+  verifie('manche : une pastille par point demandé',
+          (Manche.svg({ points: pos }).match(/manche-point/g) || []).length === pos.length);
+}
+
+console.log('\n— Tablature texte —');
+{
+  const ode = Morceaux.get('ode-joie');
+  const txt = Tablature.versTexte(ode, 4);
+  const lignes = txt.split('\n');
+  verifie('export : six lignes e B G D A E', lignes.slice(0, 6).map((l) => l[0]).join('') === 'eBGDAE', lignes.slice(0, 6).map((l) => l[0]).join(''));
+  verifie('export : lignes de même longueur', new Set(lignes.slice(0, 6).map((l) => l.length)).size === 1);
+  const relu = Tablature.depuisTexte(txt);
+  verifie('aller-retour : mêmes notes, même ordre',
+          relu.length === ode.notes.length && relu.every((n, i) => n.corde === ode.notes[i].corde && n.frette === ode.notes[i].frette),
+          relu.length + ' vs ' + ode.notes.length);
+  verifie('aller-retour : mêmes hauteurs', relu.every((n, i) => n.midi === ode.notes[i].midi));
+  const web = Tablature.depuisTexte('Intro :\ne|-----0-----|\nB|---1---1---|\nG|-2-------2-|\nD|-----------|\nA|-----------|\nE|-12--------|\nparoles ici');
+  verifie('import : case à deux chiffres lue comme 12, pas 1 puis 2', web.some((n) => n.corde === 6 && n.frette === 12) && !web.some((n) => n.corde === 6 && n.frette === 2));
+  verifie('import : notes simultanées au même temps', web.filter((n) => n.temps === 0).length === 2);
+  verifie('import : texte autour ignoré', web.length === 6, web.length);
+  verifie('import : rien reconnu = liste vide', Tablature.depuisTexte('bonjour').length === 0);
+}
+
+console.log('\n— Lecteur —');
+{
+  const joue = [];
+  const avant = Audio5.jouerNote, clic = Audio5.jouerClic;
+  Audio5.jouerNote = (midi, o) => { joue.push({ midi, retard: o.retard }); };
+  let clics = [];
+  Audio5.jouerClic = (r, acc) => clics.push({ r, acc });
+  const p = Morceaux.get('au-clair');            // 4/4, 4 mesures
+  Tablature.jouer(p, { tempo: 60, de: 4, a: 8, decompte: 4, capo: 2, metronome: true });
+  Tablature.arreter();
+  const attendues = p.notes.filter((n) => n.temps >= 4 && n.temps < 8);
+  verifie('section : seules les notes de la mesure 2 sont jouées', joue.length === attendues.length, joue.length);
+  verifie('capodastre 2 : tout sonne un ton plus haut', joue.every((j, i) => j.midi === attendues[i].midi + 2));
+  verifie('décompte : la première note tombe après 4 temps', Math.abs(joue[0].retard - 4) < 1e-9, joue[0].retard);
+  verifie('décompte + clic : 4 + 4 clics, premier temps accentué', clics.length === 8 && clics[0].acc && clics[4].acc && !clics[1].acc, clics.length);
+  joue.length = 0; clics = [];
+  Tablature.jouer(p, { tempo: 60, muet: true });
+  Tablature.arreter();
+  verifie('guitare muette : aucune note jouée', joue.length === 0);
+  Audio5.jouerNote = avant; Audio5.jouerClic = clic;
+}
 
 console.log(`\n=== ${ok} réussis, ${ko} échoués ===`);
 process.exit(ko ? 1 : 0);

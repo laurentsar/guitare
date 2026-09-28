@@ -24,7 +24,7 @@
     // Quitter un écran coupe ce qu'il faisait : rien de pire qu'un métronome
     // qui continue pendant qu'on lit une leçon.
     if (ecranCourant === 'accordeur' && nom !== 'accordeur') arreterAccordeur();
-    if (ecranCourant === 'morceau' && nom !== 'morceau') Tablature.arreter();
+    if ((ecranCourant === 'morceau' || ecranCourant === 'editeur') && nom !== ecranCourant) Tablature.arreter();
 
     ecranCourant = nom;
     Array.prototype.forEach.call(document.querySelectorAll('.ecran'), function (s) {
@@ -40,6 +40,7 @@
     if (nom === 'morceaux') rendreMorceaux();
     if (nom === 'oreille') rendreOreilleAccueil();
     if (nom === 'reglages') rendreReglages();
+    if (nom === 'gammes') rendreGammes();
     majStats();
   }
 
@@ -52,7 +53,7 @@
   // Ne tourne que sur les écrans où l'on joue réellement, et s'arrête quand
   // l'app passe en arrière-plan : un compteur qui gonfle tout seul ne veut
   // plus rien dire.
-  var ECRANS_PRATIQUE = ['lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille'];
+  var ECRANS_PRATIQUE = ['lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur'];
   setInterval(function () {
     if (document.hidden) return;
     if (ECRANS_PRATIQUE.indexOf(ecranCourant) === -1) return;
@@ -439,42 +440,73 @@
   }
 
   // --------------------------------------------------------------- morceaux
+  // Un morceau intégré ou une tablature de l'élève : le lecteur ne fait pas
+  // la différence, seule la liste les range à part.
+  function trouverMorceau(id) { return Morceaux.get(id) || Store.tablature(id); }
+
   function rendreMorceaux() {
     var h = vide($('listeMorceaux'));
     var niveaux = {};
     Morceaux.tous().forEach(function (p) { (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p); });
+    function ligne(p, droite) {
+      var b = el('button', 'ligne-morceau');
+      var t = el('span');
+      t.appendChild(el('b', null, p.titre));
+      t.appendChild(el('small', null, p.sous_titre));
+      b.appendChild(t);
+      b.appendChild(el('span', 'niveau', droite));
+      b.onclick = function () { ouvrirMorceau(p.id); };
+      return b;
+    }
     Object.keys(niveaux).sort().forEach(function (n) {
       h.appendChild(el('h3', null, 'Niveau ' + n));
-      niveaux[n].forEach(function (p) {
-        var b = el('button', 'ligne-morceau');
-        var t = el('span');
-        t.appendChild(el('b', null, p.titre));
-        t.appendChild(el('small', null, p.sous_titre));
-        b.appendChild(t);
-        b.appendChild(el('span', 'niveau', '♩ = ' + p.tempo));
-        b.onclick = function () { ouvrirMorceau(p.id); };
-        h.appendChild(b);
-      });
+      niveaux[n].forEach(function (p) { h.appendChild(ligne(p, '♩ = ' + p.tempo)); });
     });
+
+    h.appendChild(el('h3', null, 'Mes tablatures'));
+    var perso = Store.tablatures();
+    if (!perso.length) h.appendChild(el('p', 'aide', 'Écris ta propre tablature, ou colles-en une trouvée sur internet : elle se jouera ici comme les autres, avec boucle, ralenti et manche.'));
+    perso.forEach(function (p) { h.appendChild(ligne(p, p.notes.length + ' notes')); });
+    var bNouv = el('button', 'btn primaire large', '✏️ Nouvelle tablature');
+    bNouv.onclick = function () { ouvrirEditeur(null); };
+    h.appendChild(bNouv);
   }
 
+  /* Le lecteur, façon logiciel de tablature : tempo, boucle sur une section,
+   * entraîneur de vitesse, décompte, clic, capodastre, guitare muette et
+   * manche qui suit la lecture. Chaque option se résume à un paramètre de
+   * Tablature.jouer — ce fichier ne fait que les exposer. */
   function ouvrirMorceau(id) {
-    var p = Morceaux.get(id);
+    var p = trouverMorceau(id);
     if (!p) return;
+    var r = Store.reglages();
+    var parMesure = p.signature ? p.signature[0] : 4;
+    var nbMesures = Math.max(1, Math.ceil(Tablature.duree_totale(p) / parMesure));
+    var etat = {
+      tempo: p.tempo, capo: 0, de: 1, a: nbMesures,
+      boucle: false, entraineur: false, pct: 100,
+      decompte: r.decompte, clic: r.clicLecture, muet: false, manche: true
+    };
+
     var h = vide($('detailMorceau'));
     h.appendChild(el('h2', null, p.titre));
     h.appendChild(el('p', 'aide', p.sous_titre));
-    h.appendChild(el('p', null, p.description));
+    if (p.description) h.appendChild(el('p', null, p.description));
 
-    var tempo = p.tempo;
+    // Tempo : ±10, et, quand l'entraîneur tourne, le pourcentage en cours.
     var ligneTempo = el('div', 'actions');
-    var affiche = el('b', null, '♩ = ' + tempo);
+    var affiche = el('b');
+    function majTempo() {
+      affiche.textContent = '♩ = ' + tempoEffectif() + (etat.entraineur ? ' (' + etat.pct + ' %)' : '');
+    }
+    function tempoEffectif() { return Math.max(20, Math.round(etat.tempo * etat.pct / 100)); }
     var moins = el('button', 'btn', '−10');
     var plus = el('button', 'btn', '+10');
-    moins.onclick = function () { tempo = Math.max(30, tempo - 10); affiche.textContent = '♩ = ' + tempo; };
-    plus.onclick = function () { tempo = Math.min(200, tempo + 10); affiche.textContent = '♩ = ' + tempo; };
+    moins.onclick = function () { etat.tempo = Math.max(30, etat.tempo - 10); majTempo(); };
+    plus.onclick = function () { etat.tempo = Math.min(220, etat.tempo + 10); majTempo(); };
     ligneTempo.appendChild(moins); ligneTempo.appendChild(affiche); ligneTempo.appendChild(plus);
     h.appendChild(ligneTempo);
+    majTempo();
 
     /* Portée, tablature, ou les deux. Le choix est mémorisé : un élève qui
      * apprend à lire la portée veut la portée SEULE, et rebasculer à chaque
@@ -489,6 +521,7 @@
       Array.prototype.forEach.call(barreVue.children, function (b) {
         b.classList.toggle('actif', b.dataset.vue === vue);
       });
+      marquerSection();
     }
     [['portee', 'Portée'], ['tablature', 'Tablature'], ['deux', 'Les deux']].forEach(function (v) {
       var b = el('button', '', v[1]);
@@ -498,15 +531,94 @@
     });
     h.appendChild(barreVue);
     h.appendChild(zone);
-    dessiner();
+
+    // Manche virtuel : la note jouée s'allume là où poser le doigt.
+    var manche = el('div', 'manche-boite');
+    function majManche(temps) {
+      var pts = temps == null ? [] : p.notes.filter(function (n) { return n.temps === temps; }).map(function (n) {
+        return { corde: n.corde, frette: n.frette, classe: 'joue', texte: n.doigt ? String(n.doigt) : '' };
+      });
+      var maxCase = p.notes.reduce(function (m, n) { return Math.max(m, n.frette); }, 0);
+      manche.innerHTML = Manche.svg({ cases: Math.max(5, Math.min(19, maxCase + 1)), points: pts });
+    }
+    h.appendChild(manche);
+    majManche(null);
 
     var actions = el('div', 'actions');
     var bJouer = el('button', 'btn primaire', '▶ Écouter');
     var bStop = el('button', 'btn', '■ Arrêter');
-    var bMetro = el('button', 'btn', '🥁 Avec métronome');
+    var bMetro = el('button', 'btn', '🥁 Métronome seul');
     actions.appendChild(bJouer); actions.appendChild(bStop); actions.appendChild(bMetro);
     h.appendChild(actions);
-    h.appendChild(el('p', 'aide', 'La note en cours de lecture s’allume dans la tablature. Écoute d’abord, joue ensuite : imiter un modèle sonore va beaucoup plus vite que déchiffrer.'));
+
+    // Options de travail : des interrupteurs, pas des cases à cocher — plus
+    // gros au doigt, et atteignables à la télécommande.
+    var opts = el('div', 'filtres options-lecture');
+    function interrupteur(cle, libelle, surChange) {
+      var b = el('button', '', libelle);
+      function maj() { b.classList.toggle('actif', !!etat[cle]); b.setAttribute('aria-pressed', etat[cle] ? 'true' : 'false'); }
+      b.onclick = function () { etat[cle] = !etat[cle]; maj(); if (surChange) surChange(); };
+      maj();
+      opts.appendChild(b);
+      return b;
+    }
+    interrupteur('boucle', '🔁 Boucle');
+    interrupteur('entraineur', '📈 Entraîneur de vitesse', function () {
+      // L'entraîneur n'a de sens qu'en boucle : il accélère à chaque tour.
+      etat.pct = etat.entraineur ? 60 : 100;
+      if (etat.entraineur && !etat.boucle) { etat.boucle = true; opts.children[0].classList.add('actif'); }
+      majTempo();
+    });
+    interrupteur('decompte', '⏱ Décompte', function () { Store.reglage('decompte', etat.decompte); });
+    interrupteur('clic', '🥁 Clic', function () { Store.reglage('clicLecture', etat.clic); });
+    interrupteur('muet', '🔇 Guitare muette');
+    interrupteur('manche', '🎸 Manche', function () { manche.hidden = !etat.manche; });
+    h.appendChild(opts);
+    h.appendChild(el('p', 'aide', 'Entraîneur de vitesse : démarre à 60 % du tempo et gagne 5 % à chaque tour, jusqu’à 100 %. Guitare muette : l’app tient le temps et suit la partition, c’est toi qui joues.'));
+
+    // Section (boucle A-B) et capodastre : des ± plutôt qu'un curseur, qui
+    // capturerait les flèches de la télécommande.
+    function reglage(libelle, get, moinsFn, plusFn) {
+      var l = el('div', 'actions reglage-lecteur');
+      l.appendChild(el('span', 'reglage-nom', libelle));
+      var m = el('button', 'btn', '−'), v = el('b'), pl = el('button', 'btn', '+');
+      function maj() { v.textContent = get(); }
+      m.onclick = function () { moinsFn(); maj(); marquerSection(); };
+      pl.onclick = function () { plusFn(); maj(); marquerSection(); };
+      l.appendChild(m); l.appendChild(v); l.appendChild(pl);
+      maj();
+      h.appendChild(l);
+    }
+    reglage('Depuis la mesure', function () { return etat.de; },
+      function () { etat.de = Math.max(1, etat.de - 1); },
+      function () { etat.de = Math.min(etat.a, etat.de + 1); });
+    reglage('Jusqu’à la mesure', function () { return etat.a + ' / ' + nbMesures; },
+      function () { etat.a = Math.max(etat.de, etat.a - 1); },
+      function () { etat.a = Math.min(nbMesures, etat.a + 1); });
+    reglage('Capodastre', function () { return etat.capo ? 'case ' + etat.capo : 'aucun'; },
+      function () { etat.capo = Math.max(0, etat.capo - 1); },
+      function () { etat.capo = Math.min(9, etat.capo + 1); });
+
+    // Les notes hors de la section sont estompées : on voit ce qu'on boucle.
+    function marquerSection() {
+      var de = (etat.de - 1) * parMesure, a = etat.a * parMesure;
+      Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) {
+        var t = parseFloat(g.dataset.temps);
+        g.classList.toggle('hors-section', t < de || t >= a);
+      });
+    }
+    dessiner();
+
+    // Tablature texte : pour la recopier, l'envoyer, l'imprimer.
+    var texte = document.createElement('details');
+    texte.innerHTML = '<summary>Tablature texte (à copier)</summary>';
+    var pre = el('pre', 'tab-texte', Tablature.versTexte(p, 2));
+    var bCopier = el('button', 'btn', '📋 Copier');
+    bCopier.onclick = function () {
+      if (navigator.clipboard) navigator.clipboard.writeText(pre.textContent).then(function () { bCopier.textContent = '✓ Copiée'; }, function () {});
+    };
+    texte.appendChild(pre); texte.appendChild(bCopier);
+    h.appendChild(texte);
 
     // Rappel de lecture, replié : utile les premières semaines, encombrant
     // ensuite — <details> laisse l'élève décider, sans code de notre part.
@@ -514,27 +626,256 @@
     aide.innerHTML = '<summary>Comment lire cette tablature ?</summary>' + Illustrations.rendre('tablature');
     h.appendChild(aide);
 
+    if (p.perso) {
+      var gestion = el('div', 'actions');
+      var bModif = el('button', 'btn', '✏️ Modifier');
+      bModif.onclick = function () { ouvrirEditeur(p.id); };
+      var bSuppr = el('button', 'btn', '🗑 Supprimer');
+      bSuppr.onclick = function () {
+        if (!window.confirm('Supprimer « ' + p.titre + ' » ?')) return;
+        Store.supprimerTablature(p.id);
+        aller('morceaux');
+      };
+      gestion.appendChild(bModif); gestion.appendChild(bSuppr);
+      h.appendChild(gestion);
+    }
+
+    function effacer() {
+      Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) { g.classList.remove('en-cours'); });
+      majManche(null);
+    }
     function surligner(note) {
       Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) {
         g.classList.toggle('en-cours', parseFloat(g.dataset.temps) === note.temps);
       });
+      if (etat.manche) majManche(note.temps);
+      if (window.CasqueVR) CasqueVR.note(note);
     }
-    bJouer.onclick = function () {
+    function lancer(premier) {
       Tablature.jouer(p, {
-        tempo: tempo,
+        tempo: tempoEffectif(),
+        de: (etat.de - 1) * parMesure,
+        a: etat.a * parMesure,
+        capo: etat.capo,
+        // Le décompte n'est donné qu'au premier tour : en boucle, la reprise
+        // doit s'enchaîner comme une vraie répétition.
+        decompte: premier && etat.decompte ? parMesure : 0,
+        metronome: etat.clic,
+        muet: etat.muet,
+        timbre: Store.reglages().timbre,
         surNote: function (n, i) { surligner(n); if (Cast.connecte()) Cast.afficherMorceau(p, i); },
         surFin: function () {
-          Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) { g.classList.remove('en-cours'); });
+          effacer();
+          if (!etat.boucle || ecranCourant !== 'morceau') { if (window.CasqueVR) CasqueVR.fin(); return; }
+          if (etat.entraineur && etat.pct < 100) { etat.pct = Math.min(100, etat.pct + 5); majTempo(); }
+          lancer(false);
         }
       });
-    };
-    bStop.onclick = function () {
-      Tablature.arreter();
-      Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) { g.classList.remove('en-cours'); });
-    };
-    bMetro.onclick = function () { reglerTempo(tempo); aller('metronome'); demarrerMetro(); };
+    }
+    bJouer.onclick = function () { lancer(true); };
+    bStop.onclick = function () { Tablature.arreter(); effacer(); if (window.CasqueVR) CasqueVR.fin(); };
+    bMetro.onclick = function () { reglerTempo(tempoEffectif()); aller('metronome'); demarrerMetro(); };
+
+    if (window.CasqueVR) CasqueVR.brancher(h, p, { jouer: function () { lancer(true); }, arreter: bStop.onclick });
 
     aller('morceau');
+  }
+
+  // --------------------------------------------------------------- éditeur
+  /* Éditeur de tablature. On saisit comme sur une grille : une corde, une
+   * case, et le curseur avance d'une durée. Tout se fait avec des boutons —
+   * pas de clavier nécessaire, donc utilisable à la télécommande et au casque. */
+  var ed = null;
+
+  var DUREES = [[4, 'Ronde'], [2, 'Blanche'], [1, 'Noire'], [0.5, 'Croche'], [0.25, 'Double']];
+
+  function ouvrirEditeur(id) {
+    var base = id ? Store.tablature(id) : null;
+    ed = {
+      piece: base ? JSON.parse(JSON.stringify(base)) : {
+        id: 'perso-' + Date.now(), titre: 'Ma tablature', sous_titre: 'Écrite par moi',
+        niveau: 'perso', tempo: 80, signature: [4, 4], description: '', notes: [], perso: true
+      },
+      curseur: 0, duree: 1, corde: 1, accord: false
+    };
+    if (base) ed.curseur = Tablature.duree_totale(ed.piece);
+    rendreEditeur();
+    aller('editeur');
+  }
+
+  function rendreEditeur() {
+    var p = ed.piece;
+    var parMesure = p.signature[0];
+    var h = vide($('editeurTab'));
+
+    var titre = el('input', 'saisie');
+    titre.value = p.titre; titre.maxLength = 60; titre.setAttribute('aria-label', 'Titre');
+    titre.onchange = function () { p.titre = titre.value.trim() || 'Ma tablature'; };
+    h.appendChild(titre);
+
+    var ligne = el('div', 'actions');
+    var tm = el('button', 'btn', '−5'), tv = el('b', null, '♩ = ' + p.tempo), tp = el('button', 'btn', '+5');
+    tm.onclick = function () { p.tempo = Math.max(30, p.tempo - 5); tv.textContent = '♩ = ' + p.tempo; };
+    tp.onclick = function () { p.tempo = Math.min(220, p.tempo + 5); tv.textContent = '♩ = ' + p.tempo; };
+    ligne.appendChild(tm); ligne.appendChild(tv); ligne.appendChild(tp);
+    [2, 3, 4].forEach(function (n) {
+      var b = el('button', 'btn' + (parMesure === n ? ' primaire' : ''), n + '/4');
+      b.onclick = function () { p.signature = [n, 4]; rendreEditeur(); };
+      ligne.appendChild(b);
+    });
+    h.appendChild(ligne);
+
+    // Aperçu, avec les notes sous le curseur allumées.
+    var apercu = el('div', 'editeur-apercu');
+    // Le curseur est une note fantôme sur la corde choisie : visible même sur
+    // un temps encore vide, et elle prolonge la ligne d'une mesure si besoin.
+    var libre = !p.notes.some(function (n) { return n.temps === ed.curseur && n.corde === ed.corde; });
+    var notes = p.notes.slice();
+    if (libre) notes.push({ corde: ed.corde, frette: '·', temps: ed.curseur, duree: ed.duree });
+    apercu.innerHTML = Tablature.svg({ signature: p.signature, notes: notes }, { mesuresParLigne: 2 });
+    Array.prototype.forEach.call(apercu.querySelectorAll('.tab-note'), function (g) {
+      if (parseFloat(g.dataset.temps) === ed.curseur) g.classList.add('en-cours');
+    });
+    h.appendChild(apercu);
+    var mesure = Math.floor(ed.curseur / parMesure) + 1;
+    var temps = +(ed.curseur % parMesure + 1).toFixed(2);
+    h.appendChild(el('p', 'aide', 'Curseur : mesure ' + mesure + ', temps ' + temps + ' · ' + p.notes.length + ' notes'));
+
+    h.appendChild(el('h3', null, 'Corde'));
+    var cordes = el('div', 'filtres');
+    for (var c = 1; c <= 6; c++) {
+      (function (num) {
+        var b = el('button', ed.corde === num ? 'actif' : '', num + ' · ' + Theorie.CORDES[num].nom);
+        b.onclick = function () { ed.corde = num; rendreEditeur(); };
+        cordes.appendChild(b);
+      })(c);
+    }
+    h.appendChild(cordes);
+
+    h.appendChild(el('h3', null, 'Durée'));
+    var durees = el('div', 'filtres');
+    DUREES.forEach(function (d) {
+      var b = el('button', ed.duree === d[0] ? 'actif' : '', d[1]);
+      b.onclick = function () { ed.duree = d[0]; rendreEditeur(); };
+      durees.appendChild(b);
+    });
+    var bAccord = el('button', ed.accord ? 'actif' : '', '🎶 Accord (ne pas avancer)');
+    bAccord.onclick = function () { ed.accord = !ed.accord; rendreEditeur(); };
+    durees.appendChild(bAccord);
+    h.appendChild(durees);
+
+    h.appendChild(el('h3', null, 'Case — corde ' + ed.corde));
+    var grille = el('div', 'grille-cases');
+    for (var f = 0; f <= 15; f++) {
+      (function (fr) {
+        var b = el('button', 'btn', String(fr));
+        b.onclick = function () { poserNote(fr); };
+        grille.appendChild(b);
+      })(f);
+    }
+    h.appendChild(grille);
+
+    var nav = el('div', 'actions');
+    [['◀ Reculer', function () { ed.curseur = Math.max(0, +(ed.curseur - ed.duree).toFixed(4)); }],
+     ['Avancer ▶', function () { ed.curseur = +(ed.curseur + ed.duree).toFixed(4); }],
+     ['𝄽 Silence', function () { ed.curseur = +(ed.curseur + ed.duree).toFixed(4); }],
+     ['⌫ Effacer ici', function () {
+       p.notes = p.notes.filter(function (n) { return n.temps !== ed.curseur; });
+     }],
+     ['↶ Dernière note', function () {
+       var n = p.notes.pop();
+       if (n) ed.curseur = n.temps;
+     }]].forEach(function (a) {
+      var b = el('button', 'btn', a[0]);
+      b.onclick = function () { a[1](); rendreEditeur(); };
+      nav.appendChild(b);
+    });
+    h.appendChild(nav);
+
+    var fin2 = el('div', 'actions');
+    var bEcouter = el('button', 'btn', '▶ Écouter');
+    bEcouter.onclick = function () { Tablature.jouer(p, { tempo: p.tempo, timbre: Store.reglages().timbre }); };
+    var bSauver = el('button', 'btn primaire', '💾 Enregistrer');
+    bSauver.onclick = function () {
+      p.titre = titre.value.trim() || 'Ma tablature';
+      p.notes.sort(function (x, y) { return x.temps - y.temps || x.corde - y.corde; });
+      Store.sauverTablature(p);
+      ouvrirMorceau(p.id);
+    };
+    fin2.appendChild(bEcouter); fin2.appendChild(bSauver);
+    h.appendChild(fin2);
+
+    // Import d'une tab texte trouvée sur le web : collée, analysée, ajoutée.
+    var imp = document.createElement('details');
+    imp.innerHTML = '<summary>Coller une tablature texte (internet)</summary>' +
+      '<p class="aide">Six lignes qui commencent par e|, B|, G|, D|, A|, E|. Les notes et les cases sont reprises ; le rythme n’existe pas dans ce format, chaque note devient une croche — ajuste ensuite à l’oreille.</p>';
+    var zoneTexte = el('textarea', 'saisie tab-texte');
+    zoneTexte.rows = 8;
+    zoneTexte.placeholder = 'e|---0---2---|\nB|-1-------3-|\nG|-----------|\nD|-----------|\nA|-----------|\nE|-----------|';
+    var bImp = el('button', 'btn primaire', 'Importer');
+    var etatImp = el('p', 'aide');
+    bImp.onclick = function () {
+      var notes = Tablature.depuisTexte(zoneTexte.value);
+      if (!notes.length) { etatImp.textContent = 'Aucune tablature reconnue : il faut les six lignes, du Mi aigu (e) au Mi grave (E).'; return; }
+      var decal = Tablature.duree_totale(p);
+      notes.forEach(function (n) { n.temps += decal; p.notes.push(n); });
+      ed.curseur = Tablature.duree_totale(p);
+      rendreEditeur();
+    };
+    imp.appendChild(zoneTexte); imp.appendChild(bImp); imp.appendChild(etatImp);
+    h.appendChild(imp);
+  }
+
+  function poserNote(frette) {
+    var p = ed.piece;
+    p.notes = p.notes.filter(function (n) { return !(n.temps === ed.curseur && n.corde === ed.corde); });
+    p.notes.push({ corde: ed.corde, frette: frette, temps: ed.curseur, duree: ed.duree, midi: Theorie.midiDeCase(ed.corde, frette) });
+    Audio5.jouerCase(ed.corde, frette, { duree: 1.2, timbre: Store.reglages().timbre });
+    if (!ed.accord) ed.curseur = +(ed.curseur + ed.duree).toFixed(4);
+    rendreEditeur();
+  }
+
+  // ---------------------------------------------------------------- gammes
+  var gamme = { tonique: 9, type: 'penta-min' };   // La mineur pentatonique : la première qu'on apprend
+
+  function rendreGammes() {
+    var h = vide($('gammesContenu'));
+    h.appendChild(el('h2', null, 'Gammes sur le manche'));
+    var toniques = el('div', 'filtres');
+    Theorie.NOMS_FR.forEach(function (nom, i) {
+      var b = el('button', gamme.tonique === i ? 'actif' : '', nom);
+      b.onclick = function () { gamme.tonique = i; rendreGammes(); };
+      toniques.appendChild(b);
+    });
+    h.appendChild(toniques);
+    var types = el('div', 'filtres');
+    Gammes.TYPES.forEach(function (t) {
+      var b = el('button', gamme.type === t.id ? 'actif' : '', t.nom);
+      b.onclick = function () { gamme.type = t.id; rendreGammes(); };
+      types.appendChild(b);
+    });
+    h.appendChild(types);
+
+    h.appendChild(el('p', null, Theorie.NOMS_FR[gamme.tonique] + ' ' + Gammes.type(gamme.type).nom.toLowerCase() + ' : ' + Gammes.noms(gamme.tonique, gamme.type).join(' · ')));
+    var m = el('div', 'manche-boite');
+    m.innerHTML = Manche.svg({
+      cases: 12,
+      points: Gammes.positions(gamme.tonique, gamme.type, 12).map(function (pt) {
+        return { corde: pt.corde, frette: pt.frette, classe: pt.tonique ? 'tonique' : 'gamme', texte: pt.nom.replace('♯', '#').slice(0, 3) };
+      })
+    });
+    h.appendChild(m);
+    h.appendChild(el('p', 'aide', 'Les pastilles pleines sont la tonique. Travaille la gamme case par case, un doigt par case, en montant puis en descendant — lentement, au métronome.'));
+
+    var b = el('button', 'btn primaire large', '▶ Écouter (2 octaves, montante et descendante)');
+    b.onclick = function () {
+      Audio5.couperTout();
+      var tempo = Audio5.tempoMetronome(Store.reglages().tempo);
+      Gammes.aJouer(gamme.tonique, gamme.type, 2).forEach(function (midi, i) {
+        Audio5.jouerNote(midi, { retard: i * 60 / tempo / 2, duree: 1.2, timbre: Store.reglages().timbre });
+      });
+    };
+    h.appendChild(b);
   }
 
   // --------------------------------------------------------------- oreille
@@ -613,7 +954,7 @@
       ? 'Récepteur configuré. Le bouton 📺 en haut à droite lance la diffusion.'
       : 'Sans identifiant de récepteur, la diffusion Chromecast reste désactivée — mais l’app s’installe aussi directement sur une télé Android, et le mode télévision s’y active tout seul.';
     $('aproposVersion').textContent = 'Version ' + (window.APP_VERSION || '?') +
-      ' · ' + Lecons.tous().length + ' leçons · ' + Accords.tous().length + ' accords · ' + Morceaux.tous().length + ' morceaux.';
+      ' · ' + Lecons.tous().length + ' leçons · ' + Accords.tous().length + ' accords · ' + Morceaux.tous().length + ' morceaux · ' + Gammes.TYPES.length + ' gammes.';
     if (window.AutoBackup && AutoBackup.mount) AutoBackup.mount($('carteBackup'));
   }
 
@@ -648,6 +989,14 @@
     pointsMetro(4);
     majStats();
     rendreAccueil();
+
+    $('raccourciEditeur').onclick = function () { ouvrirEditeur(null); };
+    // Au casque : raccourci vers les morceaux, où se trouve la partition
+    // flottante (elle n'a de sens qu'avec quelque chose à lire).
+    if (window.CasqueVR && CasqueVR.estCasque()) {
+      $('raccourciVR').hidden = false;
+      $('raccourciVR').onclick = function () { aller('morceaux'); };
+    }
 
     // Accordeur
     $('btnAccordeur').onclick = basculerAccordeur;
@@ -729,5 +1078,5 @@
   else init();
 
   // Exposé pour les tests d'interface (jsdom) : aucun autre usage.
-  window.AppGuitare = { aller: aller, ouvrirLecon: ouvrirLecon, ouvrirAccord: ouvrirAccord, ouvrirMorceau: ouvrirMorceau, demarrerOreille: demarrerOreille };
+  window.AppGuitare = { aller: aller, ouvrirLecon: ouvrirLecon, ouvrirAccord: ouvrirAccord, ouvrirMorceau: ouvrirMorceau, demarrerOreille: demarrerOreille, ouvrirEditeur: ouvrirEditeur };
 })();

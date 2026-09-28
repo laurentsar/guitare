@@ -30,7 +30,9 @@
     castAppId: '',       // récepteur Chromecast personnalisé, voir cast.js
     objectifMinutes: 15,
     vuePartition: 'deux',  // 'portee' | 'tablature' | 'deux'
-    instrument: 'Prodipe Primera 4/4'
+    instrument: 'Prodipe Primera 4/4',
+    decompte: true,        // une mesure de clics avant de jouer un morceau
+    clicLecture: false     // métronome pendant la lecture
   };
 
   function reglages() {
@@ -108,7 +110,25 @@
     return p.records[paire];
   }
 
+  /* Tablatures écrites par l'élève (éditeur) ou collées depuis le web. Même
+   * forme qu'un morceau intégré : le lecteur ne fait pas la différence. */
+  function tablatures() { return lire('tablatures', []); }
+  function tablature(id) {
+    return tablatures().filter(function (t) { return t.id === id; })[0] || null;
+  }
+  function sauverTablature(piece) {
+    var liste = tablatures().filter(function (t) { return t.id !== piece.id; });
+    liste.push(piece);
+    ecrire('tablatures', liste);
+    return piece;
+  }
+  function supprimerTablature(id) {
+    ecrire('tablatures', tablatures().filter(function (t) { return t.id !== id; }));
+  }
+
   global.Store = {
+    tablatures: tablatures, tablature: tablature,
+    sauverTablature: sauverTablature, supprimerTablature: supprimerTablature,
     reglages: reglages, reglage: reglage,
     progression: progression, marquerLecon: marquerLecon,
     ajouterSecondes: ajouterSecondes, serie: serie, minutesDuJour: minutesDuJour,

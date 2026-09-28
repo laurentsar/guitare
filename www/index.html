@@ -33,6 +33,9 @@
       <button class="raccourci" data-aller="morceaux"><span>🎼</span>Morceaux</button>
       <button class="raccourci" data-aller="oreille"><span>👂</span>Oreille</button>
       <button class="raccourci" data-aller="parcours"><span>📘</span>Parcours</button>
+      <button class="raccourci" data-aller="gammes"><span>🎹</span>Gammes</button>
+      <button class="raccourci" id="raccourciEditeur"><span>✏️</span>Écrire une tab</button>
+      <button class="raccourci" id="raccourciVR" hidden><span>🥽</span>Casque VR</button>
     </div>
     <div class="carte" id="carteProgression"></div>
     <div class="carte conseil" id="carteConseil"></div>
@@ -118,6 +121,15 @@
     <div id="detailMorceau"></div>
   </section>
 
+  <section id="ecran-gammes" class="ecran">
+    <div id="gammesContenu"></div>
+  </section>
+
+  <section id="ecran-editeur" class="ecran">
+    <button class="retour" data-aller="morceaux">‹ Morceaux</button>
+    <div id="editeurTab"></div>
+  </section>
+
   <section id="ecran-oreille" class="ecran">
     <div id="oreilleAccueil"></div>
     <div id="oreilleJeu" hidden></div>
@@ -186,7 +198,7 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.6';
+  window.APP_VERSION = '1.7';
   // Mise à jour automatique : update-check.js interroge la dernière release
   // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
   // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.
@@ -198,6 +210,8 @@
 <script src="illustrations.js"></script>
 <script src="tablature.js"></script>
 <script src="portee.js"></script>
+<script src="manche.js"></script>
+<script src="gammes.js"></script>
 <script src="morceaux.js"></script>
 <script src="lecons.js"></script>
 <script src="accordeur.js"></script>
@@ -206,6 +220,7 @@
 <script src="dpad-nav.js"></script>
 <script src="tv.js"></script>
 <script src="cast.js"></script>
+<script src="vr.js"></script>
 <script src="autobackup.js"></script>
 <script src="apk-update.js"></script>
 <script src="update-check.js"></script>

@@ -240,7 +240,7 @@ html.tv .onglets {
 html.tv .onglets button { flex: 0 0 auto; flex-direction: row; gap: 12px; font-size: 17px; padding: 14px 18px; justify-content: flex-start; }
 html.tv .onglets button span { font-size: 24px; }
 html.tv .onglets button.actif { background: var(--fond-3); }
-html.tv .grille-raccourcis { grid-template-columns: repeat(6, 1fr); }
+html.tv .grille-raccourcis { grid-template-columns: repeat(4, 1fr); }
 html.tv .grille-accords { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 html.tv .grand-diagramme { max-width: 460px; }
 html.tv .metro-tempo { font-size: 92px; }
@@ -348,3 +348,48 @@ html.tv .portee { min-width: 0; }
 .ligne-morceau b, .ligne-morceau small { display: block; }
 .ligne-morceau small { color: var(--texte-2); }
 .ligne-morceau > span:first-child { flex: 1; }
+
+/* --------------------------------------------------- lecteur « pro » */
+.options-lecture { justify-content: center; margin-top: 12px; }
+.reglage-lecteur { margin-top: 6px; }
+.reglage-lecteur .reglage-nom { min-width: 150px; color: var(--texte-2); font-size: 14px; }
+.reglage-lecteur b { min-width: 80px; text-align: center; }
+.tab-note.hors-section, .portee-note.hors-section { opacity: .28; }
+.tab-texte {
+  font: 13px/1.35 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  background: var(--fond-2); border: 1px solid var(--trait); border-radius: 10px;
+  padding: 10px; overflow-x: auto; white-space: pre; color: var(--texte); width: 100%;
+}
+
+/* ---------------------------------------------------- manche virtuel */
+.manche-boite { margin: 12px 0; overflow-x: auto; }
+.manche { width: 100%; min-width: 420px; height: auto; display: block; }
+.manche-bois { fill: #3A2A1A; }
+.manche-frette { stroke: #B9C0CC; stroke-width: 1.6; }
+.manche-sillet { stroke: #EDE6D6; stroke-width: 4; }
+.manche-corde { stroke: var(--corde); }
+.manche-repere { fill: #6E5A44; }
+.manche-num { fill: var(--texte-2); font-size: 9px; }
+.manche-nom { fill: var(--texte-2); font-size: 9px; }
+.manche-point circle { fill: var(--fond-3); stroke: var(--accent); stroke-width: 1.4; }
+.manche-point text { fill: var(--texte); font-size: 7px; font-weight: 700; }
+.manche-point.joue circle, .manche-point.tonique circle { fill: var(--bois); stroke: var(--bois); }
+.manche-point.joue text, .manche-point.tonique text { fill: #22180C; }
+
+/* ------------------------------------------------------------ éditeur */
+.saisie {
+  width: 100%; background: var(--fond-2); color: var(--texte); border: 1px solid var(--trait);
+  border-radius: 10px; padding: 10px 12px; font: inherit;
+}
+.editeur-apercu { margin: 12px 0; }
+.grille-cases { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.grille-cases .btn { padding: 10px 0; font-weight: 700; }
+
+/* ------------------------------------------------------- casque VR
+ * Navigateur du casque : un pointeur (rayon, pincement) moins précis qu'un
+ * doigt, sur un panneau vu à distance. On grossit, sans passer en mode télé. */
+html.casque body { font-size: 19px; }
+html.casque .btn, html.casque .filtres button { min-height: 52px; padding-left: 18px; padding-right: 18px; }
+html.casque .grille-raccourcis { grid-template-columns: repeat(4, 1fr); }
+html.casque .grille-cases .btn { min-height: 56px; }
+html.casque #ecrans { max-width: 1100px; margin: 0 auto; }

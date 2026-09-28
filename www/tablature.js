@@ -94,23 +94,52 @@
    */
   var lecture = { actif: false, timers: [], surNote: null, surFin: null };
 
+  /* Options de lecture (celles d'un lecteur de tablatures « pro ») :
+   *   tempo      noires par minute ;
+   *   de, a      section à jouer, en noires depuis le début (boucle A-B) ;
+   *   decompte   nombre de clics avant la première note ;
+   *   metronome  un clic par temps pendant la lecture ;
+   *   capo       case du capodastre : tout sonne N demi-tons plus haut, la
+   *              tablature, elle, reste écrite comme si le capo était le sillet ;
+   *   muet       guitare coupée — le surlignage et les clics continuent : on
+   *              joue soi-même, l'app ne fait que tenir le temps.
+   */
   function jouer(piece, opts) {
     opts = opts || {};
     arreter();
     var tempo = opts.tempo || piece.tempo || 70;
     var sec = 60 / tempo;
+    var parMesure = piece.signature ? piece.signature[0] : 4;
+    var de = opts.de || 0;
+    var a = opts.a == null ? duree_totale(piece) : opts.a;
+    var capo = opts.capo || 0;
+    var decompte = opts.decompte || 0;
+    var avance = decompte * sec;                  // décalage dû au décompte
     var t0 = Date.now();
     lecture.actif = true;
     lecture.surNote = opts.surNote || null;
     lecture.surFin = opts.surFin || null;
 
+    for (var k = 0; k < decompte; k++) {
+      Audio5.jouerClic(k * sec, k % parMesure === 0);
+    }
+    if (opts.metronome) {
+      for (var t = Math.ceil(de); t < a; t++) {
+        Audio5.jouerClic(avance + (t - de) * sec, t % parMesure === 0);
+      }
+    }
+
     piece.notes.forEach(function (n, i) {
-      var retard = n.temps * sec;
-      Audio5.jouerCase(n.corde, n.frette, {
-        retard: retard,
-        duree: Math.max(0.8, (n.duree || 1) * sec + 1.2),
-        volume: 0.5
-      });
+      if (n.temps < de || n.temps >= a) return;
+      var retard = avance + (n.temps - de) * sec;
+      if (!opts.muet) {
+        Audio5.jouerNote(Theorie.midiDeCase(n.corde, n.frette) + capo, {
+          retard: retard,
+          duree: Math.max(0.8, (n.duree || 1) * sec + 1.2),
+          volume: 0.5,
+          timbre: opts.timbre
+        });
+      }
       if (lecture.surNote) {
         lecture.timers.push(setTimeout(function () {
           if (lecture.actif) lecture.surNote(n, i);
@@ -118,7 +147,7 @@
       }
     });
 
-    var fin = duree_totale(piece) * sec;
+    var fin = avance + (a - de) * sec;
     lecture.timers.push(setTimeout(function () {
       lecture.actif = false;
       if (lecture.surFin) lecture.surFin();
@@ -139,8 +168,75 @@
 
   function enLecture() { return lecture.actif; }
 
+  /* Tablature texte (« ASCII »), le format de toutes les tabs du web :
+   *
+   *   e|---0---2---|
+   *   B|-1-------3-|
+   *   ...
+   *
+   * Export : une colonne par demi-temps (par quart si le morceau a des
+   * doubles croches), une barre à chaque mesure.
+   * Import : le texte ne dit rien du rythme — chaque colonne portant au moins
+   * un chiffre devient un temps d'une croche. On récupère les bonnes notes au
+   * bon endroit du manche ; le rythme, c'est l'oreille qui le remet.
+   */
+  var LETTRES = ['e', 'B', 'G', 'D', 'A', 'E'];
+
+  function versTexte(piece, mesuresParLigne) {
+    var parMesure = piece.signature ? piece.signature[0] : 4;
+    var pas = piece.notes.some(function (n) { return (n.temps * 2) % 1 !== 0; }) ? 0.25 : 0.5;
+    var parCol = Math.round(1 / pas);
+    return systemes(piece, mesuresParLigne || 4).map(function (l) {
+      var lignes = LETTRES.map(function (x) { return x + '|'; });
+      for (var t = l.debut; t < l.fin - 1e-9; t += pas) {
+        var col = l.notes.filter(function (n) { return Math.abs(n.temps - t) < 1e-6; });
+        var larg = col.reduce(function (m, n) { return Math.max(m, String(n.frette).length); }, 1);
+        for (var c = 0; c < 6; c++) {
+          var n = col.filter(function (x) { return x.corde === c + 1; })[0];
+          var txt = n ? String(n.frette) : '';
+          lignes[c] += '-' + txt + new Array(larg - txt.length + 1).join('-');
+        }
+        var fin = Math.round((t + pas - l.debut) * parCol);
+        if (fin % (parMesure * parCol) === 0) for (c = 0; c < 6; c++) lignes[c] += '-|';
+      }
+      return lignes.join('\n');
+    }).join('\n\n');
+  }
+
+  function depuisTexte(texte) {
+    var lignes = String(texte || '').split(/\r?\n/);
+    var re = /^\s*([eBGDAEbgda])\s*[|:]/;
+    var notes = [], t = 0;
+    for (var i = 0; i + 5 < lignes.length; i++) {
+      var bloc = lignes.slice(i, i + 6);
+      if (!bloc.every(function (l) { return re.test(l); })) continue;
+      var corps = bloc.map(function (l) { return l.slice(l.search(/[|:]/) + 1); });
+      var max = corps.reduce(function (m, l) { return Math.max(m, l.length); }, 0);
+      for (var col = 0; col < max; col++) {
+        var trouve = false, saut = 0;
+        for (var c = 0; c < 6; c++) {
+          var ch = corps[c].charAt(col);
+          if (!/\d/.test(ch)) continue;
+          // Un nombre à deux chiffres qui ne commence pas à cette colonne a
+          // déjà été lu à la précédente.
+          if (/\d/.test(corps[c].charAt(col - 1))) continue;
+          var num = ch;
+          if (/\d/.test(corps[c].charAt(col + 1))) { num += corps[c].charAt(col + 1); saut = 1; }
+          var frette = parseInt(num, 10);
+          if (frette > 24) continue;
+          notes.push({ corde: c + 1, frette: frette, temps: t, duree: 0.5, midi: Theorie.midiDeCase(c + 1, frette) });
+          trouve = true;
+        }
+        if (trouve) t += 0.5;
+        col += saut;
+      }
+      i += 5;
+    }
+    return notes;
+  }
+
   global.Tablature = {
-    svg: svg, svgSysteme: svgSysteme, systemes: systemes,
+    svg: svg, svgSysteme: svgSysteme, systemes: systemes, versTexte: versTexte, depuisTexte: depuisTexte,
     duree_totale: duree_totale, jouer: jouer, arreter: arreter, enLecture: enLecture
   };
 })(typeof window !== 'undefined' ? window : globalThis);

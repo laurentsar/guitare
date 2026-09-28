@@ -13,6 +13,9 @@
 
   function detecte() {
     var ua = navigator.userAgent || '';
+    // Un casque VR a un grand écran sans tactile, mais un POINTEUR (rayon du
+    // contrôleur, main) : ce n'est pas une télé, vr.js s'en occupe.
+    if (/OculusBrowser|Quest|Pico|Wolvic/i.test(ua)) return false;
     // Le marqueur fiable est la fonctionnalité leanback annoncée par Android
     // TV dans l'UA ; « SmartTV » couvre les boîtiers tiers.
     if (/Android.*(TV|BRAVIA|AFT)|SmartTV|GoogleTV|CrKey/i.test(ua)) return true;

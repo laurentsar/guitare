@@ -217,6 +217,14 @@
     var c = contexte();
     var osc = c.createOscillator();
     var g = c.createGain();
+    // Enregistré comme une note : les clics du décompte et du métronome de
+    // lecture sont programmés d'avance, « Arrêter » doit les couper aussi.
+    var entree = { src: osc, gain: null, fin: quand + 0.12 };
+    enCours.push(entree);
+    osc.onended = function () {
+      var i = enCours.indexOf(entree);
+      if (i !== -1) enCours.splice(i, 1);
+    };
     osc.frequency.value = accentue ? 1600 : (faible ? 900 : 1200);
     osc.type = 'square';
     g.gain.setValueAtTime(0.0001, quand);
@@ -301,11 +309,19 @@
 
   function silence(v) { suspendu = !!v; }
 
+  // Clic isolé, programmé `retard` secondes plus tard : décompte et métronome
+  // pendant la lecture d'un morceau (qui, lui aussi, est programmé d'avance).
+  function jouerClic(retard, accentue) {
+    var c = contexte();
+    if (!c || suspendu) return;
+    clic(c.currentTime + (retard || 0), !!accentue, false);
+  }
+
   global.Audio5 = {
     pret: pret, volume: volume, silence: silence,
     contexte: contexte,
     jouerFreq: jouerFreq, jouerNote: jouerNote, jouerCase: jouerCase, jouerAccord: jouerAccord,
-    couperTout: couperTout,
+    couperTout: couperTout, jouerClic: jouerClic,
     demarrerMetronome: demarrerMetronome, arreterMetronome: arreterMetronome,
     tempoMetronome: tempoMetronome, metronomeActif: metronomeActif
   };

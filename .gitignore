@@ -6,3 +6,4 @@ android/
 # les clés de signature ne vivent QUE dans ~/app-kit/keys
 *.p12
 *.jks
+__pycache__/

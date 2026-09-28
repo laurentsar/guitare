@@ -24,7 +24,11 @@
     // Quitter un écran coupe ce qu'il faisait : rien de pire qu'un métronome
     // qui continue pendant qu'on lit une leçon.
     if (ecranCourant === 'accordeur' && nom !== 'accordeur') arreterAccordeur();
-    if ((ecranCourant === 'morceau' || ecranCourant === 'editeur') && nom !== ecranCourant) Tablature.arreter();
+    // Morceau ↔ pupitre : même lecture, deux vues — on ne coupe pas.
+    var lecteur = ['morceau', 'pupitre'];
+    if (ecranCourant === 'editeur' && nom !== 'editeur') Tablature.arreter();
+    if (lecteur.indexOf(ecranCourant) !== -1 && lecteur.indexOf(nom) === -1) Tablature.arreter();
+    document.documentElement.classList.toggle('en-pupitre', nom === 'pupitre');
 
     ecranCourant = nom;
     Array.prototype.forEach.call(document.querySelectorAll('.ecran'), function (s) {
@@ -53,7 +57,7 @@
   // Ne tourne que sur les écrans où l'on joue réellement, et s'arrête quand
   // l'app passe en arrière-plan : un compteur qui gonfle tout seul ne veut
   // plus rien dire.
-  var ECRANS_PRATIQUE = ['lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur'];
+  var ECRANS_PRATIQUE = ['lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur', 'pupitre'];
   setInterval(function () {
     if (document.hidden) return;
     if (ECRANS_PRATIQUE.indexOf(ecranCourant) === -1) return;
@@ -643,6 +647,7 @@
     function effacer() {
       Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) { g.classList.remove('en-cours'); });
       majManche(null);
+      pupitre.fin();
     }
     function surligner(note) {
       Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) {
@@ -650,6 +655,7 @@
       });
       if (etat.manche) majManche(note.temps);
       if (window.CasqueVR) CasqueVR.note(note);
+      pupitre.note(note);
     }
     function lancer(premier) {
       Tablature.jouer(p, {
@@ -666,19 +672,155 @@
         surNote: function (n, i) { surligner(n); if (Cast.connecte()) Cast.afficherMorceau(p, i); },
         surFin: function () {
           effacer();
-          if (!etat.boucle || ecranCourant !== 'morceau') { if (window.CasqueVR) CasqueVR.fin(); return; }
-          if (etat.entraineur && etat.pct < 100) { etat.pct = Math.min(100, etat.pct + 5); majTempo(); }
+          if (!etat.boucle || (ecranCourant !== 'morceau' && ecranCourant !== 'pupitre')) { if (window.CasqueVR) CasqueVR.fin(); return; }
+          if (etat.entraineur && etat.pct < 100) { etat.pct = Math.min(100, etat.pct + 5); majTempo(); pupitre.maj(); }
           lancer(false);
         }
       });
     }
-    bJouer.onclick = function () { lancer(true); };
-    bStop.onclick = function () { Tablature.arreter(); effacer(); if (window.CasqueVR) CasqueVR.fin(); };
+    bJouer.onclick = function () { lancer(true); pupitre.maj(); };
+    bStop.onclick = function () { Tablature.arreter(); effacer(); if (window.CasqueVR) CasqueVR.fin(); pupitre.maj(); };
     bMetro.onclick = function () { reglerTempo(tempoEffectif()); aller('metronome'); demarrerMetro(); };
 
     if (window.CasqueVR) CasqueVR.brancher(h, p, { jouer: function () { lancer(true); }, arreter: bStop.onclick });
 
+    // Mode casque : la même lecture, vue en pupitre plein écran.
+    var pupitre = construirePupitre(p, {
+      etat: etat, parMesure: parMesure, nbMesures: nbMesures,
+      tempo: function () { return affiche.textContent; },
+      jouer: bJouer.onclick, arreter: bStop.onclick,
+      moins: function () { moins.onclick(); }, plus: function () { plus.onclick(); },
+      basculer: function (cle) {
+        var b = [].filter.call(opts.children, function (x) { return x.dataset.cle === cle; })[0];
+        if (b) b.click();
+      }
+    });
+    Array.prototype.forEach.call(opts.children, function (b, i) {
+      b.dataset.cle = ['boucle', 'entraineur', 'decompte', 'clic', 'muet', 'manche'][i];
+    });
+    var bPupitre = el('button', 'btn ' + (casqueActif() ? 'primaire ' : '') + 'large', '🥽 Mode casque (pupitre)');
+    bPupitre.onclick = function () { pupitre.ouvrir(); };
+    h.insertBefore(bPupitre, h.children[casqueActif() ? 2 : h.children.length]);
+    pupitreCourant = pupitre;
+
     aller('morceau');
+  }
+
+  function casqueActif() { return document.documentElement.classList.contains('casque'); }
+  var pupitreCourant = null;
+
+  /* Pupitre : la vue « casque ».
+   *
+   * Sur un Quest, une app Android s'affiche comme une fenêtre qui flotte dans
+   * la pièce (réalité mixte) : on voit sa vraie guitare ET la fenêtre. Le
+   * pupitre remplit cette fenêtre avec ce qui sert en jouant, et rien d'autre :
+   * la ligne en cours en très gros, la suivante en dessous (les pages tournent
+   * toutes seules), le manche, et une barre de gros boutons visables au rayon
+   * ou au pincement. Marche aussi sur tablette ou télé, comme lutrin. */
+  function construirePupitre(p, ctl) {
+    var lignes = Tablature.systemes(p, 2);
+    var idx = -1;
+    var hote = $('pupitreVue');
+    var tete, partition, manche, barre, bLecture;
+    var enLecture = false;
+
+    function ligneDe(t) {
+      for (var i = 0; i < lignes.length; i++) if (t >= lignes[i].debut && t < lignes[i].fin) return i;
+      return 0;
+    }
+    function rendreLignes(i) {
+      idx = i;
+      var html = '';
+      [i, i + 1].forEach(function (k, rang) {
+        if (!lignes[k]) return;
+        html += '<div class="pupitre-ligne' + (rang ? ' suivante' : '') + '">' +
+          Tablature.svgSysteme(lignes[k], { parMesure: ctl.parMesure, pxParTemps: 60, interligne: 18 }) + '</div>';
+      });
+      partition.innerHTML = html;
+    }
+    function rendreManche(t) {
+      var pts = t == null ? [] : p.notes.filter(function (n) { return n.temps === t; }).map(function (n) {
+        return { corde: n.corde, frette: n.frette, classe: 'joue', texte: n.doigt ? String(n.doigt) : '' };
+      });
+      var maxCase = p.notes.reduce(function (m, n) { return Math.max(m, n.frette); }, 0);
+      manche.innerHTML = Manche.svg({ cases: Math.max(5, Math.min(12, maxCase + 1)), points: pts });
+    }
+    function bouton(txt, fn, cle) {
+      var b = el('button', 'btn', txt);
+      b.onclick = function () { fn(); maj(); };
+      if (cle) b.dataset.cle = cle;
+      barre.appendChild(b);
+      return b;
+    }
+    function maj() {
+      if (!tete) return;
+      var mesure = idx < 0 ? 1 : Math.floor(lignes[idx].debut / ctl.parMesure) + 1;
+      tete.querySelector('.pupitre-info').textContent = ctl.tempo() + ' · mesure ' + mesure + ' / ' + ctl.nbMesures;
+      bLecture.textContent = enLecture ? '■ Arrêter' : '▶ Jouer';
+      bLecture.classList.toggle('primaire', !enLecture);
+      Array.prototype.forEach.call(barre.querySelectorAll('[data-cle]'), function (b) {
+        b.classList.toggle('actif', !!ctl.etat[b.dataset.cle]);
+      });
+    }
+
+    function ouvrir() {
+      vide(hote);
+      tete = el('div', 'pupitre-tete');
+      var q = el('button', 'btn', '‹ Quitter');
+      q.onclick = function () { aller('morceau'); };
+      tete.appendChild(q);
+      tete.appendChild(el('b', 'pupitre-titre', p.titre));
+      tete.appendChild(el('span', 'pupitre-info'));
+      hote.appendChild(tete);
+      partition = el('div', 'pupitre-partition');
+      hote.appendChild(partition);
+      manche = el('div', 'pupitre-manche');
+      hote.appendChild(manche);
+      barre = el('div', 'pupitre-barre');
+      bouton('−10', ctl.moins);
+      bLecture = bouton('▶ Jouer', function () {
+        if (enLecture) { ctl.arreter(); enLecture = false; } else { ctl.jouer(); enLecture = true; }
+      });
+      bouton('+10', ctl.plus);
+      bouton('🔁 Boucle', function () { ctl.basculer('boucle'); }, 'boucle');
+      bouton('📈 Vitesse', function () { ctl.basculer('entraineur'); }, 'entraineur');
+      bouton('🔇 Muette', function () { ctl.basculer('muet'); }, 'muet');
+      bouton('🥁 Clic', function () { ctl.basculer('clic'); }, 'clic');
+      if (window.CasqueVR && CasqueVR.immersifPossible) {
+        CasqueVR.immersifPossible(p).then(function (libelle) {
+          if (!libelle || !barre) return;
+          bouton(libelle, function () { CasqueVR.immersif(p); });
+        });
+      }
+      hote.appendChild(barre);
+      rendreLignes(ligneDe((ctl.etat.de - 1) * ctl.parMesure));
+      rendreManche(null);
+      maj();
+      aller('pupitre');
+    }
+
+    return {
+      ouvrir: ouvrir,
+      maj: maj,
+      note: function (n) {
+        if (!partition || ecranCourant !== 'pupitre') return;
+        enLecture = true;
+        var i = ligneDe(n.temps);
+        if (i !== idx) rendreLignes(i);
+        Array.prototype.forEach.call(partition.querySelectorAll('.pupitre-ligne:not(.suivante) .tab-note'), function (g) {
+          g.classList.toggle('en-cours', parseFloat(g.dataset.temps) === n.temps);
+        });
+        rendreManche(n.temps);
+        maj();
+      },
+      fin: function () {
+        if (!partition) return;
+        enLecture = false;
+        Array.prototype.forEach.call(partition.querySelectorAll('.tab-note'), function (g) { g.classList.remove('en-cours'); });
+        rendreManche(null);
+        maj();
+      }
+    };
   }
 
   // --------------------------------------------------------------- éditeur
@@ -948,6 +1090,7 @@
     $('regInstrument').value = r.instrument || '';
     $('regObjectif').value = String(r.objectifMinutes);
     $('regTv').value = r.modeTv == null ? 'auto' : (r.modeTv ? 'oui' : 'non');
+    $('regCasque').value = r.modeCasque == null ? 'auto' : (r.modeCasque ? 'oui' : 'non');
     $('regCast').value = r.castAppId || '';
     $('castUrl').textContent = urlRecepteur();
     $('castAide').textContent = Cast.configure()
@@ -956,6 +1099,25 @@
     $('aproposVersion').textContent = 'Version ' + (window.APP_VERSION || '?') +
       ' · ' + Lecons.tous().length + ' leçons · ' + Accords.tous().length + ' accords · ' + Morceaux.tous().length + ' morceaux · ' + Gammes.TYPES.length + ' gammes.';
     if (window.AutoBackup && AutoBackup.mount) AutoBackup.mount($('carteBackup'));
+  }
+
+  /* Lien profond « ?morceau=<id> » (ou « #tab=<json> » pour une tablature
+   * perso, qui n'existe que dans le stockage de l'APK) : c'est ainsi que
+   * l'APK passe la main au navigateur du casque pour la partition immersive. */
+  function ouvrirLienProfond() {
+    try {
+      var id = new URLSearchParams(location.search).get('morceau');
+      var m = /#tab=(.+)$/.exec(location.hash);
+      if (m) {
+        var piece = JSON.parse(decodeURIComponent(m[1]));
+        if (piece && piece.id && Array.isArray(piece.notes)) {
+          piece.perso = true;
+          if (!Store.tablature(piece.id)) Store.sauverTablature(piece);
+          id = piece.id;
+        }
+      }
+      if (id && trouverMorceau(id)) { ouvrirMorceau(id); pupitreCourant.ouvrir(); }
+    } catch (e) { /* lien abîmé : on reste sur l'accueil */ }
   }
 
   function urlRecepteur() {
@@ -993,10 +1155,9 @@
     $('raccourciEditeur').onclick = function () { ouvrirEditeur(null); };
     // Au casque : raccourci vers les morceaux, où se trouve la partition
     // flottante (elle n'a de sens qu'avec quelque chose à lire).
-    if (window.CasqueVR && CasqueVR.estCasque()) {
-      $('raccourciVR').hidden = false;
-      $('raccourciVR').onclick = function () { aller('morceaux'); };
-    }
+    if (window.CasqueVR) CasqueVR.appliquer();
+    $('raccourciVR').hidden = !casqueActif();
+    $('raccourciVR').onclick = function () { aller('morceaux'); };
 
     // Accordeur
     $('btnAccordeur').onclick = basculerAccordeur;
@@ -1050,6 +1211,11 @@
       $('sousTitre').textContent = (i ? i + ' · ' : '') + 'guitare classique · débutant';
     };
     $('regObjectif').onchange = function () { Store.reglage('objectifMinutes', parseInt(this.value, 10)); };
+    $('regCasque').onchange = function () {
+      Store.reglage('modeCasque', this.value === 'auto' ? null : this.value === 'oui');
+      if (window.CasqueVR) CasqueVR.appliquer();
+      $('raccourciVR').hidden = !casqueActif();
+    };
     $('regTv').onchange = function () {
       Store.reglage('modeTv', this.value === 'auto' ? null : this.value === 'oui');
       Tv.appliquer();
@@ -1067,6 +1233,8 @@
     if (Cast.configure()) Cast.chargerSdk();
     $('btnCast').onclick = function () { Cast.connecter(); };
 
+    ouvrirLienProfond();
+
     // Le service worker ne sert qu'à la version web (PWA) : dans l'APK, tout
     // est déjà local.
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
@@ -1078,5 +1246,5 @@
   else init();
 
   // Exposé pour les tests d'interface (jsdom) : aucun autre usage.
-  window.AppGuitare = { aller: aller, ouvrirLecon: ouvrirLecon, ouvrirAccord: ouvrirAccord, ouvrirMorceau: ouvrirMorceau, demarrerOreille: demarrerOreille, ouvrirEditeur: ouvrirEditeur };
+  window.AppGuitare = { aller: aller, ouvrirLecon: ouvrirLecon, ouvrirAccord: ouvrirAccord, ouvrirMorceau: ouvrirMorceau, demarrerOreille: demarrerOreille, ouvrirEditeur: ouvrirEditeur, pupitre: function () { return pupitreCourant; } };
 })();

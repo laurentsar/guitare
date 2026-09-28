@@ -36,13 +36,21 @@ Deux chemins, indépendants :
 
 ## Au casque VR (Meta Quest)
 
-Ouvrir la PWA (`https://laurentsar.github.io/guitare/`) dans le navigateur du
-casque. L'interface grossit pour le rayon du contrôleur ou le pincement de la
-main. Dans un morceau, **🥽 Partition flottante** ouvre une session WebXR en
-réalité mixte : on voit sa vraie guitare à travers le casque, la tablature et
-le manche flottent devant soi et suivent la lecture. Gâchette ou pincement =
-lecture / arrêt, bouton de côté = replacer le panneau devant soi. (L'APK ne
-sert pas au casque : la WebView Android n'a pas WebXR.)
+**Dans l'APK (installée sur le Quest)** : le mode casque s'active tout seul
+(réglable : automatique / toujours / jamais). Sur Horizon OS, une app Android
+flotte dans la pièce en réalité mixte — on voit sa vraie guitare ET la
+fenêtre, ouverte en grand format (1280 × 800 dp, posé par `ci/patch_manifest.py`).
+Dans un morceau, **🥽 Mode casque (pupitre)** remplit la fenêtre avec la ligne
+de tablature en cours en très gros, la suivante en dessous (les pages tournent
+seules), le manche, et de gros boutons (lecture, tempo, boucle, entraîneur,
+guitare muette, clic) visables au rayon ou au pincement.
+
+**Partition immersive** (panneau posé dans l'espace, WebXR) : la WebView de
+l'APK n'a pas WebXR, donc le bouton **🥽 Immersif (navigateur)** du pupitre
+ouvre le même morceau dans le navigateur du casque (lien profond ; une
+tablature perso voyage dans l'URL). La PWA ouverte directement dans le
+navigateur du Quest y a accès sans détour. Gâchette ou pincement = lecture /
+arrêt, bouton de côté = replacer le panneau.
 
 ## Rien n'est téléchargé, rien n'est envoyé
 

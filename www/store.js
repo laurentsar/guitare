@@ -27,6 +27,7 @@
     timbre: 'nylon',
     gaucher: false,
     modeTv: null,        // null = détection automatique
+    modeCasque: null,    // casque VR : null = détection automatique (vr.js)
     castAppId: '',       // récepteur Chromecast personnalisé, voir cast.js
     objectifMinutes: 15,
     vuePartition: 'deux',  // 'portee' | 'tablature' | 'deux'

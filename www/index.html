@@ -130,6 +130,10 @@
     <div id="editeurTab"></div>
   </section>
 
+  <section id="ecran-pupitre" class="ecran">
+    <div id="pupitreVue"></div>
+  </section>
+
   <section id="ecran-oreille" class="ecran">
     <div id="oreilleAccueil"></div>
     <div id="oreilleJeu" hidden></div>
@@ -154,6 +158,13 @@
           <option value="15" selected>15 min</option>
           <option value="20">20 min</option>
           <option value="30">30 min</option>
+        </select>
+      </label>
+      <label class="ligne">Mode casque VR
+        <select id="regCasque">
+          <option value="auto">Automatique</option>
+          <option value="oui">Toujours</option>
+          <option value="non">Jamais</option>
         </select>
       </label>
       <label class="ligne">Mode télévision
@@ -198,7 +209,7 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.7';
+  window.APP_VERSION = '1.8';
   // Mise à jour automatique : update-check.js interroge la dernière release
   // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
   // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.

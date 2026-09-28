@@ -27,9 +27,52 @@
     return /OculusBrowser|Quest|Pico|Wolvic|VR\b/i.test(ua) || /[?&]casque=1/.test(global.location ? location.search : '');
   }
 
+  // Réglage « Mode casque VR » : automatique (détection), toujours, jamais.
+  function actif() {
+    var choix = global.Store ? Store.reglages().modeCasque : null;
+    return choix == null ? estCasque() : !!choix;
+  }
+
   function appliquer() {
-    if (typeof document === 'undefined') return;
-    document.documentElement.classList.toggle('casque', estCasque());
+    if (typeof document === 'undefined') return false;
+    var on = actif();
+    document.documentElement.classList.toggle('casque', on);
+    return on;
+  }
+
+  function dansApk() {
+    return !!(global.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+  }
+
+  var URL_PWA = 'https://laurentsar.github.io/guitare/';
+
+  /* Partition immersive depuis le pupitre. Deux cas :
+   *  - navigateur avec WebXR (PWA dans le navigateur du Quest) : directe ;
+   *  - APK sur un casque : la WebView d'Android n'a PAS WebXR. On passe la
+   *    main au navigateur du casque avec un lien profond vers le même
+   *    morceau (une tablature perso voyage dans l'URL, elle n'existe que
+   *    dans le stockage de l'APK). Capacitor ouvre tout lien externe dans le
+   *    navigateur par défaut, qui sur un Quest est celui du casque.
+   * Renvoie le libellé du bouton, ou null s'il n'y a rien à proposer. */
+  function immersifPossible() {
+    return detecterXR().then(function (mode) {
+      if (mode) return '🥽 Immersif';
+      if (dansApk() && estCasque()) return '🥽 Immersif (navigateur)';
+      return null;
+    });
+  }
+
+  function lienProfond(p) {
+    if (p.perso) return URL_PWA + '#tab=' + encodeURIComponent(JSON.stringify({
+      id: p.id, titre: p.titre, sous_titre: p.sous_titre, niveau: 'perso',
+      tempo: p.tempo, signature: p.signature, description: p.description || '', notes: p.notes
+    }));
+    return URL_PWA + '?morceau=' + encodeURIComponent(p.id);
+  }
+
+  function immersif(p) {
+    if (modeXR && etat.controles) { demarrer(modeXR); return; }
+    if (dansApk()) global.location.href = lienProfond(p);
   }
 
   // Mode immersif disponible : 'immersive-ar' (passthrough) de préférence.
@@ -289,7 +332,8 @@
   appliquer();
 
   global.CasqueVR = {
-    estCasque: estCasque, appliquer: appliquer, detecterXR: detecterXR,
+    estCasque: estCasque, actif: actif, appliquer: appliquer, detecterXR: detecterXR,
+    immersifPossible: immersifPossible, immersif: immersif, lienProfond: lienProfond,
     brancher: brancher, note: note, fin: fin, quitter: quitter, dessiner: dessiner,
     _etat: etat
   };

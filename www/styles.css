@@ -393,3 +393,21 @@ html.casque .btn, html.casque .filtres button { min-height: 52px; padding-left: 
 html.casque .grille-raccourcis { grid-template-columns: repeat(4, 1fr); }
 html.casque .grille-cases .btn { min-height: 56px; }
 html.casque #ecrans { max-width: 1100px; margin: 0 auto; }
+
+/* -------------------------------------------------------------- pupitre
+ * Vue « casque » : la fenêtre flottante du Quest (ou une tablette posée sur
+ * le lutrin) ne montre que ce qui sert en jouant. */
+html.en-pupitre .entete, html.en-pupitre .onglets { display: none; }
+html.en-pupitre body { padding-bottom: 0; }
+#ecran-pupitre { max-width: none; padding: 8px 14px; }
+#pupitreVue { display: flex; flex-direction: column; gap: 10px; min-height: calc(100vh - 16px); }
+.pupitre-tete { display: flex; align-items: center; gap: 14px; }
+.pupitre-titre { font-size: 22px; color: var(--bois); flex: 1; }
+.pupitre-info { color: var(--texte-2); font-size: 17px; }
+.pupitre-partition { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.pupitre-ligne .tab { width: 100%; height: auto; min-width: 0; }
+.pupitre-ligne.suivante { opacity: .4; }
+.pupitre-manche .manche { min-width: 0; }
+.pupitre-barre { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.pupitre-barre .btn { min-height: 60px; min-width: 96px; font-size: 18px; }
+.pupitre-barre .btn.actif { border-color: var(--bois); color: var(--bois); }

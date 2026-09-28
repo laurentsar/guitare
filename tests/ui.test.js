@@ -187,6 +187,41 @@ function verifie(nom, cond, detail) {
   w.CasqueVR._etat.piece = w.Morceaux.get('ode-joie');
   verifie('module casque exposé', typeof w.CasqueVR.brancher === 'function' && typeof w.CasqueVR.note === 'function');
 
+  console.log('\n— Pupitre (mode casque) —');
+  w.AppGuitare.ouvrirMorceau('etude-lam');
+  const bPup = [...$('detailMorceau').querySelectorAll('button')].find((b) => /Mode casque/.test(b.textContent));
+  verifie('bouton « Mode casque » dans le morceau', !!bPup);
+  bPup.click();
+  verifie('pupitre affiché, en-tête et onglets masqués',
+          $('ecran-pupitre').classList.contains('actif') && w.document.documentElement.classList.contains('en-pupitre'));
+  verifie('ligne en cours + ligne suivante', $('pupitreVue').querySelectorAll('.pupitre-ligne').length === 2 &&
+          $('pupitreVue').querySelectorAll('.pupitre-ligne.suivante').length === 1);
+  verifie('manche et barre de commandes', $('pupitreVue').querySelector('.pupitre-manche svg') &&
+          $('pupitreVue').querySelectorAll('.pupitre-barre .btn').length >= 7);
+  const pup = w.AppGuitare.pupitre();
+  const pieceL = w.Morceaux.get('etude-lam');
+  const noteLoin = pieceL.notes.find((n) => n.temps >= 8);
+  pup.note(noteLoin);
+  verifie('les pages tournent : la ligne affichée suit la note', /mesure 3/.test($('pupitreVue').textContent), $('pupitreVue').querySelector('.pupitre-info').textContent);
+  verifie('note en cours allumée dans le pupitre', $('pupitreVue').querySelectorAll('.pupitre-ligne:not(.suivante) .tab-note.en-cours').length >= 1);
+  verifie('et sur le manche', $('pupitreVue').querySelectorAll('.manche-point.joue').length >= 1);
+  const bBoucle = [...$('pupitreVue').querySelectorAll('.pupitre-barre .btn')].find((b) => /Boucle/.test(b.textContent));
+  bBoucle.click();
+  verifie('boucle depuis le pupitre = même réglage que le lecteur', bBoucle.classList.contains('actif') &&
+          [...$('detailMorceau').querySelectorAll('.options-lecture button')].find((b) => /Boucle/.test(b.textContent)).classList.contains('actif'));
+  [...$('pupitreVue').querySelectorAll('button')].find((b) => /Quitter/.test(b.textContent)).click();
+  verifie('quitter revient au morceau et rend l’en-tête', $('ecran-morceau').classList.contains('actif') && !w.document.documentElement.classList.contains('en-pupitre'));
+
+  w.AppGuitare.aller('reglages');
+  $('regCasque').value = 'oui'; $('regCasque').onchange();
+  verifie('réglage « Mode casque : toujours » = classe casque + raccourci', w.document.documentElement.classList.contains('casque') && !$('raccourciVR').hidden);
+  $('regCasque').value = 'auto'; $('regCasque').onchange();
+  verifie('réglage « automatique » = pas de casque sur ce navigateur', !w.document.documentElement.classList.contains('casque'));
+  const lien = w.CasqueVR.lienProfond(w.Store.tablatures()[0]);
+  verifie('lien profond d’une tablature perso : elle voyage dans l’URL', /#tab=/.test(lien) &&
+          JSON.parse(decodeURIComponent(lien.split('#tab=')[1])).notes.length === w.Store.tablatures()[0].notes.length);
+  verifie('lien profond d’un morceau intégré', w.CasqueVR.lienProfond(pieceL) === 'https://laurentsar.github.io/guitare/?morceau=etude-lam');
+
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
   w.AppGuitare.demarrerOreille('cordes');

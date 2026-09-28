@@ -74,5 +74,19 @@ if "adjustResize" not in s:
     s = re.sub(r"(<activity\b)", r'\1\n            android:windowSoftInputMode="adjustResize"', s, count=1)
     print("adjustResize posé sur l'activité")
 
+# --- Casque Meta Quest -------------------------------------------------------
+# Sur Horizon OS, une app Android s'ouvre en fenêtre flottante dans la pièce.
+# Sans taille par défaut, elle prend un format téléphone étroit : le pupitre
+# (mode casque) veut une fenêtre large, où la ligne de tablature se lit à
+# distance. Balise <layout> standard d'Android (fenêtres libres), ignorée par
+# un téléphone ou une télé.
+if "<layout" not in s:
+    s2 = re.sub(r'(<activity\b[^>]*>)',
+                r'\1\n            <layout android:defaultWidth="1280dp" android:defaultHeight="800dp" android:gravity="center" />',
+                s, count=1)
+    if s2 != s:
+        s = s2
+        print("taille de fenêtre par défaut (casque) posée")
+
 open(MF, "w").write(s)
 print("manifeste à jour")

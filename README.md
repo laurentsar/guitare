@@ -12,7 +12,7 @@ le téléviseur.
 | **Accordeur** | Détection de hauteur au micro (autocorrélation), affichage en centièmes, six cordes suivies une par une. |
 | **Métronome** | Tempo, mesure, subdivisions, battement du tempo à la main, accent sur le premier temps. |
 | **Accords** | 23 positions avec diagramme, doigté, notes produites, barrés signalés, écoute grattée / arpégée / corde par corde. |
-| **Morceaux** | 8 pièces en tablature, jouées par l'app avec la note en cours surlignée : deux exercices, quatre mélodies du domaine public, deux études d'arpèges. |
+| **Morceaux** | 30 pièces en tablature et portée, jouées par l'app avec la note en cours surlignée : deux exercices, quatre mélodies du domaine public, deux études d'arpèges, et **22 pièces du répertoire** (Bach/Petzold, Sor, Giuliani, Carulli, Carcassi, Mertz, Coste, Sanz, Horetzky…) issues du Mutopia Project. |
 | **Lecteur** | Inspiré de Guitar Pro 8 : boucle sur une section (mesures A → B), entraîneur de vitesse (60 % → 100 %, +5 % par tour), décompte, clic, capodastre, guitare muette (on joue seul, l'app tient le temps), manche virtuel qui suit la lecture, portée + tablature, export en tablature texte. |
 | **Éditeur** | Écrire ses propres tablatures (corde, case, durée, accords), ou coller une tab texte trouvée sur internet ; elles se jouent dans le même lecteur. |
 | **Gammes** | 7 gammes (majeure, mineures, pentatoniques, blues, chromatique) sur les 12 tonalités, affichées sur tout le manche et jouées. |
@@ -52,13 +52,33 @@ tablature perso voyage dans l'URL). La PWA ouverte directement dans le
 navigateur du Quest y a accès sans détour. Gâchette ou pincement = lecture /
 arrêt, bouton de côté = replacer le panneau.
 
+## Répertoire Mutopia
+
+Les niveaux 3 à 5 viennent du [Mutopia Project](https://www.mutopiaproject.org),
+partitions libres. Seules les licences **domaine public** et **CC-BY** sont
+retenues (le ShareAlike imposerait sa licence à l'app) ; la fiche de chaque
+morceau crédite l'éditeur de la partition, la licence et renvoie à la source.
+
+`tools/mutopia_import.py` lit le MIDI de chaque pièce (hauteurs, durées),
+corrige l'octave des partitions écrites sans le « 8 » de la clé de guitare,
+recale les anacrouses, puis **choisit la corde et la case de chaque note** par
+programmation dynamique : main qui couvre quatre cases sans bouger, écart ≤ 4,
+positions basses et cordes à vide préférées, basses tenues lâchées quand la
+mélodie a besoin de leur corde. Les tests revérifient chaque hauteur contre la
+partition, l'absence de deux notes sur une même corde et l'écart de la main.
+
+Pour ajouter une pièce : télécharger son `.mid` et son `.ly` (liste et liens
+dans `tools/mutopia_selection.json`), l'ajouter à `PIECES` dans le script, puis
+`python3 tools/mutopia_import.py <dossier> > www/repertoire.js`.
+
 ## Rien n'est téléchargé, rien n'est envoyé
 
 Tous les sons sont **synthétisés** (Karplus-Strong pour la corde pincée,
 oscillateur pour le métronome) : pas un octet d'échantillon audio, donc pas de
 licence à traîner et une APK légère. L'accordeur analyse le micro **sur
-l'appareil** ; aucun flux ne sort. Les morceaux sont soit du domaine public
-(traditionnel, Beethoven), soit écrits pour cette app.
+l'appareil** ; aucun flux ne sort. Les morceaux sont du domaine public
+(traditionnel, Beethoven), écrits pour cette app, ou issus du Mutopia Project
+(domaine public / CC-BY, crédités).
 
 ## Développement
 

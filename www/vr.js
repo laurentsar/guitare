@@ -160,7 +160,7 @@
     var t = etat.note ? etat.note.temps : 0;
     var ligne = lignes.filter(function (l) { return t >= l.debut && t < l.fin; })[0] || lignes[0];
     if (!ligne) return;
-    var parMesure = p.signature ? p.signature[0] : 4;
+    var parMesure = Tablature.noiresParMesure(p);
     var inter = h / 5.6, y0 = y + inter * 0.3;
     var gauche = x + 70, px = (w - 80) / (ligne.fin - ligne.debut);
     g.strokeStyle = '#6B7890'; g.lineWidth = 2;

@@ -69,14 +69,20 @@
       var xq = versLeBas ? x - 5 : x + 5;
       var yq = versLeBas ? y + 26 : y - 26;
       s += '<line x1="' + xq + '" y1="' + y + '" x2="' + xq + '" y2="' + yq + '" class="portee-trait"/>';
-      if (duree <= 0.5) {
-        // Crochet de croche : une courbe, pas une ligature — les ligatures
-        // demanderaient de regrouper les croches par temps, et une croche
-        // isolée reste juste avec un crochet.
-        s += '<path d="M' + xq + ' ' + yq + ' q 9 4 8 14" class="portee-trait"/>';
+      // Crochet : une courbe, pas une ligature — les ligatures demanderaient
+      // de regrouper les croches par temps, et une croche isolée reste juste
+      // avec un crochet. Deux crochets pour une double croche.
+      var pointee = [0.75, 1.5, 3].indexOf(duree) !== -1;
+      var base = pointee ? duree / 1.5 : duree;
+      if (base < 1) {
+        var sens = versLeBas ? -1 : 1;
+        s += '<path d="M' + xq + ' ' + yq + ' q 9 ' + (4 * sens) + ' 8 ' + (14 * sens) + '" class="portee-trait"/>';
+        if (base <= 0.25 + 1e-6) {
+          s += '<path d="M' + xq + ' ' + (yq + 7 * sens) + ' q 9 ' + (4 * sens) + ' 8 ' + (14 * sens) + '" class="portee-trait"/>';
+        }
       }
     }
-    if (duree === 1.5 || duree === 3) {
+    if ([0.75, 1.5, 3].indexOf(duree) !== -1) {
       s += '<circle cx="' + (x + 9) + '" cy="' + (y - 2) + '" r="1.8" class="portee-tete"/>';
     }
     return s;
@@ -137,7 +143,7 @@
 
   function svg(piece, opts) {
     opts = opts || {};
-    var parMesure = piece.signature ? piece.signature[0] : 4;
+    var parMesure = Tablature.noiresParMesure(piece);
     var lignes = Tablature.systemes(piece, opts.mesuresParLigne || 2);
     return lignes.map(function (l, i) {
       return '<div class="portee-ligne-bloc">' + svgSysteme(l, {

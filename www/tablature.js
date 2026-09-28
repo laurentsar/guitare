@@ -12,6 +12,33 @@
 (function (global) {
   'use strict';
 
+  /* Durée d'une mesure EN NOIRES : 4/4 → 4, 3/8 → 1,5, 6/8 → 3, 2/2 → 4.
+   * Tout le modèle compte en noires ; le chiffrage n'est qu'un affichage. */
+  function noiresParMesure(piece) {
+    var s = piece && piece.signature;
+    return s ? s[0] * 4 / s[1] : 4;
+  }
+
+  /* Mise en page selon la densité : un morceau en doubles croches a besoin
+   * de plus de place par temps, sinon les chiffres se chevauchent ; et si
+   * deux mesures ne tiennent plus en largeur, on passe à une par ligne. */
+  function miseEnPage(piece) {
+    // Le plus petit écart FRÉQUENT entre deux attaques : quelques petites
+    // notes d'ornement ne doivent pas étirer toute la partition.
+    var temps = piece.notes.map(function (n) { return n.temps; }).sort(function (a, b) { return a - b; });
+    var comptes = {}, total = 0;
+    for (var i = 1; i < temps.length; i++) {
+      var d = Math.round((temps[i] - temps[i - 1]) * 48) / 48;
+      if (d > 0) { comptes[d] = (comptes[d] || 0) + 1; total++; }
+    }
+    var ecart = 1;
+    Object.keys(comptes).forEach(function (d) {
+      if (comptes[d] >= total * 0.08 && +d < ecart) ecart = +d;
+    });
+    var px = Math.max(46, Math.ceil(19 / ecart));
+    return { pxParTemps: px, mesuresParLigne: noiresParMesure(piece) * px * 2 > 760 ? 1 : 2 };
+  }
+
   function duree_totale(piece) {
     return piece.notes.reduce(function (m, n) { return Math.max(m, n.temps + (n.duree || 1)); }, 0);
   }
@@ -20,7 +47,7 @@
   // tablature qui déborde en largeur est illisible sur un téléphone, et
   // couper au milieu d'une mesure désoriente autant qu'une phrase coupée.
   function systemes(piece, mesuresParLigne) {
-    var parMesure = piece.signature ? piece.signature[0] : 4;
+    var parMesure = noiresParMesure(piece);
     var total = duree_totale(piece);
     var nbMesures = Math.ceil(total / parMesure);
     var lignes = [];
@@ -74,7 +101,7 @@
 
   function svg(piece, opts) {
     opts = opts || {};
-    var parMesure = piece.signature ? piece.signature[0] : 4;
+    var parMesure = noiresParMesure(piece);
     var lignes = systemes(piece, opts.mesuresParLigne || 2);
     return lignes.map(function (l) {
       return '<div class="tab-ligne">' + svgSysteme(l, {
@@ -109,7 +136,7 @@
     arreter();
     var tempo = opts.tempo || piece.tempo || 70;
     var sec = 60 / tempo;
-    var parMesure = piece.signature ? piece.signature[0] : 4;
+    var parMesure = noiresParMesure(piece);
     var de = opts.de || 0;
     var a = opts.a == null ? duree_totale(piece) : opts.a;
     var capo = opts.capo || 0;
@@ -121,11 +148,11 @@
     lecture.surFin = opts.surFin || null;
 
     for (var k = 0; k < decompte; k++) {
-      Audio5.jouerClic(k * sec, k % parMesure === 0);
+      Audio5.jouerClic(k * sec, k === 0);
     }
     if (opts.metronome) {
       for (var t = Math.ceil(de); t < a; t++) {
-        Audio5.jouerClic(avance + (t - de) * sec, t % parMesure === 0);
+        Audio5.jouerClic(avance + (t - de) * sec, Math.abs(t / parMesure - Math.round(t / parMesure)) < 1e-6);
       }
     }
 
@@ -183,7 +210,7 @@
   var LETTRES = ['e', 'B', 'G', 'D', 'A', 'E'];
 
   function versTexte(piece, mesuresParLigne) {
-    var parMesure = piece.signature ? piece.signature[0] : 4;
+    var parMesure = noiresParMesure(piece);
     var pas = piece.notes.some(function (n) { return (n.temps * 2) % 1 !== 0; }) ? 0.25 : 0.5;
     var parCol = Math.round(1 / pas);
     return systemes(piece, mesuresParLigne || 4).map(function (l) {
@@ -236,7 +263,7 @@
   }
 
   global.Tablature = {
-    svg: svg, svgSysteme: svgSysteme, systemes: systemes, versTexte: versTexte, depuisTexte: depuisTexte,
+    svg: svg, svgSysteme: svgSysteme, systemes: systemes, noiresParMesure: noiresParMesure, miseEnPage: miseEnPage, versTexte: versTexte, depuisTexte: depuisTexte,
     duree_totale: duree_totale, jouer: jouer, arreter: arreter, enLecture: enLecture
   };
 })(typeof window !== 'undefined' ? window : globalThis);

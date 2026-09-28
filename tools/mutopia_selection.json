@@ -1,0 +1,252 @@
+{
+ "46": {
+  "base": "anna-magdalena-04-guitar-tab",
+  "mid": "https://www.mutopiaproject.org/ftp/BachJS/BWVAnh114/anna-magdalena-04-guitar-tab/anna-magdalena-04-guitar-tab.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/BachJS/BWVAnh114/anna-magdalena-04-guitar-tab/anna-magdalena-04-guitar-tab.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=695",
+  "maintainer": "Yannick KIRSCHHOFFER",
+  "txt": "Menuet in G by J. S. Bach (1685–1750) BWV Anh. 114 for Guitar Baroque Mutopia Public Domain More Information 2013/01/06 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "371": {
+  "base": "Greensleaves",
+  "mid": "https://www.mutopiaproject.org/ftp/Traditional/Greensleaves/Greensleaves.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/Traditional/Greensleaves/Greensleaves.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=109",
+  "maintainer": "Aaron Fontaine",
+  "txt": "Greensleaves Traditional for Lute, Guitar, Vihuela Renaissance Unknown Public Domain More Information 2013/03/23 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "90": {
+  "base": "guitar-skole-no-01",
+  "mid": "https://www.mutopiaproject.org/ftp/CarulliF/guitar-skole-no-01/guitar-skole-no-01.mid",
+  "ly": null,
+  "lyzip": "https://www.mutopiaproject.org/ftp/CarulliF/guitar-skole-no-01/guitar-skole-no-01-lys.zip",
+  "lic": "Creative Commons Attribution 4.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1656",
+  "maintainer": "Louie van Bommel",
+  "txt": "Guitar-Skole no. 1 : Waltz, op. 241, no 1 by F. Carulli (1770–1841) for Guitar Classical Guitar-Skole af A. Eggers, The Royal Library (Det Kongelige Bibliotek), Copenhagen, Denmark Creative Commons Attribution 4.0 More Information 2018/12/04 Download: .ly files (zipped) .mid file Preview image Appro"
+ },
+ "91": {
+  "base": "guitar-skole-no-06",
+  "mid": "https://www.mutopiaproject.org/ftp/CarulliF/guitar-skole-no-06/guitar-skole-no-06.mid",
+  "ly": null,
+  "lyzip": "https://www.mutopiaproject.org/ftp/CarulliF/guitar-skole-no-06/guitar-skole-no-06-lys.zip",
+  "lic": "Creative Commons Attribution 4.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1660",
+  "maintainer": "Louie van Bommel",
+  "txt": "Guitar-Skole no. 6 : Waltz, op. 241, no. 4 by F. Carulli (1770–1841) for Guitar Classical Guitar-Skole af A. Eggers, The Royal Library (Det Kongelige Bibliotek), Copenhagen, Denmark Creative Commons Attribution 4.0 More Information 2018/12/04 Download: .ly files (zipped) .mid file Preview image Appr"
+ },
+ "92": {
+  "base": "guitar-skole-no-08",
+  "mid": "https://www.mutopiaproject.org/ftp/CarulliF/guitar-skole-no-08/guitar-skole-no-08.mid",
+  "ly": null,
+  "lyzip": "https://www.mutopiaproject.org/ftp/CarulliF/guitar-skole-no-08/guitar-skole-no-08-lys.zip",
+  "lic": "Creative Commons Attribution 4.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1662",
+  "maintainer": "Louie van Bommel",
+  "txt": "Guitar-Skole no. 8 : Andantino, Andante, op. 241, no. 5 by F. Carulli (1770–1841) for Guitar Classical Guitar-Skole af A. Eggers, The Royal Library (Det Kongelige Bibliotek), Copenhagen, Denmark Creative Commons Attribution 4.0 More Information 2018/12/04 Download: .ly files (zipped) .mid file Previ"
+ },
+ "106": {
+  "base": "giuliani-op50n01",
+  "mid": "https://www.mutopiaproject.org/ftp/GiulianiM/O50/giuliani-op50n01/giuliani-op50n01.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/GiulianiM/O50/giuliani-op50n01/giuliani-op50n01.ly",
+  "lyzip": null,
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1329",
+  "maintainer": "Stephen Rhen",
+  "txt": "Opus 50 No. 1 by M. Giuliani (1781–1829) Op. 50 for Guitar Classical Statens musikbibliotek - The Music Library of Sweden Creative Commons Attribution 3.0 More Information 2008/03/05 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (g"
+ },
+ "107": {
+  "base": "giuliani-op50n02",
+  "mid": "https://www.mutopiaproject.org/ftp/GiulianiM/O50/giuliani-op50n02/giuliani-op50n02.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/GiulianiM/O50/giuliani-op50n02/giuliani-op50n02.ly",
+  "lyzip": null,
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1330",
+  "maintainer": "Stephen Rhen",
+  "txt": "Opus 50 No. 2 by M. Giuliani (1781–1829) Op. 50 for Guitar Classical Statens musikbibliotek - The Music Library of Sweden Creative Commons Attribution 3.0 More Information 2008/03/05 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (g"
+ },
+ "108": {
+  "base": "giuliani-op50n03",
+  "mid": "https://www.mutopiaproject.org/ftp/GiulianiM/O50/giuliani-op50n03/giuliani-op50n03.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/GiulianiM/O50/giuliani-op50n03/giuliani-op50n03.ly",
+  "lyzip": null,
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1331",
+  "maintainer": "Stephen Rhen",
+  "txt": "Opus 50 No. 3 by M. Giuliani (1781–1829) Op. 50 for Guitar Classical Statens musikbibliotek - The Music Library of Sweden Creative Commons Attribution 3.0 More Information 2008/03/05 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (g"
+ },
+ "109": {
+  "base": "giuliani-op50n04",
+  "mid": "https://www.mutopiaproject.org/ftp/GiulianiM/O50/giuliani-op50n04/giuliani-op50n04.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/GiulianiM/O50/giuliani-op50n04/giuliani-op50n04.ly",
+  "lyzip": null,
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1332",
+  "maintainer": "Stephen Rhen",
+  "txt": "Opus 50 No. 4 by M. Giuliani (1781–1829) Op. 50 for Guitar Classical Statens musikbibliotek - The Music Library of Sweden Creative Commons Attribution 3.0 More Information 2008/03/05 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (g"
+ },
+ "364": {
+  "base": "guitar-skole-no-02",
+  "mid": "https://www.mutopiaproject.org/ftp/SorF/guitar-skole-no-02/guitar-skole-no-02.mid",
+  "ly": null,
+  "lyzip": "https://www.mutopiaproject.org/ftp/SorF/guitar-skole-no-02/guitar-skole-no-02-lys.zip",
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1645",
+  "maintainer": "Louie van Bommel",
+  "txt": "Guitar-Skole no. 2 : Andante, op. 35, no. 1 by F. Sor (1778–1839) for Guitar Classical Guitar-Skole af A. Eggers, The Royal Library (Det Kongelige Bibliotek), Copenhagen, Denmark Creative Commons Attribution 3.0 More Information 2009/06/08 Download: .ly files (zipped) .mid file Preview image Appropr"
+ },
+ "365": {
+  "base": "guitar-skole-no-03",
+  "mid": "https://www.mutopiaproject.org/ftp/SorF/guitar-skole-no-03/guitar-skole-no-03.mid",
+  "ly": null,
+  "lyzip": "https://www.mutopiaproject.org/ftp/SorF/guitar-skole-no-03/guitar-skole-no-03-lys.zip",
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1657",
+  "maintainer": "Louie van Bommel",
+  "txt": "Guitar-Skole no. 3 : Allegretto, op. 44, no. 2 by F. Sor (1778–1839) for Guitar Classical Guitar-Skole af A. Eggers, The Royal Library (Det Kongelige Bibliotek), Copenhagen, Denmark Creative Commons Attribution 3.0 More Information 2009/06/08 Download: .ly files (zipped) .mid file Preview image Appr"
+ },
+ "366": {
+  "base": "guitar-skole-no-18",
+  "mid": "https://www.mutopiaproject.org/ftp/SorF/guitar-skole-no-18/guitar-skole-no-18.mid",
+  "ly": null,
+  "lyzip": "https://www.mutopiaproject.org/ftp/SorF/guitar-skole-no-18/guitar-skole-no-18-lys.zip",
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1672",
+  "maintainer": "Louie van Bommel",
+  "txt": "Guitar-Skole no. 18 : Landler by F. Sor (1778–1839) for Guitar Classical Guitar-Skole af A. Eggers, The Royal Library (Det Kongelige Bibliotek), Copenhagen, Denmark Creative Commons Attribution 3.0 More Information 2009/06/08 Download: .ly files (zipped) .mid file Preview image Appropriate FTP area "
+ },
+ "97": {
+  "base": "guitar-skole-no-10",
+  "mid": "https://www.mutopiaproject.org/ftp/CosteN/guitar-skole-no-10/guitar-skole-no-10.mid",
+  "ly": null,
+  "lyzip": "https://www.mutopiaproject.org/ftp/CosteN/guitar-skole-no-10/guitar-skole-no-10-lys.zip",
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1664",
+  "maintainer": "Louie van Bommel",
+  "txt": "Guitar-Skole no. 10 : Menuett, fra det 17de Aarhundrede by N. Coste (1805–1883) for Guitar Classical Guitar-Skole af A. Eggers, The Royal Library (Det Kongelige Bibliotek), Copenhagen, Denmark Creative Commons Attribution 3.0 More Information 2009/06/08 Download: .ly files (zipped) .mid file Preview"
+ },
+ "278": {
+  "base": "guitar-skole-no-04",
+  "mid": "https://www.mutopiaproject.org/ftp/MertzJK/guitar-skole-no-04/guitar-skole-no-04.mid",
+  "ly": null,
+  "lyzip": "https://www.mutopiaproject.org/ftp/MertzJK/guitar-skole-no-04/guitar-skole-no-04-lys.zip",
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1658",
+  "maintainer": "Louie van Bommel",
+  "txt": "Guitar-Skole no. 4 : Andante by J. K. Mertz (1806–1856) for Guitar Classical Guitar-Skole af A. Eggers, The Royal Library (Det Kongelige Bibliotek), Copenhagen, Denmark Creative Commons Attribution 3.0 More Information 2009/06/08 Download: .ly files (zipped) .mid file Preview image Appropriate FTP a"
+ },
+ "279": {
+  "base": "guitar-skole-no-05",
+  "mid": "https://www.mutopiaproject.org/ftp/MertzJK/guitar-skole-no-05/guitar-skole-no-05.mid",
+  "ly": null,
+  "lyzip": "https://www.mutopiaproject.org/ftp/MertzJK/guitar-skole-no-05/guitar-skole-no-05-lys.zip",
+  "lic": "Creative Commons Attribution 3.0",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1659",
+  "maintainer": "Louie van Bommel",
+  "txt": "Guitar-Skole no. 5 : Andantino by J. K. Mertz (1806–1856) for Guitar Classical Guitar-Skole af A. Eggers, The Royal Library (Det Kongelige Bibliotek), Copenhagen, Denmark Creative Commons Attribution 3.0 More Information 2009/06/08 Download: .ly files (zipped) .mid file Preview image Appropriate FTP"
+ },
+ "214": {
+  "base": "horetzky21",
+  "mid": "https://www.mutopiaproject.org/ftp/HoretzkyF/horetzky21/horetzky21.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/HoretzkyF/horetzky21/horetzky21.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1111",
+  "maintainer": "Stan Sanderson",
+  "txt": "Nº. 21. Au Clair De la Lune. by F. Horetzky (1796–1870) for Classical Guitar unk Classical Boije collection #268 Public Domain More Information 2007/11/10 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "237": {
+  "base": "horetzky44",
+  "mid": "https://www.mutopiaproject.org/ftp/HoretzkyF/horetzky44/horetzky44.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/HoretzkyF/horetzky44/horetzky44.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1141",
+  "maintainer": "Stan Sanderson",
+  "txt": "Nº. 44. Il Pleut, Il Pleut, Bergère. by F. Horetzky (1796–1870) for Classical Guitar unk Classical Boije collection #268 Public Domain More Information 2007/11/17 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf "
+ },
+ "199": {
+  "base": "horetzky6",
+  "mid": "https://www.mutopiaproject.org/ftp/HoretzkyF/horetzky6/horetzky6.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/HoretzkyF/horetzky6/horetzky6.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1095",
+  "maintainer": "Stan Sanderson",
+  "txt": "Nº. 6. Un Noel. by F. Horetzky (1796–1870) for Classical Guitar unk Classical Boije collection #268 Public Domain More Information 2007/11/04 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "255": {
+  "base": "SixStudiesA",
+  "mid": "https://www.mutopiaproject.org/ftp/KnjzeF/SixStudiesA/SixStudiesA.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/KnjzeF/SixStudiesA/SixStudiesA.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1058",
+  "maintainer": "Stan Sanderson",
+  "txt": "Six Progressive Studies: No. I by F. Knjze (1784–1840) for Classical Guitar unk Classical Boije collection #276 Public Domain More Information 2007/10/14 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "62": {
+  "base": "carcassi-op60-01",
+  "mid": "https://www.mutopiaproject.org/ftp/CarcassiM/O60/carcassi-op60-01/carcassi-op60-01.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/CarcassiM/O60/carcassi-op60-01/carcassi-op60-01.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=13",
+  "maintainer": "Jeff Covey",
+  "txt": "Etude 1 by M. Carcassi (1792–1853) O 60 for Guitar 19th C. Classical Unknown Public Domain More Information 2015/08/18 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "64": {
+  "base": "carcassi-op60-03",
+  "mid": "https://www.mutopiaproject.org/ftp/CarcassiM/O60/carcassi-op60-03/carcassi-op60-03.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/CarcassiM/O60/carcassi-op60-03/carcassi-op60-03.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=14",
+  "maintainer": "Jeff Covey",
+  "txt": "Etude 3 by M. Carcassi (1792–1853) O 60 for Guitar 19th C. Classical Mayence, B. Schott's Söhne Public Domain More Information 2015/08/18 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "286": {
+  "base": "mertz_etude",
+  "mid": "https://www.mutopiaproject.org/ftp/MertzJK/mertz_etude/mertz_etude.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/MertzJK/mertz_etude/mertz_etude.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=111",
+  "maintainer": "Emre Akbas",
+  "txt": "Etude in A minor by J. K. Mertz (1806–1856) for Guitar Classical Unknown Public Domain More Information 2014/02/23 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "291": {
+  "base": "sanz-1",
+  "mid": "https://www.mutopiaproject.org/ftp/SanzG/sanz-1/sanz-1.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/SanzG/sanz-1/sanz-1.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=380",
+  "maintainer": "Stan Sanderson",
+  "txt": "Preludio by G. Sanz (1640–1710) for Guitar Classical Not Known Public Domain More Information 2014/12/14 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "376": {
+  "base": "SpanishFandango1882",
+  "mid": "https://www.mutopiaproject.org/ftp/WorrallH/SpanishFandango1882/SpanishFandango1882.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/WorrallH/SpanishFandango1882/SpanishFandango1882.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=2036",
+  "maintainer": "David McNamara",
+  "txt": "Spanish Fandango by H. Worrall (1825–1902) for Guitar 1882 Classical J. Church & Co. version, 1882 Public Domain More Information 2015/07/23 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gzipped) Letter .pdf file"
+ },
+ "369": {
+  "base": "claro-de-luna",
+  "mid": "https://www.mutopiaproject.org/ftp/TarregaF/claro-de-luna/claro-de-luna.mid",
+  "ly": "https://www.mutopiaproject.org/ftp/TarregaF/claro-de-luna/claro-de-luna.ly",
+  "lyzip": null,
+  "lic": "Public Domain",
+  "info": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=2074",
+  "maintainer": "Jeffrey Olson",
+  "txt": "Claro de Luna (Beethoven's Moonlight Sonata) by F. Tarrega (1852–1909) for Guitar c.1885 Classical Madrid: Ildefonso Alier, n.d. Plate 5754 Public Domain More Information 2015/12/03 Download: .ly file .mid file Preview image Appropriate FTP area A4 .ps file (gzipped) A4 .pdf file Letter .ps file (gz"
+ }
+}

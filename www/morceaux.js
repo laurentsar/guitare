@@ -217,6 +217,25 @@
     ])
   });
 
+  // --- Répertoire du Mutopia Project ----------------------------------------
+  /* Vraies pièces du répertoire (Sor, Giuliani, Carulli, Carcassi, Mertz…),
+   * importées par tools/mutopia_import.py depuis les partitions libres du
+   * Mutopia Project. Le placement sur le manche est calculé par l'outil ; les
+   * hauteurs viennent de la partition et sont revérifiées par test. */
+  (global.REPERTOIRE_MUTOPIA || []).forEach(function (r) {
+    var notes = [];
+    for (var i = 0; i < r.notes.length; i += 5) {
+      notes.push({ temps: r.notes[i], corde: r.notes[i + 1], frette: r.notes[i + 2], duree: r.notes[i + 3], midi: r.notes[i + 4] });
+    }
+    ajoute({
+      id: r.id, titre: r.titre,
+      sous_titre: r.compositeur + (r.oeuvre ? ' · ' + r.oeuvre : ''),
+      niveau: r.niveau, tempo: r.tempo, tempoOriginal: r.tempoOriginal,
+      signature: r.signature, description: r.description,
+      source: r.source, notes: notes
+    });
+  });
+
   function tous() { return PIECES.slice(); }
   function get(id) { for (var i = 0; i < PIECES.length; i++) if (PIECES[i].id === id) return PIECES[i]; return null; }
 

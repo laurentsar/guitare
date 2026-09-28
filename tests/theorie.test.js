@@ -43,7 +43,7 @@ ctx.AudioContext = function () {
   this.resume = () => {};
 };
 
-['theorie.js', 'accords.js', 'tablature.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js']
+['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
 const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes } = ctx;
@@ -122,7 +122,9 @@ console.log('\n— Morceaux —');
 Morceaux.tous().forEach(p => {
   verifie(p.id + ' : chaque note correspond à sa corde/case',
           p.notes.every(n => !n.midi || n.midi === Theorie.midiDeCase(n.corde, n.frette)));
-  verifie(p.id + ' : rien au-delà de la 5e case (première position)',
+  // Le répertoire Mutopia monte parfois plus haut, et c'est voulu : il est
+  // contrôlé à part plus bas. Ici, les morceaux écrits pour l'app.
+  if (!p.source) verifie(p.id + ' : rien au-delà de la 5e case (première position)',
           p.notes.every(n => n.frette >= 0 && n.frette <= 5),
           p.notes.filter(n => n.frette > 5).map(n => n.frette).join(','));
   verifie(p.id + ' : durées et temps positifs',
@@ -340,6 +342,56 @@ console.log('\n— Lecteur —');
   Tablature.arreter();
   verifie('guitare muette : aucune note jouée', joue.length === 0);
   Audio5.jouerNote = avant; Audio5.jouerClic = clic;
+}
+
+console.log('\n— Répertoire Mutopia —');
+{
+  const rep = Morceaux.tous().filter((p) => p.source);
+  verifie('22 pièces importées', rep.length === 22, rep.length);
+  verifie('identifiants uniques', new Set(Morceaux.tous().map((p) => p.id)).size === Morceaux.tous().length);
+  verifie('licences : domaine public ou CC-BY seulement (pas de ShareAlike)',
+          rep.every((p) => /^(Public Domain|Creative Commons Attribution \d\.\d)$/.test(p.source.licence)),
+          rep.filter((p) => !/^(Public Domain|Creative Commons Attribution \d\.\d)$/.test(p.source.licence)).map((p) => p.id).join(','));
+  verifie('CC-BY : l’éditeur de la partition est crédité', rep.every((p) => p.source.licence === 'Public Domain' || p.source.copiste));
+  verifie('chaque pièce renvoie à sa fiche Mutopia', rep.every((p) => /^https:\/\/www\.mutopiaproject\.org\/cgibin\/piece-info\.cgi\?id=\d+$/.test(p.source.url)));
+  const mauvaises = [];
+  rep.forEach((p) => p.notes.forEach((n) => { if (Theorie.midiDeCase(n.corde, n.frette) !== n.midi) mauvaises.push(p.id + '@' + n.temps); }));
+  verifie('chaque case jouée donne la hauteur de la partition', mauvaises.length === 0, mauvaises.slice(0, 5).join(','));
+  verifie('toutes les cases entre 0 et 12, cordes 1 à 6',
+          rep.every((p) => p.notes.every((n) => n.frette >= 0 && n.frette <= 12 && n.corde >= 1 && n.corde <= 6)));
+  verifie('deux notes attaquées ensemble ne sont jamais sur la même corde',
+          rep.every((p) => {
+            const par = {};
+            p.notes.forEach((n) => { (par[n.temps] = par[n.temps] || []).push(n.corde); });
+            return Object.values(par).every((c) => new Set(c).size === c.length);
+          }));
+  verifie('une corde ne joue jamais deux notes à la fois (les basses tenues sont lâchées à temps)',
+          rep.every((p) => [...new Set(p.notes.map((n) => n.temps))].every((t) => {
+            const c = p.notes.filter((n) => n.temps <= t && t < n.temps + n.duree - 1e-6).map((n) => n.corde);
+            return new Set(c).size === c.length;
+          })));
+  verifie('accords jouables : écart de main de 4 cases au plus à chaque attaque',
+          rep.every((p) => {
+            const par = {};
+            p.notes.forEach((n) => { if (n.frette > 0) (par[n.temps] = par[n.temps] || []).push(n.frette); });
+            return Object.values(par).every((f) => Math.max(...f) - Math.min(...f) <= 4);
+          }));
+  verifie('pièces faciles (niveau 3) en première position (case ≤ 5), sauf le Menuet et Bergère',
+          rep.filter((p) => p.niveau === 3 && !/menuet|bergere/.test(p.id)).every((p) => p.notes.filter((n) => n.frette > 5).length <= 2));
+  verifie('rien sous le Mi grave (accordage standard)', rep.every((p) => p.notes.every((n) => n.midi >= 40)));
+  verifie('durées positives', rep.every((p) => p.notes.every((n) => n.duree > 0)));
+  verifie('mesure en noires : 3/8 → 1,5 · 6/8 → 3 · 2/2 → 4',
+          Tablature.noiresParMesure({ signature: [3, 8] }) === 1.5 && Tablature.noiresParMesure({ signature: [6, 8] }) === 3 &&
+          Tablature.noiresParMesure({ signature: [2, 2] }) === 4);
+  verifie('mise en page : plus de place par temps pour les pièces en doubles croches',
+          Tablature.miseEnPage(Morceaux.get('mertz-etude')).pxParTemps > 46 && Tablature.miseEnPage(Morceaux.get('au-clair')).pxParTemps === 46);
+  verifie('mise en page : quelques petites notes d’ornement n’étirent pas la partition',
+          Tablature.miseEnPage(Morceaux.get('horetzky-bergere')).pxParTemps < 100, Tablature.miseEnPage(Morceaux.get('horetzky-bergere')).pxParTemps);
+  verifie('Menuet : premières notes = Ré5 sur Sol2 (partition)', (() => {
+    const deb = Morceaux.get('menuet-sol').notes.filter((n) => n.temps === Morceaux.get('menuet-sol').notes[0].temps).map((n) => n.midi).sort();
+    return deb.join() === '43,62';
+  })());
+  verifie('la tablature de chaque pièce se dessine', rep.every((p) => (Tablature.svg(p, Tablature.miseEnPage(p)).match(/tab-note/g) || []).length === p.notes.length));
 }
 
 console.log(`\n=== ${ok} réussis, ${ko} échoués ===`);

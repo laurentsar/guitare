@@ -32,7 +32,7 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'morceaux.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'morceaux.js', 'lecons.js',
  'accordeur.js', 'oreille.js', 'store.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
@@ -221,6 +221,16 @@ function verifie(nom, cond, detail) {
   verifie('lien profond d’une tablature perso : elle voyage dans l’URL', /#tab=/.test(lien) &&
           JSON.parse(decodeURIComponent(lien.split('#tab=')[1])).notes.length === w.Store.tablatures()[0].notes.length);
   verifie('lien profond d’un morceau intégré', w.CasqueVR.lienProfond(pieceL) === 'https://laurentsar.github.io/guitare/?morceau=etude-lam');
+
+  console.log('\n— Répertoire Mutopia (interface) —');
+  w.AppGuitare.aller('morceaux');
+  verifie('niveaux du répertoire listés', /Niveau 4 — répertoire/.test($('listeMorceaux').textContent) && /Niveau 5 — études/.test($('listeMorceaux').textContent));
+  w.AppGuitare.ouvrirMorceau('sor-landler');
+  verifie('fiche : crédit Mutopia + éditeur + licence', /Mutopia Project, édition de Louie van Bommel · Creative Commons Attribution 3\.0/.test($('detailMorceau').textContent));
+  verifie('fiche : lien vers la partition source', $('detailMorceau').querySelector('.credit a').href.indexOf('mutopiaproject.org') !== -1);
+  verifie('3/8 : chiffrage affiché 3 sur 8', [...$('detailMorceau').querySelectorAll('.portee-chiffrage')].map((t) => t.textContent).join('/') === '3/8');
+  w.AppGuitare.ouvrirMorceau('carcassi-60-1');
+  verifie('Carcassi : toutes les notes dessinées', $('detailMorceau').querySelectorAll('.tab-note').length === w.Morceaux.get('carcassi-60-1').notes.length);
 
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');

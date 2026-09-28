@@ -462,12 +462,15 @@
       b.onclick = function () { ouvrirMorceau(p.id); };
       return b;
     }
+    var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études' };
     Object.keys(niveaux).sort().forEach(function (n) {
-      h.appendChild(el('h3', null, 'Niveau ' + n));
+      h.appendChild(el('h3', null, NOMS_NIVEAUX[n] || 'Niveau ' + n));
       niveaux[n].forEach(function (p) { h.appendChild(ligne(p, '♩ = ' + p.tempo)); });
     });
 
     h.appendChild(el('h3', null, 'Mes tablatures'));
+    h.appendChild(el('p', 'aide', 'Niveaux 3 à 5 : pièces du Mutopia Project (partitions libres, domaine public ou Creative Commons). Le placement sur le manche est calculé par l’app : si une position te semble inconfortable, le doigté d’une édition papier peut différer.'));
+
     var perso = Store.tablatures();
     if (!perso.length) h.appendChild(el('p', 'aide', 'Écris ta propre tablature, ou colles-en une trouvée sur internet : elle se jouera ici comme les autres, avec boucle, ralenti et manche.'));
     perso.forEach(function (p) { h.appendChild(ligne(p, p.notes.length + ' notes')); });
@@ -484,7 +487,8 @@
     var p = trouverMorceau(id);
     if (!p) return;
     var r = Store.reglages();
-    var parMesure = p.signature ? p.signature[0] : 4;
+    var parMesure = Tablature.noiresParMesure(p);
+    var page = Tablature.miseEnPage(p);
     var nbMesures = Math.max(1, Math.ceil(Tablature.duree_totale(p) / parMesure));
     var etat = {
       tempo: p.tempo, capo: 0, de: 1, a: nbMesures,
@@ -496,6 +500,17 @@
     h.appendChild(el('h2', null, p.titre));
     h.appendChild(el('p', 'aide', p.sous_titre));
     if (p.description) h.appendChild(el('p', null, p.description));
+    if (p.source) {
+      // Mention exigée par la licence (CC-BY) et due dans tous les cas.
+      var credit = el('p', 'aide credit');
+      credit.appendChild(document.createTextNode('Partition : Mutopia Project' +
+        (p.source.copiste ? ', édition de ' + p.source.copiste : '') + ' · ' + p.source.licence +
+        (p.tempoOriginal ? ' · tempo de la partition ♩ = ' + p.tempoOriginal : '') + ' · '));
+      var lien = el('a', null, 'fiche');
+      lien.href = p.source.url; lien.target = '_blank'; lien.rel = 'noopener';
+      credit.appendChild(lien);
+      h.appendChild(credit);
+    }
 
     // Tempo : ±10, et, quand l'entraîneur tourne, le pourcentage en cours.
     var ligneTempo = el('div', 'actions');
@@ -520,8 +535,8 @@
     function dessiner() {
       var vue = Store.reglages().vuePartition;
       zone.innerHTML =
-        (vue !== 'tablature' ? Portee.svg(p, { mesuresParLigne: 2 }) : '') +
-        (vue !== 'portee' ? Tablature.svg(p, { mesuresParLigne: 2 }) : '');
+        (vue !== 'tablature' ? Portee.svg(p, page) : '') +
+        (vue !== 'portee' ? Tablature.svg(p, page) : '');
       Array.prototype.forEach.call(barreVue.children, function (b) {
         b.classList.toggle('actif', b.dataset.vue === vue);
       });
@@ -616,7 +631,7 @@
     // Tablature texte : pour la recopier, l'envoyer, l'imprimer.
     var texte = document.createElement('details');
     texte.innerHTML = '<summary>Tablature texte (à copier)</summary>';
-    var pre = el('pre', 'tab-texte', Tablature.versTexte(p, 2));
+    var pre = el('pre', 'tab-texte', Tablature.versTexte(p, page.mesuresParLigne));
     var bCopier = el('button', 'btn', '📋 Copier');
     bCopier.onclick = function () {
       if (navigator.clipboard) navigator.clipboard.writeText(pre.textContent).then(function () { bCopier.textContent = '✓ Copiée'; }, function () {});
@@ -665,7 +680,7 @@
         capo: etat.capo,
         // Le décompte n'est donné qu'au premier tour : en boucle, la reprise
         // doit s'enchaîner comme une vraie répétition.
-        decompte: premier && etat.decompte ? parMesure : 0,
+        decompte: premier && etat.decompte ? Math.max(2, Math.round(parMesure)) : 0,
         metronome: etat.clic,
         muet: etat.muet,
         timbre: Store.reglages().timbre,
@@ -718,7 +733,8 @@
    * toutes seules), le manche, et une barre de gros boutons visables au rayon
    * ou au pincement. Marche aussi sur tablette ou télé, comme lutrin. */
   function construirePupitre(p, ctl) {
-    var lignes = Tablature.systemes(p, 2);
+    var page = Tablature.miseEnPage(p);
+    var lignes = Tablature.systemes(p, page.mesuresParLigne);
     var idx = -1;
     var hote = $('pupitreVue');
     var tete, partition, manche, barre, bLecture;
@@ -734,7 +750,7 @@
       [i, i + 1].forEach(function (k, rang) {
         if (!lignes[k]) return;
         html += '<div class="pupitre-ligne' + (rang ? ' suivante' : '') + '">' +
-          Tablature.svgSysteme(lignes[k], { parMesure: ctl.parMesure, pxParTemps: 60, interligne: 18 }) + '</div>';
+          Tablature.svgSysteme(lignes[k], { parMesure: ctl.parMesure, pxParTemps: Math.round(page.pxParTemps * 1.3), interligne: 18 }) + '</div>';
       });
       partition.innerHTML = html;
     }

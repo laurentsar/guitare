@@ -411,3 +411,4 @@ html.en-pupitre body { padding-bottom: 0; }
 .pupitre-barre { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .pupitre-barre .btn { min-height: 60px; min-width: 96px; font-size: 18px; }
 .pupitre-barre .btn.actif { border-color: var(--bois); color: var(--bois); }
+.credit a { color: var(--accent); }

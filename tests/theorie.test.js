@@ -154,6 +154,28 @@ verifie('l’étude en Mi mineur alterne p-i-m-a',
   })());
 }
 
+{
+  const debutants = ['trois-cordes', 'hot-cross-buns', 'mary-agneau', 'saints', 'joyeux-anniversaire', 'jingle-bells'];
+  verifie('grand débutant : 6 morceaux présents', debutants.every((id) => Morceaux.get(id)));
+  verifie('grand débutant : trois cordes aiguës, rien au-delà de la case 3',
+          debutants.every((id) => Morceaux.get(id).notes.every((n) => n.corde <= 3 && n.frette <= 3)));
+  verifie('« Trois cordes à vide » : aucune case pressée', Morceaux.get('trois-cordes').notes.every((n) => n.frette === 0));
+  verifie('grand débutant : un doigt par case (case = doigt), main droite i-m alternée',
+          debutants.every((id) => Morceaux.get(id).notes.every((n, i) =>
+            (n.frette === 0 ? !n.doigt : n.doigt === n.frette) && n.main === (i % 2 ? 'm' : 'i'))));
+  verifie('grand débutant : chaque morceau finit sur une barre de mesure',
+          debutants.every((id) => { const p = Morceaux.get(id); return Tablature.duree_totale(p) % Tablature.noiresParMesure(p) === 0; }));
+  verifie('grand débutant : aucune note ne déborde sur la mesure suivante',
+          debutants.every((id) => { const p = Morceaux.get(id), m = Tablature.noiresParMesure(p);
+            return p.notes.every((n) => Math.floor(n.temps / m) === Math.floor((n.temps + n.duree - 1e-6) / m)); }));
+  verifie('Saints : la phrase commence après un temps de silence', Morceaux.get('saints').notes[0].temps === 1);
+  verifie('Joyeux anniversaire : levée au 3e temps, Sol Sol La Sol Do Si',
+          Morceaux.get('joyeux-anniversaire').notes[0].temps === 2 &&
+          Morceaux.get('joyeux-anniversaire').notes.slice(0, 6).map((n) => Theorie.nom(n.midi)).join(' ') === 'Sol3 Sol3 La3 Sol3 Do4 Si3');
+  verifie('mélodies : le doigt de main gauche est noté (Au clair : Ré = annulaire)',
+          Morceaux.get('au-clair').notes[3].doigt === 3);
+}
+
 console.log('\n— Tablature —');
 const p = Morceaux.get('au-clair');
 verifie('durée totale = somme des durées', Tablature.duree_totale(p) === p.notes.reduce((t, n) => Math.max(t, n.temps + n.duree), 0));

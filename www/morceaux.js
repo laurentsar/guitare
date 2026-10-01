@@ -45,14 +45,25 @@
     return (parseInt(m[2], 10) + 1) * 12 + NOMS[m[1]];
   }
 
-  // Mélodie : suite de [nom, durée en noires]. Les durées s'enchaînent.
-  function melodie(suite) {
-    var t = 0, notes = [];
+  // Mélodie : suite de [nom, durée en noires]. Les durées s'enchaînent ;
+  // « - » est un silence (sert aussi à placer une levée en fin de mesure).
+  //
+  // En première position, un doigt par case : la case dit le doigt (1 index
+  // … 4 auriculaire ; la 5e case du La aigu se prend aussi à l'auriculaire,
+  // la main glisse d'une case). Avec `alterne`, la main droite alterne
+  // index-majeur, comme on l'apprend dès la première mélodie.
+  function melodie(suite, opts) {
+    opts = opts || {};
+    var t = 0, notes = [], k = 0;
     suite.forEach(function (pas) {
+      if (pas[0] === '-') { t += pas[1]; return; }
       var midi = midiDeNom(pas[0]);
       var pos = caseEnPremierePosition(midi);
       if (!pos) throw new Error('note hors première position : ' + pas[0]);
-      notes.push({ corde: pos.corde, frette: pos.frette, temps: t, duree: pas[1], midi: midi });
+      var n = { corde: pos.corde, frette: pos.frette, temps: t, duree: pas[1], midi: midi };
+      if (pos.frette > 0) n.doigt = Math.min(4, pos.frette);
+      if (opts.alterne) n.main = (k++ % 2) ? 'm' : 'i';
+      notes.push(n);
       t += pas[1];
     });
     return notes;
@@ -129,6 +140,111 @@
   });
 
   // --- Mélodies du domaine public -------------------------------------------
+  /* Grand débutant : les morceaux qui suivent tiennent sur les trois cordes
+   * aiguës, en première position, avec des rythmes en noires et blanches. Ils
+   * sont rangés du plus simple (cordes à vide seules) au plus long. */
+  ajoute({
+    id: 'trois-cordes',
+    titre: 'Trois cordes à vide',
+    sous_titre: 'Première mélodie · écrite pour cette app',
+    niveau: 1, tempo: 60, signature: [4, 4],
+    description: 'Aucun doigt à la main gauche : Mi (1re corde), Si (2e) et Sol (3e), à vide. On ne pense qu’à la main droite — index, majeur, index, majeur — et à laisser sonner chaque note jusqu’à la suivante.',
+    notes: melodie([
+      ['mi4', 1], ['mi4', 1], ['si3', 2],
+      ['mi4', 1], ['mi4', 1], ['si3', 2],
+      ['sol3', 1], ['si3', 1], ['mi4', 1], ['si3', 1],
+      ['sol3', 4],
+      ['si3', 1], ['si3', 1], ['mi4', 2],
+      ['si3', 1], ['si3', 1], ['sol3', 2],
+      ['sol3', 1], ['si3', 1], ['mi4', 1], ['si3', 1],
+      ['mi4', 4]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'hot-cross-buns',
+    titre: 'Hot Cross Buns',
+    sous_titre: 'Comptine anglaise · traditionnel · domaine public',
+    niveau: 1, tempo: 72, signature: [4, 4],
+    description: 'Trois notes : Mi (1re à vide), Ré (2e corde, case 3, annulaire), Do (2e corde, case 1, index). Le premier vrai doigt posé : appuie juste derrière la frette, le bout du doigt bien droit.',
+    notes: melodie([
+      ['mi4', 1], ['re4', 1], ['do4', 2],
+      ['mi4', 1], ['re4', 1], ['do4', 2],
+      ['do4', 0.5], ['do4', 0.5], ['do4', 0.5], ['do4', 0.5],
+      ['re4', 0.5], ['re4', 0.5], ['re4', 0.5], ['re4', 0.5],
+      ['mi4', 1], ['re4', 1], ['do4', 2]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'mary-agneau',
+    titre: 'Mary avait un petit agneau',
+    sous_titre: 'Mary Had a Little Lamb · L. Mason · domaine public',
+    niveau: 1, tempo: 80, signature: [4, 4],
+    description: 'Les trois notes de Hot Cross Buns, plus le Sol (1re corde, case 3, annulaire). L’index reste posé sur le Do pendant qu’on joue le Ré : un doigt de moins à replacer.',
+    notes: melodie([
+      ['mi4', 1], ['re4', 1], ['do4', 1], ['re4', 1],
+      ['mi4', 1], ['mi4', 1], ['mi4', 2],
+      ['re4', 1], ['re4', 1], ['re4', 2],
+      ['mi4', 1], ['sol4', 1], ['sol4', 2],
+      ['mi4', 1], ['re4', 1], ['do4', 1], ['re4', 1],
+      ['mi4', 1], ['mi4', 1], ['mi4', 1], ['mi4', 1],
+      ['re4', 1], ['re4', 1], ['mi4', 1], ['re4', 1],
+      ['do4', 4]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'saints',
+    titre: 'When the Saints Go Marching In',
+    sous_titre: 'Negro spiritual · traditionnel · domaine public',
+    niveau: 1, tempo: 100, signature: [4, 4],
+    description: 'Cinq notes, Do Mi Fa Sol et Ré. Chaque phrase commence sur le 2e temps, après un silence : compte « un » dans ta tête, puis joue. Fa = 1re corde, case 1 (index).',
+    notes: melodie([
+      ['-', 1], ['do4', 1], ['mi4', 1], ['fa4', 1], ['sol4', 4],
+      ['-', 1], ['do4', 1], ['mi4', 1], ['fa4', 1], ['sol4', 4],
+      ['-', 1], ['do4', 1], ['mi4', 1], ['fa4', 1], ['sol4', 2], ['mi4', 2],
+      ['do4', 2], ['mi4', 2], ['re4', 4],
+      ['-', 1], ['mi4', 1], ['mi4', 1], ['re4', 1], ['do4', 3], ['do4', 1],
+      ['mi4', 2], ['sol4', 2], ['sol4', 1], ['fa4', 3],
+      ['-', 1], ['mi4', 1], ['fa4', 1], ['sol4', 1], ['mi4', 2], ['do4', 2],
+      ['re4', 4], ['do4', 4]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'joyeux-anniversaire',
+    titre: 'Joyeux anniversaire',
+    sous_titre: 'Happy Birthday · Hill · domaine public',
+    niveau: 2, tempo: 90, signature: [3, 4],
+    description: 'À trois temps. Descend jusqu’au Sol de la 3e corde à vide et au La (3e corde, case 2, majeur), monte jusqu’au Sol de la 1re. La levée « Joy-eux » est courte-longue : la première note à peine touchée.',
+    notes: melodie([
+      ['-', 2], ['sol3', 0.75], ['sol3', 0.25],
+      ['la3', 1], ['sol3', 1], ['do4', 1], ['si3', 2], ['sol3', 0.75], ['sol3', 0.25],
+      ['la3', 1], ['sol3', 1], ['re4', 1], ['do4', 2], ['sol3', 0.75], ['sol3', 0.25],
+      ['sol4', 1], ['mi4', 1], ['do4', 1], ['si3', 1], ['la3', 1], ['fa4', 0.75], ['fa4', 0.25],
+      ['mi4', 1], ['do4', 1], ['re4', 1], ['do4', 3]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'jingle-bells',
+    titre: 'Jingle Bells (refrain)',
+    sous_titre: 'J. L. Pierpont, 1857 · domaine public',
+    niveau: 2, tempo: 100, signature: [4, 4],
+    description: 'Les répétitions de Mi à vide laissent le temps de préparer la main gauche. Une seule difficulté : la croche pointée « Do… ré » de la 3e mesure.',
+    notes: melodie([
+      ['mi4', 1], ['mi4', 1], ['mi4', 2],
+      ['mi4', 1], ['mi4', 1], ['mi4', 2],
+      ['mi4', 1], ['sol4', 1], ['do4', 1.5], ['re4', 0.5],
+      ['mi4', 4],
+      ['fa4', 1], ['fa4', 1], ['fa4', 1.5], ['fa4', 0.5],
+      ['fa4', 1], ['mi4', 1], ['mi4', 1], ['mi4', 0.5], ['mi4', 0.5],
+      ['mi4', 1], ['re4', 1], ['re4', 1], ['mi4', 1],
+      ['re4', 2], ['sol4', 2]
+    ], { alterne: true })
+  });
+
   ajoute({
     id: 'au-clair',
     titre: 'Au clair de la lune',

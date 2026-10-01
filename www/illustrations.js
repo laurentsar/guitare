@@ -372,7 +372,7 @@
       c += '<text x="' + pose.x + '" y="' + (pose.y + 5) + '" class="sch-doigt-nom" text-anchor="middle">' + pose.doigt + '</text>';
     });
 
-    c += txt(L / 2, H - 8, '1 index · 2 majeur · 3 annulaire · 4 auriculaire', 'sch-petit');
+    c += txt(L / 2, H - 8, L >= 420 ? '1 index · 2 majeur · 3 annulaire · 4 auriculaire' : '1 index · 2 majeur · 3 annul. · 4 auric.', 'sch-petit');
     return svg('0 0 ' + L + ' ' + H, c, 'Position de la main gauche pour l’accord ' + accord.id);
   }
 

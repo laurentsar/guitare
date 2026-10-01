@@ -292,6 +292,11 @@ html.tv :focus-visible { outline: 4px solid var(--accent) !important; outline-of
 html.tv .schema { max-width: 760px; }
 details { background: var(--fond-3); border: 1px solid var(--trait); border-radius: 10px; padding: 10px 14px; margin-top: 12px; }
 details summary { cursor: pointer; color: var(--accent); }
+.mains-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.main-accord { text-align: center; border: 1px solid var(--trait); border-radius: 10px; padding: 8px; }
+.main-accord .diagramme { max-width: 140px; display: block; margin: 0 auto; }
+.main-accord .aide { text-align: left; }
+.main-accord-nom { margin-bottom: 4px; }
 .schema .sch-rotation { fill: none; stroke: var(--accent); stroke-width: 2.4; }
 .schema .sch-doigt.sch-exception { fill: var(--presque); }
 .schema .sch-vide { fill: none; stroke: var(--corde); stroke-width: 2; }

@@ -12,7 +12,7 @@ le téléviseur.
 | **Accordeur** | Détection de hauteur au micro (autocorrélation), affichage en centièmes, six cordes suivies une par une. |
 | **Métronome** | Tempo, mesure, subdivisions, battement du tempo à la main, accent sur le premier temps. |
 | **Accords** | 23 positions avec diagramme, doigté, notes produites, barrés signalés, écoute grattée / arpégée / corde par corde. |
-| **Morceaux** | 30 pièces en tablature et portée, jouées par l'app avec la note en cours surlignée : deux exercices, quatre mélodies du domaine public, deux études d'arpèges, et **22 pièces du répertoire** (Bach/Petzold, Sor, Giuliani, Carulli, Carcassi, Mertz, Coste, Sanz, Horetzky…) issues du Mutopia Project. |
+| **Morceaux** | 31 pièces en tablature et portée, jouées par l'app avec la note en cours surlignée : deux exercices, quatre mélodies du domaine public, deux études d'arpèges, **Zombie** (The Cranberries) en accompagnement avec la position précise des deux mains — doigté de chaque accord dessiné, consigne de passage, p-i-m-a sous chaque note —, et **22 pièces du répertoire** (Bach/Petzold, Sor, Giuliani, Carulli, Carcassi, Mertz, Coste, Sanz, Horetzky…) issues du Mutopia Project. |
 | **Lecteur** | Inspiré de Guitar Pro 8 : boucle sur une section (mesures A → B), entraîneur de vitesse (60 % → 100 %, +5 % par tour), décompte, clic, capodastre, guitare muette (on joue seul, l'app tient le temps), manche virtuel qui suit la lecture, portée + tablature, export en tablature texte. |
 | **Éditeur** | Écrire ses propres tablatures (corde, case, durée, accords), ou coller une tab texte trouvée sur internet ; elles se jouent dans le même lecteur. |
 | **Gammes** | 7 gammes (majeure, mineures, pentatoniques, blues, chromatique) sur les 12 tonalités, affichées sur tout le manche et jouées. |
@@ -77,7 +77,8 @@ Tous les sons sont **synthétisés** (Karplus-Strong pour la corde pincée,
 oscillateur pour le métronome) : pas un octet d'échantillon audio, donc pas de
 licence à traîner et une APK légère. L'accordeur analyse le micro **sur
 l'appareil** ; aucun flux ne sort. Les morceaux sont du domaine public
-(traditionnel, Beethoven), écrits pour cette app, ou issus du Mutopia Project
+(traditionnel, Beethoven), écrits pour cette app (dont l'accompagnement de
+« Zombie » : la grille d'accords seule, ni mélodie ni paroles), ou issus du Mutopia Project
 (domaine public / CC-BY, crédités).
 
 ## Développement

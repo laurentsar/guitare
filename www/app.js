@@ -483,6 +483,33 @@
    * entraîneur de vitesse, décompte, clic, capodastre, guitare muette et
    * manche qui suit la lecture. Chaque option se résume à un paramètre de
    * Tablature.jouer — ce fichier ne fait que les exposer. */
+  /* Accompagnement : chaque accord du morceau avec SON doigté (diagramme +
+   * main dessinée + consigne de passage), puis le travail de la main droite.
+   * Ouvert par défaut : c'est ce qu'on regarde avant de jouer la première note. */
+  function blocMains(mains) {
+    var d = el('details', 'mains-morceau');
+    d.open = true;
+    d.appendChild(el('summary', null, 'Position des mains'));
+    d.appendChild(el('h3', null, 'Main gauche'));
+    var grille = el('div', 'mains-grille');
+    mains.gauche.forEach(function (a) {
+      var c = el('div', 'main-accord');
+      c.innerHTML = '<div class="main-accord-nom"><b>' + a.id + '</b> · ' + a.fr + '</div>' +
+        Accords.svg(a, { largeur: 140 }) + Illustrations.mainAccord(a, { largeur: 300 });
+      c.appendChild(el('p', 'aide', a.consigne));
+      var b = el('button', 'btn', '▶ Écouter');
+      b.onclick = function () { Audio5.jouerAccord(a.frettes, { timbre: Store.reglages().timbre }); };
+      c.appendChild(b);
+      grille.appendChild(c);
+    });
+    d.appendChild(grille);
+    d.appendChild(el('h3', null, 'Main droite'));
+    var ul = el('ul');
+    mains.droite.forEach(function (t) { ul.appendChild(el('li', null, t)); });
+    d.appendChild(ul);
+    return d;
+  }
+
   function ouvrirMorceau(id) {
     var p = trouverMorceau(id);
     if (!p) return;
@@ -500,6 +527,7 @@
     h.appendChild(el('h2', null, p.titre));
     h.appendChild(el('p', 'aide', p.sous_titre));
     if (p.description) h.appendChild(el('p', null, p.description));
+    if (p.mains) h.appendChild(blocMains(p.mains));
     if (p.source) {
       // Mention exigée par la licence (CC-BY) et due dans tous les cas.
       var credit = el('p', 'aide credit');

@@ -135,6 +135,25 @@ verifie('Ode à la joie commence bien par mi-mi-fa-sol',
 verifie('l’étude en Mi mineur alterne p-i-m-a',
         Morceaux.get('etude-mim').notes.slice(0, 4).map(n => n.main).join('') === 'pima');
 
+{
+  const z = Morceaux.get('zombie');
+  verifie('Zombie : grille Em-Cmaj7-G-D, une mesure chacun',
+          [0, 4, 8, 12].map((t) => z.notes.find((n) => n.temps === t).accord).join('-') === 'Em-Cmaj7-G-D');
+  verifie('Zombie : 16 mesures', Tablature.duree_totale(z) === 64);
+  verifie('Zombie : chaque case pressée a son doigt de main gauche',
+          z.notes.every((n) => (n.frette === 0) === !n.doigt));
+  verifie('Zombie : chaque note a son doigt de main droite', z.notes.every((n) => /^[pima]$/.test(n.main)));
+  verifie('Zombie : jamais deux notes sur la même corde au même instant', (() => {
+    const par = {};
+    z.notes.forEach((n) => { (par[n.temps] = par[n.temps] || []).push(n.corde); });
+    return Object.values(par).every((c) => new Set(c).size === c.length);
+  })());
+  verifie('Zombie : doigtés cohérents (Cmaj7 garde le majeur de Em sur la 4e corde)', (() => {
+    const [em, c] = z.mains.gauche;
+    return em.frettes[3] === c.frettes[3] && em.doigts[3] === 2 && c.doigts[3] === 2;
+  })());
+}
+
 console.log('\n— Tablature —');
 const p = Morceaux.get('au-clair');
 verifie('durée totale = somme des durées', Tablature.duree_totale(p) === p.notes.reduce((t, n) => Math.max(t, n.temps + n.duree), 0));

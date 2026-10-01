@@ -232,6 +232,12 @@ function verifie(nom, cond, detail) {
   w.AppGuitare.ouvrirMorceau('carcassi-60-1');
   verifie('Carcassi : toutes les notes dessinées', $('detailMorceau').querySelectorAll('.tab-note').length === w.Morceaux.get('carcassi-60-1').notes.length);
 
+  w.AppGuitare.ouvrirMorceau('zombie');
+  verifie('Zombie : position des mains, 4 accords dessinés avec la main',
+          $('detailMorceau').querySelectorAll('.main-accord').length === 4 &&
+          $('detailMorceau').querySelectorAll('.main-accord .diagramme').length === 4 &&
+          /Main droite/.test($('detailMorceau').textContent));
+
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
   w.AppGuitare.demarrerOreille('cordes');

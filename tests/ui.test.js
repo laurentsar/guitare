@@ -238,6 +238,16 @@ function verifie(nom, cond, detail) {
           $('detailMorceau').querySelectorAll('.main-accord .diagramme').length === 4 &&
           /Main droite/.test($('detailMorceau').textContent));
 
+  w.AppGuitare.ouvrirMorceau('hot-cross-buns');
+  {
+    const g = $('detailMorceau').querySelector('.guide-mains');
+    verifie('guide des mains : 1re note dite en phrases', g && /Note 1 sur \d+ : Mi/.test(g.textContent) && /Aucun doigt sur la 1re corde/.test(g.textContent) && /L’index \(i\) pince/.test(g.textContent));
+    [...g.querySelectorAll('button')].find((b) => /Suivante/.test(b.textContent)).click();
+    verifie('guide des mains : « Suivante » passe au Ré, annulaire case 3', /Note 2 sur/.test(g.textContent) && /annulaire \(doigt 3\).*case 3/.test(g.textContent));
+    verifie('guide des mains : la note est surlignée sur la tablature', $('detailMorceau').querySelectorAll('.tab-note.en-cours').length === 1);
+    verifie('manche : pastille colorée du doigt 3', !!$('detailMorceau').querySelector('.manche-point.doigt-3'));
+  }
+
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
   w.AppGuitare.demarrerOreille('cordes');

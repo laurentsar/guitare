@@ -176,6 +176,23 @@ verifie('l’étude en Mi mineur alterne p-i-m-a',
           Morceaux.get('au-clair').notes[3].doigt === 3);
 }
 
+console.log('\n— Consignes des mains —');
+{
+  const re = Tablature.consigne([{ corde: 2, frette: 3, doigt: 3, main: 'm', midi: 62 }]);
+  verifie('Ré : annulaire, 2e corde, case 3', /Pose l’annulaire \(doigt 3\) sur la 2e corde \(Si\), case 3/.test(re.gauche[0].texte), re.gauche[0].texte);
+  verifie('Ré : le majeur pince la 2e corde', /^Le majeur \(m\) pince la 2e corde/.test(re.droite[0].texte), re.droite[0].texte);
+  verifie('corde à vide : aucun doigt', /^Aucun doigt sur la 1re corde \(Mi aigu, la plus fine\)/.test(Tablature.consigne([{ corde: 1, frette: 0, midi: 64 }]).gauche[0].texte));
+  verifie('sans doigt noté : un doigt par case, pouce sur les graves', (() => {
+    const c = Tablature.consigne([{ corde: 5, frette: 2 }]);
+    return c.gauche[0].doigt === 2 && c.droite[0].main === 'p';
+  })());
+  verifie('au-delà de la case 4 sans doigt noté : laissé au choix', Tablature.consigne([{ corde: 1, frette: 7 }]).gauche[0].doigt === 0);
+  const acc = Tablature.consigne(Morceaux.get('zombie').notes.filter((n) => n.temps === 4 * 8 + 1));
+  verifie('accord plaqué : trois cordes, pincées ensemble', acc.gauche.length === 3 && /en même temps/.test(acc.droite[acc.droite.length - 1].texte));
+  verifie('chaque note de chaque morceau a une consigne',
+          Morceaux.tous().every((p) => p.notes.every((n) => { const c = Tablature.consigne([n]); return c.gauche[0].texte && c.droite[0].texte; })));
+}
+
 console.log('\n— Tablature —');
 const p = Morceaux.get('au-clair');
 verifie('durée totale = somme des durées', Tablature.duree_totale(p) === p.notes.reduce((t, n) => Math.max(t, n.temps + n.duree), 0));

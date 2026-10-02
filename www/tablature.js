@@ -262,7 +262,54 @@
     return notes;
   }
 
+  /* Consigne en toutes lettres pour une attaque (une note, ou plusieurs
+   * jouées ensemble) : quel doigt gauche sur quelle corde et quelle case,
+   * quel doigt droit pince. Un débutant ne sait pas encore lire « 3 » sur une
+   * ligne : on le lui dit en phrase, une note à la fois.
+   *
+   * Sans doigt noté (répertoire importé), on donne celui de la première
+   * position — un doigt par case — et, au-delà de la case 4, on le laisse au
+   * choix. Sans main droite notée : pouce sur les trois graves, sinon index
+   * ou majeur en alternance. */
+  var DOIGTS_G = { 1: 'l’index', 2: 'le majeur', 3: 'l’annulaire', 4: 'l’auriculaire' };
+  var DOIGTS_D = { p: 'le pouce', i: 'l’index', m: 'le majeur', a: 'l’annulaire' };
+  var ORDINAL = { 1: '1re', 2: '2e', 3: '3e', 4: '4e', 5: '5e', 6: '6e' };
+  var REPERE_CORDE = { 1: 'la plus fine', 6: 'la plus grosse' };
+
+  function nomCorde(c) {
+    var t = 'la ' + ORDINAL[c] + ' corde (' + Theorie.CORDES[c].nom;
+    return t + (REPERE_CORDE[c] ? ', ' + REPERE_CORDE[c] : '') + ')';
+  }
+
+  function consigne(notes) {
+    notes = notes.slice().sort(function (a, b) { return b.corde - a.corde; });
+    var gauche = [], droite = [];
+    notes.forEach(function (n) {
+      var cordeTxt = nomCorde(n.corde);
+      if (n.frette === 0) {
+        gauche.push({ corde: n.corde, frette: 0, doigt: 0,
+                      texte: 'Aucun doigt sur ' + cordeTxt + ' : elle se joue à vide.' });
+      } else {
+        var d = n.doigt || (n.frette <= 4 ? n.frette : 0);
+        gauche.push({ corde: n.corde, frette: n.frette, doigt: d,
+                      texte: (d ? 'Pose ' + DOIGTS_G[d] + ' (doigt ' + d + ')' : 'Pose un doigt') +
+                             ' sur ' + cordeTxt + ', case ' + n.frette + ', collé à la barrette côté caisse.' });
+      }
+      var m = n.main || (n.corde >= 4 ? 'p' : '');
+      droite.push({ corde: n.corde, main: m,
+                    texte: (m ? cap(DOIGTS_D[m]) + ' (' + m + ')' : 'L’index ou le majeur (i ou m), en alternant,') +
+                           ' pince ' + cordeTxt + '.' });
+    });
+    if (notes.length > 1) {
+      droite.push({ corde: 0, main: '', texte: 'Les ' + notes.length + ' cordes se pincent en même temps.' });
+    }
+    return { gauche: gauche, droite: droite,
+             noms: notes.map(function (n) { return Theorie.nomSansOctave(n.midi || Theorie.midiDeCase(n.corde, n.frette)); }) };
+  }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
   global.Tablature = {
+    consigne: consigne,
     svg: svg, svgSysteme: svgSysteme, systemes: systemes, noiresParMesure: noiresParMesure, miseEnPage: miseEnPage, versTexte: versTexte, depuisTexte: depuisTexte,
     duree_totale: duree_totale, jouer: jouer, arreter: arreter, enLecture: enLecture
   };

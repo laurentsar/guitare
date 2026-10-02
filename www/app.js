@@ -510,6 +510,92 @@
     return d;
   }
 
+  /* Pastilles du manche : le chiffre est le DOIGT (pas la case), et la
+   * pastille prend la couleur de ce doigt — la même que sur les diagrammes
+   * d'accords et les mains dessinées. */
+  function pointsManche(notes) {
+    return notes.map(function (n) {
+      var c = Tablature.consigne([n]).gauche[0];
+      return { corde: n.corde, frette: n.frette, classe: 'joue' + (c.doigt ? ' doigt-' + c.doigt : ''),
+               texte: c.doigt ? String(c.doigt) : '' };
+    });
+  }
+
+  /* « Que font mes mains ? » : la note en cours, dite en phrases. On avance
+   * note par note avec Précédente / Suivante (chaque pas se fait entendre), ou
+   * on laisse la lecture le faire avancer toute seule. */
+  function guideMains(p, montrer) {
+    var temps = [];
+    p.notes.forEach(function (n) { if (temps.indexOf(n.temps) === -1) temps.push(n.temps); });
+    temps.sort(function (a, b) { return a - b; });
+    var i = 0;
+
+    var boite = el('section', 'guide-mains');
+    boite.appendChild(el('h3', null, 'Que font mes mains ?'));
+    var legende = el('details', 'guide-legende');
+    legende.innerHTML = '<summary>Comment lire les chiffres et les lettres</summary><ul>' +
+      '<li><b>Sur la tablature</b>, le chiffre posé sur une ligne est la <b>case</b> : 0 = corde à vide, 3 = 3e case en partant de la tête de la guitare.</li>' +
+      '<li><b>Sur le manche</b> ci-dessous, le chiffre dans la pastille est le <b>doigt de la main gauche</b> : 1 index, 2 majeur, 3 annulaire, 4 auriculaire (le pouce reste derrière le manche).</li>' +
+      '<li><b>Sous la tablature</b>, la lettre est le <b>doigt de la main droite</b> qui pince : p pouce, i index, m majeur, a annulaire.</li>' +
+      '<li>Les cordes se comptent depuis <b>la plus fine (1re, Mi aigu)</b> jusqu’à la plus grosse (6e, Mi grave). Sur ta guitare, la plus fine est <b>en bas</b>, côté sol ; sur la tablature et sur le manche dessiné, elle est <b>en haut</b> — comme si tu regardais le manche couché sur tes genoux.</li></ul>';
+    boite.appendChild(legende);
+    var titre = el('p', 'guide-titre');
+    var corps = el('div', 'guide-corps');
+    boite.appendChild(titre);
+    boite.appendChild(corps);
+
+    var nav = el('div', 'actions');
+    var bPrec = el('button', 'btn', '◀ Précédente');
+    var bEcoute = el('button', 'btn', '🔊 Cette note');
+    var bSuiv = el('button', 'btn primaire', 'Suivante ▶');
+    nav.appendChild(bPrec); nav.appendChild(bEcoute); nav.appendChild(bSuiv);
+    boite.appendChild(nav);
+
+    function notesA(t) { return p.notes.filter(function (n) { return n.temps === t; }); }
+    function rendre() {
+      var ns = notesA(temps[i]);
+      var c = Tablature.consigne(ns);
+      titre.textContent = 'Note ' + (i + 1) + ' sur ' + temps.length + ' : ' + c.noms.join(' + ');
+      vide(corps);
+      function colonne(nom, lignes, pastille) {
+        var col = el('div', 'guide-main');
+        col.appendChild(el('h4', null, nom));
+        lignes.forEach(function (l) {
+          var ligne = el('p');
+          var pa = pastille(l);
+          if (pa) ligne.appendChild(pa);
+          ligne.appendChild(document.createTextNode(l.texte));
+          col.appendChild(ligne);
+        });
+        corps.appendChild(col);
+      }
+      colonne('✋ Main gauche (sur le manche)', c.gauche, function (l) {
+        return el('span', 'guide-pastille doigt-' + (l.doigt || 0), l.doigt ? String(l.doigt) : '0');
+      });
+      colonne('🤚 Main droite (au-dessus de la rosace)', c.droite, function (l) {
+        return l.main ? el('span', 'guide-pastille droite', l.main) : null;
+      });
+      bPrec.disabled = i === 0;
+      bSuiv.disabled = i === temps.length - 1;
+    }
+    function aller(k, jouer) {
+      i = Math.max(0, Math.min(temps.length - 1, k));
+      rendre();
+      montrer(temps[i]);
+      if (jouer) {
+        notesA(temps[i]).forEach(function (n) { Audio5.jouerCase(n.corde, n.frette, { duree: 1.5, timbre: Store.reglages().timbre }); });
+      }
+    }
+    bPrec.onclick = function () { aller(i - 1, true); };
+    bSuiv.onclick = function () { aller(i + 1, true); };
+    bEcoute.onclick = function () { aller(i, true); };
+    if (temps.length) rendre();
+    return {
+      boite: boite,
+      suivre: function (t) { var k = temps.indexOf(t); if (k !== -1) { i = k; rendre(); } }
+    };
+  }
+
   function ouvrirMorceau(id) {
     var p = trouverMorceau(id);
     if (!p) return;
@@ -582,14 +668,20 @@
     // Manche virtuel : la note jouée s'allume là où poser le doigt.
     var manche = el('div', 'manche-boite');
     function majManche(temps) {
-      var pts = temps == null ? [] : p.notes.filter(function (n) { return n.temps === temps; }).map(function (n) {
-        return { corde: n.corde, frette: n.frette, classe: 'joue', texte: n.doigt ? String(n.doigt) : '' };
-      });
+      var pts = temps == null ? [] : pointsManche(p.notes.filter(function (n) { return n.temps === temps; }));
       var maxCase = p.notes.reduce(function (m, n) { return Math.max(m, n.frette); }, 0);
       manche.innerHTML = Manche.svg({ cases: Math.max(5, Math.min(19, maxCase + 1)), points: pts });
     }
     h.appendChild(manche);
     majManche(null);
+
+    var guide = guideMains(p, function (temps) {
+      Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) {
+        g.classList.toggle('en-cours', parseFloat(g.dataset.temps) === temps);
+      });
+      majManche(temps);
+    });
+    h.insertBefore(guide.boite, manche);
 
     var actions = el('div', 'actions');
     var bJouer = el('button', 'btn primaire', '▶ Écouter');
@@ -697,6 +789,7 @@
         g.classList.toggle('en-cours', parseFloat(g.dataset.temps) === note.temps);
       });
       if (etat.manche) majManche(note.temps);
+      guide.suivre(note.temps);
       if (window.CasqueVR) CasqueVR.note(note);
       pupitre.note(note);
     }
@@ -783,9 +876,7 @@
       partition.innerHTML = html;
     }
     function rendreManche(t) {
-      var pts = t == null ? [] : p.notes.filter(function (n) { return n.temps === t; }).map(function (n) {
-        return { corde: n.corde, frette: n.frette, classe: 'joue', texte: n.doigt ? String(n.doigt) : '' };
-      });
+      var pts = t == null ? [] : pointsManche(p.notes.filter(function (n) { return n.temps === t; }));
       var maxCase = p.notes.reduce(function (m, n) { return Math.max(m, n.frette); }, 0);
       manche.innerHTML = Manche.svg({ cases: Math.max(5, Math.min(12, maxCase + 1)), points: pts });
     }

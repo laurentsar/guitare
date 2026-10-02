@@ -380,6 +380,25 @@ html.tv .portee { min-width: 0; }
 .manche-point text { fill: var(--texte); font-size: 7px; font-weight: 700; }
 .manche-point.joue circle, .manche-point.tonique circle { fill: var(--bois); stroke: var(--bois); }
 .manche-point.joue text, .manche-point.tonique text { fill: #22180C; }
+.manche-point.doigt-1 circle { fill: #7FB8FF; stroke: #7FB8FF; }
+.manche-point.doigt-2 circle { fill: #58D08B; stroke: #58D08B; }
+.manche-point.doigt-3 circle { fill: #E8C766; stroke: #E8C766; }
+.manche-point.doigt-4 circle { fill: #C79BFF; stroke: #C79BFF; }
+.guide-mains { background: var(--fond-3); border: 1px solid var(--trait); border-radius: 12px; padding: 10px 14px; margin: 12px 0; }
+.guide-mains h3 { margin: 0 0 6px; }
+.guide-legende { margin: 0 0 8px; background: none; border: none; padding: 0; }
+.guide-legende ul { margin: 6px 0 0; padding-left: 18px; }
+.guide-titre { font-weight: 700; font-size: 1.1em; margin: 6px 0; }
+.guide-corps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.guide-main h4 { margin: 0 0 4px; color: var(--accent); }
+.guide-main p { margin: 4px 0; display: flex; gap: 8px; align-items: flex-start; }
+.guide-pastille { flex: none; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #22180C; background: var(--fond-2, #333); border: 2px solid var(--trait); }
+.guide-pastille.doigt-0 { background: transparent; color: var(--texte-2); }
+.guide-pastille.doigt-1 { background: #7FB8FF; border-color: #7FB8FF; }
+.guide-pastille.doigt-2 { background: #58D08B; border-color: #58D08B; }
+.guide-pastille.doigt-3 { background: #E8C766; border-color: #E8C766; }
+.guide-pastille.doigt-4 { background: #C79BFF; border-color: #C79BFF; }
+.guide-pastille.droite { background: var(--bois); border-color: var(--bois); font-style: italic; }
 
 /* ------------------------------------------------------------ éditeur */
 .saisie {

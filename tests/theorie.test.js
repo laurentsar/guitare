@@ -193,6 +193,41 @@ console.log('\n— Consignes des mains —');
           Morceaux.tous().every((p) => p.notes.every((n) => { const c = Tablature.consigne([n]); return c.gauche[0].texte && c.droite[0].texte; })));
 }
 
+console.log('\n— Dessin des deux mains —');
+{
+  const re = Illustrations.deuxMains(Tablature.consigne([{ corde: 2, frette: 3, doigt: 3, main: 'm', midi: 62 }]));
+  verifie('Ré : un doigt gauche (3) et un doigt droit (m) dessinés',
+          (re.match(/sch-bout-cerne sch-doigt-3/g) || []).length === 1 && (re.match(/sch-bout-cerne sch-droite/g) || []).length === 1);
+  verifie('Ré : la 2e corde est surlignée, et elle seule', (re.match(/class="sch-corde-jouee"/g) || []).length === 1);
+  verifie('Ré : étiquette « annulaire (3) · 2e corde · case 3 »', re.indexOf('annulaire (3) · 2e corde · case 3') !== -1);
+  const vide = Illustrations.deuxMains(Tablature.consigne([{ corde: 1, frette: 0, main: 'i', midi: 64 }]));
+  verifie('corde à vide : aucun doigt gauche, anneau au sillet', !/sch-doigt-[1-4]"/.test(vide) && /sch-vide-jouee/.test(vide));
+  const c = Tablature.consigne([{ corde: 3, frette: 0, main: 'i' }, { corde: 2, frette: 0, main: 'm' }, { corde: 1, frette: 0, main: 'a' }]);
+  c.accord = 'Em'; c.tenus = [{ corde: 5, frette: 2, doigt: 1 }, { corde: 4, frette: 2, doigt: 2 }];
+  const em = Illustrations.deuxMains(c);
+  verifie('accord tenu : les deux doigts de Em dessinés, trois doigts droits',
+          /sch-bout-cerne sch-doigt-1/.test(em) && /sch-bout-cerne sch-doigt-2/.test(em) && (em.match(/sch-bout-cerne sch-droite/g) || []).length === 3);
+}
+
+console.log('\n— Apprendre pas à pas —');
+{
+  const nb = (p) => Math.ceil(Tablature.duree_totale(p) / Tablature.noiresParMesure(p));
+  const mary = Morceaux.get('mary-agneau'), em = Morceaux.etapes(mary, nb(mary));
+  verifie('Mary : accordeur, écoute, note par note, 2 × 4 mesures, tout lent, vitesse, seul',
+          em.map((e) => e.action.type).join(',') === 'accordeur,section,guide,section,section,section,section,section', em.map((e) => e.titre).join(' | '));
+  verifie('Mary : les phrases couvrent les mesures 1-4 et 5-8', em[3].action.de === 1 && em[3].action.a === 4 && em[4].action.de === 5 && em[4].action.a === 8);
+  verifie('étapes de travail : 60 % en boucle', em[3].action.pct === 60 && em[3].action.boucle);
+  verifie('dernière étape : guitare muette, clic, 100 %', em[em.length - 1].action.muet && em[em.length - 1].action.clic && em[em.length - 1].action.pct === 100);
+  const z = Morceaux.get('zombie'), ez = Morceaux.etapes(z, nb(z));
+  verifie('Zombie : accords, passages, couplet, refrain', /4 accords/.test(ez[2].titre) && /Em → Cmaj7 → G → D → Em/.test(ez[3].texte) &&
+          ez.some((e) => /Couplet/.test(e.titre) && e.action.de === 1 && e.action.a === 4) && ez.some((e) => /Refrain/.test(e.titre) && e.action.de === 9));
+  verifie('chaque morceau : des étapes, toutes les mesures couvertes par les sections', Morceaux.tous().every((p) => {
+    const n = nb(p), e = Morceaux.etapes(p, n);
+    return e.length >= 7 && e.every((x) => x.titre && x.texte && x.bouton) &&
+           (p.sections || e.filter((x) => /^Mesures/.test(x.titre)).reduce((t, x) => t + x.action.a - x.action.de + 1, 0) === n);
+  }));
+}
+
 console.log('\n— Tablature —');
 const p = Morceaux.get('au-clair');
 verifie('durée totale = somme des durées', Tablature.duree_totale(p) === p.notes.reduce((t, n) => Math.max(t, n.temps + n.duree), 0));

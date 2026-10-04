@@ -246,6 +246,30 @@ function verifie(nom, cond, detail) {
     verifie('guide des mains : « Suivante » passe au Ré, annulaire case 3', /Note 2 sur/.test(g.textContent) && /annulaire \(doigt 3\).*case 3/.test(g.textContent));
     verifie('guide des mains : la note est surlignée sur la tablature', $('detailMorceau').querySelectorAll('.tab-note.en-cours').length === 1);
     verifie('manche : pastille colorée du doigt 3', !!$('detailMorceau').querySelector('.manche-point.doigt-3'));
+    verifie('guide des mains : dessin des deux mains sur la guitare', !!g.querySelector('.guide-dessin svg') && /MAIN GAUCHE/.test(g.querySelector('.guide-dessin').textContent));
+  }
+  w.AppGuitare.ouvrirMorceau('zombie');
+  {
+    const g = $('detailMorceau').querySelector('.guide-mains');
+    for (let k = 0; k < 65; k++) [...g.querySelectorAll('button')].find((b) => /Suivante/.test(b.textContent)).click();
+    verifie('Zombie, refrain : « Garde l’accord Em posé » et les doigts tenus dessinés',
+            /Garde l’accord Em posé/.test(g.textContent) && /accord Em posé/.test(g.querySelector('.guide-dessin').textContent));
+  }
+
+  w.AppGuitare.ouvrirMorceau('mary-agneau');
+  {
+    const bloc = $('detailMorceau').querySelector('.etapes-morceau');
+    verifie('pas à pas : liste d’étapes ouverte, 0 / 8', bloc && bloc.open && /0 \/ 8 étapes/.test(bloc.querySelector('summary').textContent));
+    const etapes = bloc.querySelectorAll('.etape');
+    etapes[3].querySelector('button').click();
+    const txt = $('detailMorceau').textContent;
+    verifie('pas à pas : « Mesures 1 à 4 » règle la section et 60 %', /Jusqu’à la mesure\s*−\s*4 \/ 8/.test(txt) && /♩ = 48/.test(txt), txt.match(/♩ = \d+/));
+    w.Tablature.arreter();
+    etapes[0].querySelector('input').click();
+    verifie('pas à pas : étape cochée, mémorisée, la suivante mise en avant',
+            /1 \/ 8/.test(bloc.querySelector('summary').textContent) && w.Store.etapesFaites('mary-agneau').join() === '0' &&
+            bloc.querySelectorAll('.etape')[1].classList.contains('prochaine'));
+    w.Store.marquerEtape('mary-agneau', 0, false);
   }
 
   console.log('\n— Oreille —');

@@ -461,8 +461,136 @@
     c += txt(52, yBas + 34, 'tête', 'sch-petit');
     c += txt(xFrette(12), yBas + 34, '12e case', 'sch-petit');
     c += txt(470, yBas + 34, 'rosace', 'sch-petit');
-    c += txt(L / 2, H - 6, 'Corde 6 (grave) en haut, comme sur une tablature. ○ corde à vide, ✕ corde non jouée.', 'sch-petit');
+    c += txt(L / 2, H - 6, 'Corde 6 (grave) en haut, comme quand tu regardes ta guitare. ○ corde à vide, ✕ corde non jouée.', 'sch-petit');
     return svg('0 0 ' + L + ' ' + H, c, 'Où se joue l’accord ' + accord.id + ' sur la guitare');
+  }
+
+  /* Les DEUX mains pour une attaque (une note ou un accord plaqué), sur la
+   * guitare entière, vue comme le joueur la voit en baissant les yeux : tête
+   * à gauche, caisse à droite, corde 6 (la plus grosse) en haut.
+   *
+   * Main gauche : la paume sous le manche, le pouce derrière (pointillé), et
+   * chaque doigt posé sur la vraie case — mêmes couleurs et numéros que
+   * partout ailleurs. Main droite : au-dessus des cordes entre la rosace et
+   * le chevalet, le pouce vers les graves, i m a vers les aiguës ; seuls les
+   * doigts qui pincent sont dessinés. La corde jouée est surlignée sur toute
+   * sa longueur.
+   *
+   * `c` est le résultat de Tablature.consigne(notes). */
+  var ORD = { 1: '1re', 2: '2e', 3: '3e', 4: '4e', 5: '5e', 6: '6e' };
+  var NOM_DOIGT = { 1: 'index', 2: 'majeur', 3: 'annulaire', 4: 'auriculaire' };
+  var NOM_DROITE = { p: 'pouce', i: 'index', m: 'majeur', a: 'annulaire' };
+
+  function deuxMains(c, opts) {
+    opts = opts || {};
+    var L = 660, H = 350;
+    var xSillet = 86, xDouze = 392, xChevalet = 556;
+    var yHaut = 120, yBas = 214;
+    var pas = (yBas - yHaut - 12) / 5;
+    var s = DEFS;
+    function xFrette(n) { return xSillet + (xDouze - xSillet) * (1 - Math.pow(2, -n / 12)) / 0.5; }
+    function yCorde(num) { return yHaut + 6 + (6 - num) * pas; }
+    function xCase(n) { return (xFrette(n - 1) + xFrette(n)) / 2; }
+
+    // Guitare
+    var yMil = (yHaut + yBas) / 2;
+    s += '<ellipse cx="494" cy="' + yMil + '" rx="70" ry="74" class="sch-bois"/>';
+    s += '<ellipse cx="420" cy="' + yMil + '" rx="50" ry="56" class="sch-bois"/>';
+    s += '<circle cx="452" cy="' + yMil + '" r="22" class="sch-trou"/>';
+    s += '<rect x="' + (xChevalet - 6) + '" y="' + (yMil - 23) + '" width="12" height="46" rx="3" class="sch-piece"/>';
+    s += '<rect x="' + xSillet + '" y="' + yHaut + '" width="' + (440 - xSillet) + '" height="' + (yBas - yHaut) + '" class="sch-manche"/>';
+    s += '<rect x="20" y="' + (yHaut - 8) + '" width="' + (xSillet - 22) + '" height="' + (yBas - yHaut + 16) + '" rx="8" class="sch-piece"/>';
+    s += '<rect x="' + (xSillet - 4) + '" y="' + (yHaut - 3) + '" width="5" height="' + (yBas - yHaut + 6) + '" class="sch-sillet-plein"/>';
+    for (var n = 1; n <= 12; n++) {
+      var x = xFrette(n);
+      s += '<line x1="' + x + '" y1="' + yHaut + '" x2="' + x + '" y2="' + yBas + '" class="sch-barrette"/>';
+      if (n <= 7 || n === 12) s += txt(xCase(n), yBas + 13, String(n), 'sch-num-case');
+    }
+    var jouees = c.gauche.map(function (g) { return g.corde; });
+    for (var num = 6; num >= 1; num--) {
+      var y = yCorde(num);
+      var joue = jouees.indexOf(num) !== -1;
+      s += '<line x1="' + (xSillet - 2) + '" y1="' + y + '" x2="' + xChevalet + '" y2="' + y + '" class="' + (joue ? 'sch-corde-jouee' : 'sch-corde') + '"/>';
+      s += txt(xChevalet + 10, y + 4, num + ' ' + Theorie.CORDES[num].court, joue ? 'sch-nom-corde-jouee' : 'sch-petit', 'start');
+    }
+    s += txt(52, yBas + 30, 'tête', 'sch-petit');
+    s += txt(xSillet + 6, yBas + 30, 'cases →', 'sch-petit', 'start');
+
+    // --- Main gauche : doigts qui jouent, plus ceux qui tiennent l'accord
+    var poses = c.gauche.filter(function (g) { return g.frette > 0; }).concat(c.tenus || []);
+    if (poses.length) {
+      var xs = poses.map(function (g) { return xCase(g.frette); });
+      var xMoy = xs.reduce(function (a, b) { return a + b; }, 0) / xs.length;
+      var paumeX = xMoy + 14, paumeY = yBas + 62;
+      // pouce derrière le manche, en face du majeur
+      s += '<ellipse cx="' + (xMoy - 4) + '" cy="' + yMil + '" rx="9" ry="20" class="sch-pouce-derriere"/>';
+      s += '<ellipse cx="' + paumeX + '" cy="' + paumeY + '" rx="32" ry="22" class="sch-paume"/>';
+      s += txt(paumeX, paumeY + 5, 'main G', 'sch-petit');
+      // Les doigts d'abord, les bouts ensuite : sinon le doigt suivant passe
+      // par-dessus le bout du précédent sur deux cordes voisines.
+      poses.forEach(function (g) {
+        var d = g.doigt || 1, gx = xCase(g.frette), gy = yCorde(g.corde);
+        var depX = paumeX - 24 + (d - 1) * 14, depY = paumeY - 18;
+        s += '<path d="M' + depX + ' ' + depY + ' Q ' + (depX - 6) + ' ' + ((depY + gy) / 2) + ' ' + gx + ' ' + gy + '" class="sch-doigt-tube sch-doigt-tube-fin sch-doigt-' + d + '"/>';
+      });
+      poses.forEach(function (g) {
+        var d = g.doigt || 1, gx = xCase(g.frette), gy = yCorde(g.corde);
+        s += '<circle cx="' + gx + '" cy="' + gy + '" r="8.5" class="sch-doigt-bout sch-bout-cerne sch-doigt-' + d + '"/>';
+        s += '<text x="' + gx + '" y="' + (gy + 4) + '" class="sch-doigt-mini" text-anchor="middle">' + (g.doigt || '?') + '</text>';
+      });
+      // étiquette en haut, flèche vers le doigt
+      var g0 = poses[0];
+      var lib = c.accord ? 'accord ' + c.accord + ' posé · ' + poses.length + ' doigt' + (poses.length > 1 ? 's' : '')
+        : poses.length === 1
+        ? (g0.doigt ? NOM_DOIGT[g0.doigt] + ' (' + g0.doigt + ')' : 'un doigt') + ' · ' + ORD[g0.corde] + ' corde · case ' + g0.frette
+        : poses.length + ' doigts · cases ' + Math.min.apply(null, poses.map(function (g) { return g.frette; })) +
+          ' à ' + Math.max.apply(null, poses.map(function (g) { return g.frette; }));
+      s += txt(Math.max(160, xMoy), 22, 'MAIN GAUCHE', 'sch-titre-main');
+      s += txt(Math.max(160, xMoy), 44, lib, 'sch-txt');
+      s += txt(Math.max(160, xMoy), 64, 'pouce derrière le manche (pointillé)', 'sch-petit');
+      s += fleche(xMoy, 72, xMoy, yHaut - 6);
+      c.gauche.filter(function (g) { return g.corde > 0 && g.frette === 0; }).forEach(function (g) {
+        s += '<circle cx="' + (xSillet - 14) + '" cy="' + yCorde(g.corde) + '" r="6" class="sch-vide-jouee"/>';
+      });
+    } else {
+      s += txt(160, 22, 'MAIN GAUCHE', 'sch-titre-main');
+      s += txt(160, 44, 'aucun doigt : corde à vide', 'sch-txt');
+      c.gauche.filter(function (g) { return g.corde > 0; }).forEach(function (g) {
+        s += '<circle cx="' + (xSillet - 14) + '" cy="' + yCorde(g.corde) + '" r="6" class="sch-vide-jouee"/>';
+      });
+      s += fleche(xSillet - 14, 52, xSillet - 14, yHaut - 10);
+    }
+
+    // --- Main droite : au-dessus des cordes, entre rosace et chevalet
+    var droites = c.droite.filter(function (d) { return d.corde > 0; });
+    var mainX = 528, mainY = yHaut - 30;
+    s += '<ellipse cx="' + mainX + '" cy="' + mainY + '" rx="30" ry="18" class="sch-paume"/>';
+    s += txt(mainX, mainY + 4, 'main D', 'sch-petit');
+    var DX = { p: -50, i: -26, m: -12, a: 2 };
+    function bout(d) {
+      var m = d.main || 'i';
+      return { m: m, x: mainX + (DX[m] !== undefined ? DX[m] : -20), y: yCorde(d.corde),
+               depX: m === 'p' ? mainX - 26 : mainX - 18 + 'ima'.indexOf(m) * 12, depY: mainY + 10 };
+    }
+    droites.forEach(function (d) {
+      var b = bout(d);
+      s += '<path d="M' + b.depX + ' ' + b.depY + ' Q ' + (b.depX - 4) + ' ' + ((b.depY + b.y) / 2) + ' ' + b.x + ' ' + b.y + '" class="sch-doigt-tube sch-doigt-tube-fin sch-droite"/>';
+    });
+    droites.forEach(function (d) {
+      var b = bout(d);
+      s += '<circle cx="' + b.x + '" cy="' + b.y + '" r="8.5" class="sch-doigt-bout sch-bout-cerne sch-droite"/>';
+      s += '<text x="' + b.x + '" y="' + (b.y + 4) + '" class="sch-doigt-mini" text-anchor="middle">' + (d.main || 'i/m') + '</text>';
+    });
+    var d0 = droites[0] || {};
+    var libD = droites.length === 1
+      ? (d0.main ? NOM_DROITE[d0.main] + ' (' + d0.main + ')' : 'i ou m') + ' → ' + ORD[d0.corde] + ' corde'
+      : droites.length + ' cordes ensemble';
+    s += txt(L - 8, 22, 'MAIN DROITE', 'sch-titre-main', 'end');
+    s += txt(L - 8, 44, libD, 'sch-txt', 'end');
+    s += txt(L - 8, 64, 'entre rosace et chevalet', 'sch-petit', 'end');
+
+    s += txt(L / 2, H - 8, 'Vue du joueur : corde 6 (grosse) en haut, corde 1 (fine) en bas', 'sch-petit');
+    return svg('0 0 ' + L + ' ' + H, s, 'Position des deux mains sur la guitare');
   }
 
   function rendre(id) {
@@ -471,5 +599,5 @@
   }
   function liste() { return Object.keys(S); }
 
-  global.Illustrations = { rendre: rendre, liste: liste, mainAccord: mainAccord, positionSurGuitare: positionSurGuitare };
+  global.Illustrations = { rendre: rendre, liste: liste, mainAccord: mainAccord, positionSurGuitare: positionSurGuitare, deuxMains: deuxMains };
 })(typeof window !== 'undefined' ? window : globalThis);

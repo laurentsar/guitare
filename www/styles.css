@@ -341,6 +341,23 @@ html.tv .portee { min-width: 0; }
 .schema .sch-doigt-3 { stroke: #E8C766; fill: #E8C766; }
 .schema .sch-doigt-4 { stroke: #C79BFF; fill: #C79BFF; }
 .schema .sch-mute { fill: var(--texte-2); font-size: 13px; }
+.schema .sch-corde-jouee { stroke: var(--accent); stroke-width: 3; }
+.schema .sch-nom-corde-jouee { fill: var(--accent); font-size: 12px; font-weight: 700; }
+.schema .sch-num-case { fill: var(--texte-2); font-size: 10px; }
+.schema .sch-titre-main { fill: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.schema .sch-pouce-derriere { fill: none; stroke: var(--texte-2); stroke-width: 2; stroke-dasharray: 4 3; }
+.schema .sch-vide-jouee { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+.schema .sch-droite { stroke: #FF8F6B; fill: #FF8F6B; }
+.schema .sch-doigt-tube-fin { stroke-width: 9; }
+.schema .sch-bout-cerne { stroke: #22180C; stroke-width: 1.5; }
+.guide-dessin .schema { max-width: 760px; margin: 6px auto; }
+/* Le dessin couvre toute la guitare : sur téléphone il est réduit de moitié,
+ * on grossit donc ses textes pour qu'ils restent lisibles. */
+.guide-dessin .sch-txt { font-size: 17px; font-weight: 600; }
+.guide-dessin .sch-titre-main { font-size: 15px; }
+.guide-dessin .sch-petit { font-size: 14px; }
+.guide-dessin .sch-num-case { font-size: 13px; }
+.guide-dessin .sch-doigt-mini { font-size: 12px; }
 .diagramme .doigt-1 { fill: #7FB8FF; }
 .diagramme .doigt-2 { fill: #58D08B; }
 .diagramme .doigt-3 { fill: #E8C766; }
@@ -384,6 +401,16 @@ html.tv .portee { min-width: 0; }
 .manche-point.doigt-2 circle { fill: #58D08B; stroke: #58D08B; }
 .manche-point.doigt-3 circle { fill: #E8C766; stroke: #E8C766; }
 .manche-point.doigt-4 circle { fill: #C79BFF; stroke: #C79BFF; }
+.etapes-morceau { margin: 12px 0; }
+.etapes-morceau summary { font-weight: 700; }
+.etapes-liste { list-style: none; padding: 0; margin: 8px 0 0; }
+.etape { border-left: 3px solid var(--trait); padding: 6px 0 8px 12px; margin: 0 0 8px; }
+.etape.prochaine { border-left-color: var(--accent); }
+.etape.faite { opacity: .6; }
+.etape.faite .etape-titre b { text-decoration: line-through; }
+.etape-titre { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.etape-titre input { width: 20px; height: 20px; flex: none; }
+.etape .aide { margin: 4px 0 6px; }
 .guide-mains { background: var(--fond-3); border: 1px solid var(--trait); border-radius: 12px; padding: 10px 14px; margin: 12px 0; }
 .guide-mains h3 { margin: 0 0 6px; }
 .guide-legende { margin: 0 0 8px; background: none; border: none; padding: 0; }
@@ -398,7 +425,7 @@ html.tv .portee { min-width: 0; }
 .guide-pastille.doigt-2 { background: #58D08B; border-color: #58D08B; }
 .guide-pastille.doigt-3 { background: #E8C766; border-color: #E8C766; }
 .guide-pastille.doigt-4 { background: #C79BFF; border-color: #C79BFF; }
-.guide-pastille.droite { background: var(--bois); border-color: var(--bois); font-style: italic; }
+.guide-pastille.droite { background: #FF8F6B; border-color: #FF8F6B; font-style: italic; }
 
 /* ------------------------------------------------------------ éditeur */
 .saisie {

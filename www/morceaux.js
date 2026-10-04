@@ -395,6 +395,12 @@
     sous_titre: 'The Cranberries · grille d’accords, accompagnement écrit pour cette app',
     niveau: 3, tempo: 76, signature: [4, 4],
     description: 'Quatre accords qui tournent du début à la fin : Mi mineur, Do maj7, Sol, Ré (♩ ≈ 84 sur le disque). Couplet en arpège pouce-index-majeur-annulaire, refrain en basse + accord plaqué, comme on l’accompagne à la guitare classique. Ni mélodie ni paroles : elles sont sous droits.',
+    sections: [
+      { titre: 'Couplet : l’arpège', de: 1, a: 4,
+        texte: 'Un tour de grille en arpège p-i-m-a-m-i-m-i (mesures 1 à 4 ; les mesures 5 à 8 sont identiques). Le pouce joue la basse de chaque accord, i m a restent chacun sur leur corde.' },
+      { titre: 'Refrain : basse et accord plaqué', de: 9, a: 12,
+        texte: 'Pouce sur la basse au 1er temps, i-m-a pincés ensemble au 2e, pouce sur la 4e corde au 3e, i-m-a au 4e (mesures 9 à 12 ; 13 à 16 identiques).' }
+    ],
     mains: {
       gauche: [ZOMBIE.Em, ZOMBIE.Cmaj7, ZOMBIE.G, ZOMBIE.D],
       droite: [
@@ -436,11 +442,66 @@
     });
   });
 
+  /* Apprendre un morceau, étape par étape.
+   *
+   * La méthode est celle de tout professeur : accorder, connaître les
+   * positions SANS le rythme, puis de petits morceaux lents en boucle, puis
+   * les recoller, puis accélérer, puis jouer seul. Chaque étape porte une
+   * action que le lecteur sait exécuter (mesures à boucler, tempo en %,
+   * guitare muette…) : l'élève appuie, l'app règle tout.
+   *
+   * Découpage : les `sections` du morceau s'il en a (Zombie), sinon des
+   * phrases de 4 mesures. */
+  function etapes(p, nbMesures) {
+    var e = [];
+    e.push({ titre: 'Accorde ta guitare',
+             texte: 'Une guitare fausse rend tout plus dur à entendre. Accorde les six cordes, une par une, jusqu’à ce que l’aiguille soit au centre.',
+             bouton: '🎚 Ouvrir l’accordeur', action: { type: 'accordeur' } });
+    e.push({ titre: 'Écoute le morceau en entier',
+             texte: 'Une fois, sans jouer, en suivant la partition des yeux. Tu sauras où tu vas.',
+             bouton: '▶ Écouter', action: { type: 'section', de: 1, a: nbMesures, pct: 100 } });
+    if (p.mains) {
+      e.push({ titre: 'Apprends les ' + p.mains.gauche.length + ' accords',
+               texte: 'Un accord à la fois : pose les doigts comme sur le dessin, joue chaque corde une par une, corrige celle qui frise. Quand chacun sonne propre, passe à la suite.',
+               bouton: '✋ Voir les accords', action: { type: 'accords' } });
+      e.push({ titre: 'Passe d’un accord au suivant',
+               texte: 'Sans main droite : ' + p.mains.gauche.map(function (a) { return a.id; }).join(' → ') + ' → ' + p.mains.gauche[0].id +
+                      ', lentement, en suivant les consignes de passage (le doigt qui reste, ceux qui glissent). Dix tours sans regarder la main, c’est gagné.',
+               bouton: '✋ Voir les passages', action: { type: 'accords' } });
+    } else {
+      e.push({ titre: 'Place chaque note, sans rythme',
+               texte: 'Avec « Suivante », pose le doigt de la main gauche sur la case indiquée, pince avec le doigt de main droite indiqué, et dis le nom de la note. Aucune vitesse : seulement la bonne place.',
+               bouton: '👣 Note par note', action: { type: 'guide' } });
+    }
+    var parties = p.sections || [];
+    if (!parties.length) {
+      var taille = nbMesures <= 4 ? nbMesures : 4;
+      for (var de = 1; de <= nbMesures; de += taille) {
+        parties.push({ titre: 'Mesures ' + de + ' à ' + Math.min(nbMesures, de + taille - 1), de: de, a: Math.min(nbMesures, de + taille - 1) });
+      }
+    }
+    parties.forEach(function (s) {
+      e.push({ titre: s.titre,
+               texte: (s.texte ? s.texte + ' ' : '') + 'Écoute une fois, puis joue avec l’app, lentement (60 %) et en boucle. Passe à la suite quand tu le joues trois fois de suite sans arrêt.',
+               bouton: '🔁 Mesures ' + s.de + ' à ' + s.a + ' · 60 %', action: { type: 'section', de: s.de, a: s.a, pct: 60, boucle: true } });
+    });
+    e.push({ titre: 'Tout le morceau, lentement',
+             texte: 'On recolle les morceaux, toujours à 60 %. Si un passage accroche, reviens à son étape quelques minutes.',
+             bouton: '🔁 Tout · 60 %', action: { type: 'section', de: 1, a: nbMesures, pct: 60, boucle: true } });
+    e.push({ titre: 'Monte en vitesse',
+             texte: 'L’entraîneur part de 60 % et ajoute 5 % à chaque tour. S’il va trop vite, arrête-toi au dernier tempo réussi et reprends demain.',
+             bouton: '📈 Entraîneur de vitesse', action: { type: 'section', de: 1, a: nbMesures, entraineur: true, boucle: true } });
+    e.push({ titre: 'Joue seul, au vrai tempo',
+             texte: 'Guitare muette : l’app ne joue plus, elle bat la mesure et surligne la partition. C’est toi qui joues le morceau.',
+             bouton: '🎸 Jouer seul', action: { type: 'section', de: 1, a: nbMesures, pct: 100, muet: true, clic: true } });
+    return e;
+  }
+
   function tous() { return PIECES.slice(); }
   function get(id) { for (var i = 0; i < PIECES.length; i++) if (PIECES[i].id === id) return PIECES[i]; return null; }
 
   global.Morceaux = {
-    tous: tous, get: get, melodie: melodie, arpeges: arpeges,
+    tous: tous, get: get, melodie: melodie, arpeges: arpeges, etapes: etapes,
     caseEnPremierePosition: caseEnPremierePosition, midiDeNom: midiDeNom
   };
 })(typeof window !== 'undefined' ? window : globalThis);

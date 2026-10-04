@@ -541,7 +541,9 @@
     boite.appendChild(legende);
     var titre = el('p', 'guide-titre');
     var corps = el('div', 'guide-corps');
+    var dessin = el('div', 'guide-dessin');
     boite.appendChild(titre);
+    boite.appendChild(dessin);
     boite.appendChild(corps);
 
     var nav = el('div', 'actions');
@@ -555,7 +557,26 @@
     function rendre() {
       var ns = notesA(temps[i]);
       var c = Tablature.consigne(ns);
+      // Accompagnement : les doigts de l'accord restent posés même sur les
+      // cordes qu'on ne joue pas à cet instant — on le dit, et on les dessine.
+      var acc = ns[0].accord && p.mains && p.mains.gauche.filter(function (a) { return a.id === ns[0].accord; })[0];
+      if (acc) {
+        c.accord = acc.id;
+        c.tenus = [];
+        acc.frettes.forEach(function (f, k) {
+          var corde = k + 1;
+          if (f > 0 && !ns.some(function (n) { return n.corde === corde; })) {
+            c.tenus.push({ corde: corde, frette: f, doigt: acc.doigts[k] });
+          }
+        });
+        if (c.tenus.length) {
+          c.gauche.push({ corde: 0, frette: 0, doigt: 0, texte: 'Garde l’accord ' + acc.id + ' posé : ' + c.tenus.map(function (t) {
+            return 'doigt ' + t.doigt + ' case ' + t.frette + ' sur la ' + t.corde + (t.corde === 1 ? 're' : 'e') + ' corde';
+          }).join(', ') + '.' });
+        }
+      }
       titre.textContent = 'Note ' + (i + 1) + ' sur ' + temps.length + ' : ' + c.noms.join(' + ');
+      dessin.innerHTML = Illustrations.deuxMains(c);
       vide(corps);
       function colonne(nom, lignes, pastille) {
         var col = el('div', 'guide-main');
@@ -570,6 +591,7 @@
         corps.appendChild(col);
       }
       colonne('✋ Main gauche (sur le manche)', c.gauche, function (l) {
+        if (!l.corde) return el('span', 'guide-pastille doigt-0', '✋');
         return el('span', 'guide-pastille doigt-' + (l.doigt || 0), l.doigt ? String(l.doigt) : '0');
       });
       colonne('🤚 Main droite (au-dessus de la rosace)', c.droite, function (l) {

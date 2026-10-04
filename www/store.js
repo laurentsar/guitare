@@ -127,7 +127,19 @@
     ecrire('tablatures', tablatures().filter(function (t) { return t.id !== id; }));
   }
 
+  // Étapes « apprendre pas à pas » cochées, par morceau : { id: [0, 2, …] }.
+  function etapesFaites(id) { return (lire('etapes', {})[id] || []).slice(); }
+  function marquerEtape(id, k, fait) {
+    var t = lire('etapes', {});
+    var l = (t[id] || []).filter(function (x) { return x !== k; });
+    if (fait) l.push(k);
+    t[id] = l.sort(function (a, b) { return a - b; });
+    ecrire('etapes', t);
+    return t[id];
+  }
+
   global.Store = {
+    etapesFaites: etapesFaites, marquerEtape: marquerEtape,
     tablatures: tablatures, tablature: tablature,
     sauverTablature: sauverTablature, supprimerTablature: supprimerTablature,
     reglages: reglages, reglage: reglage,

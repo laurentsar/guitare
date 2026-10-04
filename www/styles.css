@@ -401,6 +401,16 @@ html.tv .portee { min-width: 0; }
 .manche-point.doigt-2 circle { fill: #58D08B; stroke: #58D08B; }
 .manche-point.doigt-3 circle { fill: #E8C766; stroke: #E8C766; }
 .manche-point.doigt-4 circle { fill: #C79BFF; stroke: #C79BFF; }
+.etapes-morceau { margin: 12px 0; }
+.etapes-morceau summary { font-weight: 700; }
+.etapes-liste { list-style: none; padding: 0; margin: 8px 0 0; }
+.etape { border-left: 3px solid var(--trait); padding: 6px 0 8px 12px; margin: 0 0 8px; }
+.etape.prochaine { border-left-color: var(--accent); }
+.etape.faite { opacity: .6; }
+.etape.faite .etape-titre b { text-decoration: line-through; }
+.etape-titre { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.etape-titre input { width: 20px; height: 20px; flex: none; }
+.etape .aide { margin: 4px 0 6px; }
 .guide-mains { background: var(--fond-3); border: 1px solid var(--trait); border-radius: 12px; padding: 10px 14px; margin: 12px 0; }
 .guide-mains h3 { margin: 0 0 6px; }
 .guide-legende { margin: 0 0 8px; background: none; border: none; padding: 0; }

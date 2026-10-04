@@ -614,8 +614,51 @@
     if (temps.length) rendre();
     return {
       boite: boite,
+      aller: function (k) { aller(k, true); },
       suivre: function (t) { var k = temps.indexOf(t); if (k !== -1) { i = k; rendre(); } }
     };
+  }
+
+  function defiler(n) { if (n.scrollIntoView) n.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+
+  /* « Apprendre pas à pas » : le chemin du premier contact au morceau joué
+   * seul. Chaque étape se coche (mémorisé par morceau) et son bouton règle
+   * le lecteur pour elle. La première étape non cochée est mise en avant. */
+  function blocEtapes(p, nbMesures, appliquer) {
+    var etapes = Morceaux.etapes(p, nbMesures);
+    var d = el('details', 'etapes-morceau');
+    var titre = el('summary');
+    d.appendChild(titre);
+    var liste = el('ol', 'etapes-liste');
+    d.appendChild(liste);
+    function rendre() {
+      var faites = Store.etapesFaites(p.id);
+      var prochaine = -1;
+      for (var k = 0; k < etapes.length; k++) if (faites.indexOf(k) === -1) { prochaine = k; break; }
+      titre.textContent = '🎯 Apprendre pas à pas — ' + faites.length + ' / ' + etapes.length + ' étapes' +
+        (prochaine === -1 ? ' ✓ morceau appris !' : '');
+      vide(liste);
+      etapes.forEach(function (e, k) {
+        var fait = faites.indexOf(k) !== -1;
+        var li = el('li', 'etape' + (fait ? ' faite' : '') + (k === prochaine ? ' prochaine' : ''));
+        var tete = el('label', 'etape-titre');
+        var cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.checked = fait;
+        cb.onchange = function () { Store.marquerEtape(p.id, k, cb.checked); rendre(); };
+        tete.appendChild(cb);
+        tete.appendChild(el('b', null, 'Étape ' + (k + 1) + ' · ' + e.titre));
+        li.appendChild(tete);
+        li.appendChild(el('p', 'aide', e.texte));
+        var b = el('button', 'btn' + (k === prochaine ? ' primaire' : ''), e.bouton);
+        b.onclick = function () { appliquer(e.action); };
+        li.appendChild(b);
+        liste.appendChild(li);
+      });
+    }
+    rendre();
+    // Ouvert tant que le morceau n'est pas appris : c'est par là qu'on commence.
+    d.open = Store.etapesFaites(p.id).length < etapes.length;
+    return d;
   }
 
   function ouvrirMorceau(id) {
@@ -636,6 +679,7 @@
     h.appendChild(el('p', 'aide', p.sous_titre));
     if (p.description) h.appendChild(el('p', null, p.description));
     if (p.mains) h.appendChild(blocMains(p.mains));
+    h.appendChild(blocEtapes(p, nbMesures, function (action) { appliquerEtape(action); }));
     if (p.source) {
       // Mention exigée par la licence (CC-BY) et due dans tous les cas.
       var credit = el('p', 'aide credit');
@@ -720,9 +764,11 @@
       function maj() { b.classList.toggle('actif', !!etat[cle]); b.setAttribute('aria-pressed', etat[cle] ? 'true' : 'false'); }
       b.onclick = function () { etat[cle] = !etat[cle]; maj(); if (surChange) surChange(); };
       maj();
+      majs.push(maj);
       opts.appendChild(b);
       return b;
     }
+    var majs = [];
     interrupteur('boucle', '🔁 Boucle');
     interrupteur('entraineur', '📈 Entraîneur de vitesse', function () {
       // L'entraîneur n'a de sens qu'en boucle : il accélère à chaque tour.
@@ -748,6 +794,7 @@
       pl.onclick = function () { plusFn(); maj(); marquerSection(); };
       l.appendChild(m); l.appendChild(v); l.appendChild(pl);
       maj();
+      majs.push(maj);
       h.appendChild(l);
     }
     reglage('Depuis la mesure', function () { return etat.de; },
@@ -836,6 +883,33 @@
         }
       });
     }
+    /* Une étape du parcours règle le lecteur comme un professeur le ferait :
+     * section, tempo, boucle, guitare muette — puis lance la lecture. */
+    function appliquerEtape(action) {
+      if (action.type === 'accordeur') { aller('accordeur'); return; }
+      if (action.type === 'accords') {
+        var bloc = h.querySelector('.mains-morceau');
+        if (bloc) { bloc.open = true; defiler(bloc); }
+        return;
+      }
+      if (action.type === 'guide') {
+        guide.aller(0);
+        defiler(guide.boite);
+        return;
+      }
+      Tablature.arreter(); effacer();
+      etat.de = action.de; etat.a = action.a;
+      etat.entraineur = !!action.entraineur;
+      etat.pct = action.entraineur ? 60 : (action.pct || 100);
+      etat.boucle = !!action.boucle;
+      etat.muet = !!action.muet;
+      if (action.clic) etat.clic = true;
+      majs.forEach(function (f) { f(); });
+      majTempo(); marquerSection();
+      defiler(zone);
+      lancer(true); pupitre.maj();
+    }
+
     bJouer.onclick = function () { lancer(true); pupitre.maj(); };
     bStop.onclick = function () { Tablature.arreter(); effacer(); if (window.CasqueVR) CasqueVR.fin(); pupitre.maj(); };
     bMetro.onclick = function () { reglerTempo(tempoEffectif()); aller('metronome'); demarrerMetro(); };

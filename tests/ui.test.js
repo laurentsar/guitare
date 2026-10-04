@@ -256,6 +256,22 @@ function verifie(nom, cond, detail) {
             /Garde l’accord Em posé/.test(g.textContent) && /accord Em posé/.test(g.querySelector('.guide-dessin').textContent));
   }
 
+  w.AppGuitare.ouvrirMorceau('mary-agneau');
+  {
+    const bloc = $('detailMorceau').querySelector('.etapes-morceau');
+    verifie('pas à pas : liste d’étapes ouverte, 0 / 8', bloc && bloc.open && /0 \/ 8 étapes/.test(bloc.querySelector('summary').textContent));
+    const etapes = bloc.querySelectorAll('.etape');
+    etapes[3].querySelector('button').click();
+    const txt = $('detailMorceau').textContent;
+    verifie('pas à pas : « Mesures 1 à 4 » règle la section et 60 %', /Jusqu’à la mesure\s*−\s*4 \/ 8/.test(txt) && /♩ = 48/.test(txt), txt.match(/♩ = \d+/));
+    w.Tablature.arreter();
+    etapes[0].querySelector('input').click();
+    verifie('pas à pas : étape cochée, mémorisée, la suivante mise en avant',
+            /1 \/ 8/.test(bloc.querySelector('summary').textContent) && w.Store.etapesFaites('mary-agneau').join() === '0' &&
+            bloc.querySelectorAll('.etape')[1].classList.contains('prochaine'));
+    w.Store.marquerEtape('mary-agneau', 0, false);
+  }
+
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
   w.AppGuitare.demarrerOreille('cordes');

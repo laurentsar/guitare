@@ -209,6 +209,25 @@ console.log('\n— Dessin des deux mains —');
           /sch-bout-cerne sch-doigt-1/.test(em) && /sch-bout-cerne sch-doigt-2/.test(em) && (em.match(/sch-bout-cerne sch-droite/g) || []).length === 3);
 }
 
+console.log('\n— Apprendre pas à pas —');
+{
+  const nb = (p) => Math.ceil(Tablature.duree_totale(p) / Tablature.noiresParMesure(p));
+  const mary = Morceaux.get('mary-agneau'), em = Morceaux.etapes(mary, nb(mary));
+  verifie('Mary : accordeur, écoute, note par note, 2 × 4 mesures, tout lent, vitesse, seul',
+          em.map((e) => e.action.type).join(',') === 'accordeur,section,guide,section,section,section,section,section', em.map((e) => e.titre).join(' | '));
+  verifie('Mary : les phrases couvrent les mesures 1-4 et 5-8', em[3].action.de === 1 && em[3].action.a === 4 && em[4].action.de === 5 && em[4].action.a === 8);
+  verifie('étapes de travail : 60 % en boucle', em[3].action.pct === 60 && em[3].action.boucle);
+  verifie('dernière étape : guitare muette, clic, 100 %', em[em.length - 1].action.muet && em[em.length - 1].action.clic && em[em.length - 1].action.pct === 100);
+  const z = Morceaux.get('zombie'), ez = Morceaux.etapes(z, nb(z));
+  verifie('Zombie : accords, passages, couplet, refrain', /4 accords/.test(ez[2].titre) && /Em → Cmaj7 → G → D → Em/.test(ez[3].texte) &&
+          ez.some((e) => /Couplet/.test(e.titre) && e.action.de === 1 && e.action.a === 4) && ez.some((e) => /Refrain/.test(e.titre) && e.action.de === 9));
+  verifie('chaque morceau : des étapes, toutes les mesures couvertes par les sections', Morceaux.tous().every((p) => {
+    const n = nb(p), e = Morceaux.etapes(p, n);
+    return e.length >= 7 && e.every((x) => x.titre && x.texte && x.bouton) &&
+           (p.sections || e.filter((x) => /^Mesures/.test(x.titre)).reduce((t, x) => t + x.action.a - x.action.de + 1, 0) === n);
+  }));
+}
+
 console.log('\n— Tablature —');
 const p = Morceaux.get('au-clair');
 verifie('durée totale = somme des durées', Tablature.duree_totale(p) === p.notes.reduce((t, n) => Math.max(t, n.temps + n.duree), 0));

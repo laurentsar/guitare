@@ -228,6 +228,38 @@ console.log('\n— Apprendre pas à pas —');
   }));
 }
 
+console.log('\n— Doigtés de tous les morceaux —');
+{
+  const tous = Morceaux.tous();
+  verifie('chaque note de chaque morceau : doigt gauche (si case pressée) et doigt droit',
+          tous.every((p) => p.notes.every((n) => (n.frette === 0 || (n.doigt >= 1 && n.doigt <= 4)) && /^[pima]$/.test(n.main))),
+          tous.filter((p) => p.notes.some((n) => (n.frette > 0 && !(n.doigt >= 1 && n.doigt <= 4)) || !/^[pima]$/.test(n.main))).map((p) => p.id).join(','));
+  verifie('dans un accord, une case plus haute ne prend jamais un doigt plus bas', tous.every((p) => {
+    const par = {};
+    p.notes.forEach((n) => { if (n.frette > 0) (par[n.temps] = par[n.temps] || []).push(n); });
+    return Object.values(par).every((g) => g.every((a) => g.every((b) => !(b.frette > a.frette && b.doigt < a.doigt))));
+  }));
+  verifie('main droite : la basse d’un accord (corde 4 à 6) est au pouce', tous.filter((p) => p.source).every((p) => {
+    const par = {};
+    p.notes.forEach((n) => (par[n.temps] = par[n.temps] || []).push(n));
+    return Object.values(par).every((g) => { const b = g.reduce((x, y) => (y.corde > x.corde ? y : x)); return g.length < 2 || b.corde < 4 || b.main === 'p'; });
+  }));
+  const valse = Morceaux.get('carulli-valse-11').notes;
+  verifie('répertoire : un doigt par case en première position (Carulli, case 2 = majeur)', valse.filter((n) => n.frette === 2).every((n) => n.doigt === 2));
+  verifie('études d’arpèges : accords nommés et position des mains', ['etude-mim', 'etude-lam'].every((id) => {
+    const p = Morceaux.get(id);
+    return p.mains && p.mains.gauche.length === 3 && p.notes.every((n) => n.accord) && /index|majeur|annulaire/.test(p.mains.gauche[0].consigne);
+  }));
+  const faciles = ['basses-pouce', 'premieres-notes', 'old-macdonald', 'london-bridge', 'yankee-doodle', 'row-your-boat', 'michael-row'];
+  verifie('7 nouvelles mélodies faciles, niveaux 1-2, case 3 au plus', faciles.every((id) => { const p = Morceaux.get(id); return p && p.niveau <= 2 && p.notes.every((n) => n.frette <= 3); }));
+  verifie('« Les basses au pouce » : cordes 4 à 6 à vide, au pouce', Morceaux.get('basses-pouce').notes.every((n) => n.corde >= 4 && n.frette === 0 && n.main === 'p'));
+  verifie('nouvelles mélodies : mesures complètes, aucune note à cheval', faciles.every((id) => {
+    const p = Morceaux.get(id), m = Tablature.noiresParMesure(p);
+    return Tablature.duree_totale(p) % m === 0 && p.notes.every((n) => Math.floor(n.temps / m + 1e-9) === Math.floor((n.temps + n.duree) / m - 1e-9));
+  }));
+  verifie('niveaux 1 à 3 : au moins 35 morceaux', tous.filter((p) => p.niveau <= 3).length >= 35, tous.filter((p) => p.niveau <= 3).length);
+}
+
 console.log('\n— Tablature —');
 const p = Morceaux.get('au-clair');
 verifie('durée totale = somme des durées', Tablature.duree_totale(p) === p.notes.reduce((t, n) => Math.max(t, n.temps + n.duree), 0));
@@ -440,7 +472,7 @@ console.log('\n— Lecteur —');
 console.log('\n— Répertoire Mutopia —');
 {
   const rep = Morceaux.tous().filter((p) => p.source);
-  verifie('22 pièces importées', rep.length === 22, rep.length);
+  verifie('46 pièces importées', rep.length === 46, rep.length);
   verifie('identifiants uniques', new Set(Morceaux.tous().map((p) => p.id)).size === Morceaux.tous().length);
   verifie('licences : domaine public ou CC-BY seulement (pas de ShareAlike)',
           rep.every((p) => /^(Public Domain|Creative Commons Attribution \d\.\d)$/.test(p.source.licence)),

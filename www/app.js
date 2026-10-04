@@ -574,6 +574,18 @@
             return 'doigt ' + t.doigt + ' case ' + t.frette + ' sur la ' + t.corde + (t.corde === 1 ? 're' : 'e') + ' corde';
           }).join(', ') + '.' });
         }
+      } else {
+        // Notes tenues (basse ou accord qui continue de sonner) : leur doigt
+        // reste posé, sinon la note s'éteint.
+        c.tenus = p.notes.filter(function (n) {
+          return n.frette > 0 && n.temps < temps[i] && temps[i] < n.temps + n.duree - 1e-6 &&
+                 !ns.some(function (x) { return x.corde === n.corde; });
+        }).map(function (n) { return { corde: n.corde, frette: n.frette, doigt: n.doigt }; });
+        if (c.tenus.length) {
+          c.gauche.push({ corde: 0, frette: 0, doigt: 0, texte: 'Laisse posé' + (c.tenus.length > 1 ? 's' : '') + ' : ' + c.tenus.map(function (t) {
+            return 'doigt ' + t.doigt + ' case ' + t.frette + ' sur la ' + t.corde + (t.corde === 1 ? 're' : 'e') + ' corde';
+          }).join(', ') + ' — la note continue de sonner.' });
+        }
       }
       titre.textContent = 'Note ' + (i + 1) + ' sur ' + temps.length + ' : ' + c.noms.join(' + ');
       dessin.innerHTML = Illustrations.deuxMains(c);

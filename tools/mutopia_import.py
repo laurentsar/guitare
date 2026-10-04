@@ -71,6 +71,57 @@ PIECES = [
      'Une marche légère à 2/4. Les notes répétées doivent rester égales.'),
     ('giuliani-50-4', 'giuliani-op50n04', 'Petite pièce n° 4', 'M. Giuliani', 'op. 50 n° 4', 4,
      'À 6/8, balancé comme une barcarolle.'),
+    # --- Ajouts v1.14 : pièces faciles du recueil Guitar-Skole et de Giuliani.
+    # Niveau d'après le placement calculé : case 5 au plus et tempo calme →
+    # niveau 3 ; jusqu'à la case 8 ou plus vif → 4 ; au-delà → 5.
+    ('carulli-valse-11', 'guitar-skole-no-11', 'Tempo di valse', 'F. Carulli', 'Guitar-Skole n° 11', 3,
+     'Une valse à 3/8 qui ne quitte pas les trois premières cases. Un temps par mesure : pense « UN-et-et ».'),
+    ('mertz-marche', 'guitar-skole-no-21', 'Tempo di marcia', 'J. K. Mertz', 'Guitar-Skole n° 21', 3,
+     'Une petite marche, rien au-delà de la case 4. Garde un pas régulier, comme en marchant.'),
+    ('sor-35-14', 'Sor_Etude_Opus35_14', 'Étude', 'F. Sor', 'op. 35 n° 14', 3,
+     'Une étude lente de Sor en première position : une mélodie et sa basse, des accords de trois notes au plus.'),
+    ('mertz-andante-3', 'guitar-skole-no-07', 'Andante', 'J. K. Mertz', 'Études de style n° 3 · Guitar-Skole n° 7', 3,
+     'Lent, en première position. Des accords jusqu’à quatre notes : pose toute la main avant de pincer.'),
+    ('giuliani-50-21', 'giuliani-op50n21', 'Petite pièce n° 21', 'M. Giuliani', 'op. 50 n° 21', 3,
+     'À trois temps, sans dépasser la case 5. Les accords tombent sur le premier temps : appuie-le un peu.'),
+    ('carulli-andante-grazioso', 'guitar-skole-no-13', 'Andante grazioso', 'F. Carulli', 'Guitar-Skole n° 13', 3,
+     'À 2/4, gracieux et sans hâte. Tout se joue dans les cinq premières cases.'),
+    ('carulli-valse-17', 'guitar-skole-no-17', 'Tempo di valse', 'F. Carulli', 'Guitar-Skole n° 17', 3,
+     'Une deuxième valse de Carulli à 3/8, un peu plus longue que la n° 11. Toujours en première position.'),
+    ('carcassi-allegretto-22', 'guitar-skole-no-22', 'Allegretto', 'M. Carcassi', 'Guitar-Skole n° 22', 3,
+     'À 3/8, léger. Rien au-delà de la case 5 : un bon pont vers les études de Carcassi.'),
+    ('carulli-poco-allegro', 'guitar-skole-no-20', 'Poco allegro', 'F. Carulli', 'Guitar-Skole n° 20', 4,
+     'Trois premières cases seulement, mais plus de notes et un tempo plus vif : à travailler au ralenti d’abord.'),
+    ('giuliani-50-20', 'giuliani-op50n20', 'Petite pièce n° 20', 'M. Giuliani', 'op. 50 n° 20', 4,
+     'À 6/8 : deux grands temps de trois croches. Case 4 au plus.'),
+    ('giuliani-50-11', 'giuliani-op50n11', 'Petite pièce n° 11', 'M. Giuliani', 'op. 50 n° 11', 4,
+     'À 2/4, dans les trois premières cases, mais vif : la main droite doit rester régulière.'),
+    ('giuliani-50-13', 'giuliani-op50n13', 'Petite pièce n° 13', 'M. Giuliani', 'op. 50 n° 13', 4,
+     'Une seule ligne, sans accord, dans les trois premières cases — mais en notes rapides. Alterne i-m sans exception.'),
+    ('giuliani-50-15', 'giuliani-op50n15', 'Petite pièce n° 15', 'M. Giuliani', 'op. 50 n° 15', 4,
+     'À 6/8, deux voix. Quelques notes montent à la case 6.'),
+    ('coste-gavotte', 'guitar-skole-no-24', 'Gavotte du XVIIe siècle', 'N. Coste', 'arrangement · Guitar-Skole n° 24', 4,
+     'Une gavotte ancienne arrangée par Coste, mesure à la blanche (2/2). Courte, avec quelques notes à la case 6.'),
+    ('carcassi-allegretto-19', 'guitar-skole-no-19', 'Allegretto', 'M. Carcassi', 'Guitar-Skole n° 19', 4,
+     'À 2/4, assez long. La main monte jusqu’à la case 7 par moments.'),
+    ('mertz-andantino-14', 'guitar-skole-no-14', 'Andantino', 'J. K. Mertz', 'Guitar-Skole n° 14', 4,
+     'Un chant sur des accords jusqu’à quatre notes ; quelques passages à la case 7.'),
+    ('carcassi-allegretto-15', 'guitar-skole-no-15', 'Allegretto', 'M. Carcassi', 'Guitar-Skole n° 15', 4,
+     'À 3/8, avec des montées jusqu’à la case 8.'),
+    ('carcassi-60-7', 'carcassi-op60-07', 'Étude n° 7', 'M. Carcassi', 'op. 60 n° 7', 5,
+     'Une étude en notes continues sur tout le manche (jusqu’à la case 7). Pour la régularité de la main droite.'),
+    ('carcassi-60-8', 'carcassi-op60-08', 'Étude n° 8', 'M. Carcassi', 'op. 60 n° 8', 5,
+     'Une seule ligne qui voyage jusqu’à la case 9 : l’étude des changements de position.'),
+    ('mertz-cantabile', 'guitar-skole-no-12', 'Cantabile', 'J. K. Mertz', 'Guitar-Skole n° 12', 5,
+     'Chanté, lent, mais la mélodie monte haut (case 10) : il faut déplacer la main en gardant le son lié.'),
+    ('mertz-adagio', 'guitar-skole-no-09', 'Adagio', 'J. K. Mertz', 'Guitar-Skole n° 9', 5,
+     'Un adagio romantique qui monte jusqu’à la case 12.'),
+    ('giuliani-50-12', 'giuliani-op50n12', 'Petite pièce n° 12', 'M. Giuliani', 'op. 50 n° 12', 5,
+     'À 6/8, avec des passages jusqu’à la case 12.'),
+    ('brahms-valse-3', 'brahms-vals3', 'Valse n° 3', 'J. Brahms', 'op. 39 n° 3 · arrangement pour guitare', 5,
+     'Une des seize valses de Brahms, arrangée pour guitare. Beaucoup de positions hautes.'),
+    ('brahms-valse-9', 'brahms-vals9', 'Valse n° 9', 'J. Brahms', 'op. 39 n° 9 · arrangement pour guitare', 5,
+     'Plus longue que la n° 3, et encore plus de positions hautes : un objectif pour plus tard.'),
     ('carcassi-60-1', 'carcassi-op60-01', 'Étude n° 1', 'M. Carcassi', 'op. 60 n° 1', 5,
      'L’étude de gammes la plus jouée au monde. Main droite en alternance i-m stricte, jamais deux fois le même doigt.'),
     ('carcassi-60-3', 'carcassi-op60-03', 'Étude n° 3', 'M. Carcassi', 'op. 60 n° 3', 5,
@@ -236,13 +287,28 @@ def convertir(dossier, fichier):
         tenues = [i for i in tenues if ids[i][1] not in hauteurs]
         evenements.append((t, attaques, tenues))
     pos, coupes = placer(evenements, {i: n[1] for i, n in ids.items()})
+    durees = {}
+    for i, (t, p, d) in ids.items():
+        if i in coupes:                 # basse lâchée pour libérer sa corde
+            d = round(coupes[i] - t, 4)
+        durees[i] = d
+    # Une corde ne sonne qu'une note : celle qui attaque arrête la précédente
+    # (note réattaquée pendant qu'elle est tenue, ou triolets dont les durées
+    # arrondies se chevauchent de quelques cent-millièmes).
+    par_corde = {}
+    for i in ids:
+        par_corde.setdefault(pos[i][0], []).append(i)
+    for liste_c in par_corde.values():
+        liste_c.sort(key=lambda i: ids[i][0])
+        for a, b in zip(liste_c, liste_c[1:]):
+            ecart = ids[b][0] - ids[a][0]
+            if ids[a][0] + durees[a] > ids[b][0] + 1e-6 and ecart > 0:
+                durees[a] = round(ecart, 4)
     sortie = []
     for i, (t, p, d) in ids.items():
         c, f = pos[i]
-        if i in coupes:                 # basse lâchée pour libérer sa corde
-            d = round(coupes[i] - t, 4)
         assert CORDES[c] + f == p
-        sortie += [t, c, f, d, p]
+        sortie += [t, c, f, durees[i], p]
     tempo = round(60e6 / m['tempos'][0][1]) if m['tempos'] else 80
     return sortie, sig, tempo
 

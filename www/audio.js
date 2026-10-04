@@ -111,6 +111,11 @@
     }
     var pincement = Math.max(1, Math.round(L * (acier ? 0.12 : 0.2)));
     for (i = 0; i < L; i++) ligne[i] = lisse[i] - lisse[(i + pincement) % L];
+    // La différence de deux bruits peut, par malchance, dépasser 1 et saturer :
+    // on ramène la crête de l'excitation à 0,9, quel que soit le tirage.
+    var crete = 0;
+    for (i = 0; i < L; i++) crete = Math.max(crete, Math.abs(ligne[i]));
+    if (crete > 0.9) for (i = 0; i < L; i++) ligne[i] *= 0.9 / crete;
 
     /* Boucle.
      *

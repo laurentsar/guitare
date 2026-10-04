@@ -272,6 +272,16 @@ function verifie(nom, cond, detail) {
     w.Store.marquerEtape('mary-agneau', 0, false);
   }
 
+  w.AppGuitare.ouvrirMorceau('sor-35-14');
+  {
+    const g = $('detailMorceau').querySelector('.guide-mains');
+    const suiv = [...g.querySelectorAll('button')].find((b) => /Suivante/.test(b.textContent));
+    let vu = false;
+    for (let k = 0; k < 40 && !vu; k++) { suiv.click(); vu = /Laisse posé/.test(g.textContent); }
+    verifie('répertoire : le guide dit quels doigts laisser posés pendant une note tenue', vu);
+    verifie('répertoire : chaque note a un doigt gauche nommé (plus de « un doigt » au choix)', !/Pose un doigt/.test(g.textContent));
+  }
+
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
   w.AppGuitare.demarrerOreille('cordes');

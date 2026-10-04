@@ -62,7 +62,8 @@
       if (!pos) throw new Error('note hors première position : ' + pas[0]);
       var n = { corde: pos.corde, frette: pos.frette, temps: t, duree: pas[1], midi: midi };
       if (pos.frette > 0) n.doigt = Math.min(4, pos.frette);
-      if (opts.alterne) n.main = (k++ % 2) ? 'm' : 'i';
+      if (opts.main) n.main = opts.main;
+      else if (opts.alterne) n.main = (k++ % 2) ? 'm' : 'i';
       notes.push(n);
       t += pas[1];
     });
@@ -86,11 +87,103 @@
           var corde = doigt === 'p' ? bloc.basse : (doigt === 'i' ? 3 : (doigt === 'm' ? 2 : 1));
           var frette = frettes[corde - 1];
           if (frette === -1) frette = 0;
-          notes.push({ corde: corde, frette: frette, temps: t, duree: pas, main: doigt,
-                       midi: Theorie.midiDeCase(corde, frette) });
+          var n = { corde: corde, frette: frette, temps: t, duree: pas, main: doigt, accord: accord.id,
+                    midi: Theorie.midiDeCase(corde, frette) };
+          if (frette > 0 && accord.doigts && accord.doigts[corde - 1]) n.doigt = accord.doigts[corde - 1];
+          notes.push(n);
           t += pas;
         }
       }
+    });
+    return notes;
+  }
+
+  /* « Position des mains » d'une pièce faite d'accords de la bibliothèque :
+   * la consigne de chaque accord est écrite à partir de son doigté. */
+  var NOMS_DOIGTS = { 1: 'index', 2: 'majeur', 3: 'annulaire', 4: 'auriculaire' };
+  function consigneAccord(a) {
+    var poses = [], vides = [], muettes = [];
+    a.frettes.forEach(function (f, k) {
+      var c = k + 1, o = c === 1 ? '1re' : c + 'e';
+      if (f > 0) poses.push(NOMS_DOIGTS[a.doigts[k]] + ' case ' + f + ' sur la ' + o);
+      else if (f === 0) vides.push(o);
+      else muettes.push(o);
+    });
+    var t = a.barre ? 'Barré : l’index couche toutes les cordes de la ' + a.barre.a + 'e à la ' + (a.barre.de === 1 ? '1re' : a.barre.de + 'e') + ' case ' + a.barre.frette + '. ' : '';
+    t += poses.length ? cap(poses.join(', ')) + '.' : '';
+    if (vides.length) t += ' À vide : ' + vides.join(', ') + '.';
+    if (muettes.length) t += ' Ne pas jouer : ' + muettes.join(', ') + '.';
+    return t + ' Pouce derrière le manche, en face du majeur.';
+  }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function mainsAccords(ids, droite) {
+    return {
+      gauche: ids.map(function (id) {
+        var a = Accords.get(id);
+        return { id: a.id, fr: a.fr, frettes: a.frettes, doigts: a.doigts, barre: a.barre, consigne: consigneAccord(a) };
+      }),
+      droite: droite
+    };
+  }
+
+  /* Doigts manquants, calculés pour TOUS les morceaux (le répertoire importé
+   * n'en note aucun) :
+   *  - main gauche : la main couvre quatre cases, un doigt par case. Elle ne
+   *    bouge que si une note sort de sa fenêtre, et revient en première
+   *    position dès que possible. Dans un accord, deux notes à la même case
+   *    prennent deux doigts voisins (on ne pose pas un doigt sur deux cordes).
+   *  - main droite : le pouce prend la basse (corde 4 à 6, ou la note la plus
+   *    grave d'un accord) ; au-dessus, i m a selon la corde ; une mélodie à
+   *    une voix alterne i-m. */
+  function completerDoigtes(notes) {
+    var parTemps = {}, temps = [];
+    notes.forEach(function (n) {
+      if (!parTemps[n.temps]) { parTemps[n.temps] = []; temps.push(n.temps); }
+      parTemps[n.temps].push(n);
+    });
+    temps.sort(function (a, b) { return a - b; });
+    var pos = 1, alt = 0;
+    temps.forEach(function (t) {
+      var g = parTemps[t];
+      // Main gauche
+      var fr = g.filter(function (n) { return n.frette > 0; });
+      if (fr.length) {
+        var lo = Math.min.apply(null, fr.map(function (n) { return n.frette; }));
+        var hi = Math.max.apply(null, fr.map(function (n) { return n.frette; }));
+        if (hi <= 4) pos = 1;
+        else if (lo < pos) pos = lo;
+        else if (hi > pos + 3) pos = Math.max(lo, hi - 3);
+        if (lo < pos) pos = lo;
+        var dernier = 0;
+        fr.slice().sort(function (a, b) { return a.frette - b.frette || b.corde - a.corde; }).forEach(function (n) {
+          var base = Math.min(4, n.frette - pos + 1);
+          var d = Math.max(base, dernier + 1);
+          if (d > 4) d = base;                    // plus de doigt libre : petit barré
+          if (!n.doigt) n.doigt = d;
+          dernier = n.doigt;
+        });
+      }
+      // Main droite
+      var g2 = g.slice().sort(function (a, b) { return b.corde - a.corde; });   // grave → aigu
+      var libres = g2.filter(function (n) { return !n.main; });
+      if (!libres.length) return;
+      if (g2.length === 1) {
+        var n0 = g2[0];
+        if (n0.corde >= 4) n0.main = 'p';
+        else { n0.main = alt % 2 ? 'm' : 'i'; alt++; }
+        return;
+      }
+      var hauts = g2;
+      if (g2[0].corde >= 4 || g2.length > 3) {
+        if (!g2[0].main) g2[0].main = 'p';
+        hauts = g2.slice(1);
+      }
+      var doigts = hauts.length === 1 ? [{ 3: 'i', 2: 'm', 1: 'a' }[hauts[0].corde] || 'i']
+                 : hauts.length === 2 ? (hauts[1].corde === 1 ? ['m', 'a'] : ['i', 'm'])
+                 : ['i', 'm', 'a'];
+      hauts.forEach(function (n, k) {
+        if (!n.main) n.main = k < doigts.length ? doigts[k] : 'p';
+      });
     });
     return notes;
   }
@@ -112,7 +205,7 @@
       var n = [], t = 0;
       for (var corde = 6; corde >= 1; corde--) {
         for (var f = 1; f <= 4; f++) {
-          n.push({ corde: corde, frette: f, temps: t, duree: 1, doigt: f, midi: Theorie.midiDeCase(corde, f) });
+          n.push({ corde: corde, frette: f, temps: t, duree: 1, doigt: f, main: n.length % 2 ? 'm' : 'i', midi: Theorie.midiDeCase(corde, f) });
           t += 1;
         }
       }
@@ -137,6 +230,130 @@
       }
       return n;
     })()
+  });
+
+  ajoute({
+    id: 'basses-pouce',
+    titre: 'Les basses au pouce',
+    sous_titre: 'Exercice · écrit pour cette app',
+    niveau: 1, tempo: 60, signature: [4, 4],
+    description: 'Les trois cordes graves à vide — Mi (6e, la plus grosse), La (5e), Ré (4e) — toutes au pouce. Le pouce pousse la corde vers le bas et vient se poser sur la suivante : c’est le geste des basses de tout le répertoire.',
+    notes: melodie([
+      ['mi2', 2], ['mi2', 2], ['la2', 2], ['la2', 2],
+      ['re3', 2], ['re3', 2], ['la2', 2], ['la2', 2],
+      ['mi2', 1], ['la2', 1], ['re3', 1], ['la2', 1],
+      ['mi2', 1], ['la2', 1], ['re3', 2],
+      ['re3', 1], ['la2', 1], ['mi2', 2],
+      ['mi2', 4]
+    ], { main: 'p' })
+  });
+
+  ajoute({
+    id: 'premieres-notes',
+    titre: 'Mes premières notes',
+    sous_titre: 'Exercice · écrit pour cette app',
+    niveau: 1, tempo: 60, signature: [4, 4],
+    description: 'Les deux cordes aiguës, trois notes chacune : Si à vide, Do (index, case 1), Ré (annulaire, case 3) sur la 2e corde ; Mi à vide, Fa (index, case 1), Sol (annulaire, case 3) sur la 1re. Un doigt par case : la case dit le doigt.',
+    notes: melodie([
+      ['si3', 1], ['do4', 1], ['re4', 2],
+      ['re4', 1], ['do4', 1], ['si3', 2],
+      ['mi4', 1], ['fa4', 1], ['sol4', 2],
+      ['sol4', 1], ['fa4', 1], ['mi4', 2],
+      ['si3', 1], ['re4', 1], ['mi4', 1], ['sol4', 1],
+      ['fa4', 1], ['re4', 1], ['do4', 2],
+      ['re4', 1], ['mi4', 1], ['do4', 1], ['si3', 1],
+      ['do4', 4]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'old-macdonald',
+    titre: 'Old MacDonald',
+    sous_titre: 'Comptine américaine · traditionnel · domaine public',
+    niveau: 1, tempo: 92, signature: [4, 4],
+    description: 'Do, Ré, Mi sur les deux premières cordes, et pour la première fois la 3e corde : Sol à vide et La (case 2, majeur).',
+    notes: melodie([
+      ['do4', 1], ['do4', 1], ['do4', 1], ['sol3', 1],
+      ['la3', 1], ['la3', 1], ['sol3', 2],
+      ['mi4', 1], ['mi4', 1], ['re4', 1], ['re4', 1],
+      ['do4', 3], ['sol3', 1],
+      ['do4', 1], ['do4', 1], ['do4', 1], ['sol3', 1],
+      ['la3', 1], ['la3', 1], ['sol3', 2],
+      ['mi4', 1], ['mi4', 1], ['re4', 1], ['re4', 1],
+      ['do4', 4]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'london-bridge',
+    titre: 'London Bridge',
+    sous_titre: 'Comptine anglaise · traditionnel · domaine public',
+    niveau: 1, tempo: 88, signature: [4, 4],
+    description: 'En Sol, sur les trois cordes aiguës, case 3 au plus. Une seule croche pointée par phrase, au tout début : « Lon-don ».',
+    notes: melodie([
+      ['re4', 1.5], ['mi4', 0.5], ['re4', 1], ['do4', 1],
+      ['si3', 1], ['do4', 1], ['re4', 2],
+      ['la3', 1], ['si3', 1], ['do4', 2],
+      ['si3', 1], ['do4', 1], ['re4', 2],
+      ['re4', 1.5], ['mi4', 0.5], ['re4', 1], ['do4', 1],
+      ['si3', 1], ['do4', 1], ['re4', 2],
+      ['la3', 2], ['re4', 2],
+      ['si3', 1], ['sol3', 3]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'yankee-doodle',
+    titre: 'Yankee Doodle',
+    sous_titre: 'Air américain · traditionnel · domaine public',
+    niveau: 2, tempo: 100, signature: [4, 4],
+    description: 'Que des noires, mais sept notes différentes sur trois cordes : Sol, La, Si, Do, Ré, Mi, Fa. Un bon test de « la case dit le doigt ».',
+    notes: melodie([
+      ['do4', 1], ['do4', 1], ['re4', 1], ['mi4', 1],
+      ['do4', 1], ['mi4', 1], ['re4', 1], ['sol3', 1],
+      ['do4', 1], ['do4', 1], ['re4', 1], ['mi4', 1],
+      ['do4', 2], ['si3', 2],
+      ['do4', 1], ['do4', 1], ['re4', 1], ['mi4', 1],
+      ['fa4', 1], ['mi4', 1], ['re4', 1], ['do4', 1],
+      ['si3', 1], ['sol3', 1], ['la3', 1], ['si3', 1],
+      ['do4', 2], ['do4', 2]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'row-your-boat',
+    titre: 'Row, Row, Row Your Boat',
+    sous_titre: 'Canon anglais · traditionnel · domaine public',
+    niveau: 2, tempo: 72, signature: [6, 8],
+    description: 'À 6/8 : deux grands temps de trois croches par mesure. Monte de Sol (3e à vide) jusqu’au Sol aigu (1re, case 3), puis redescend en triolets.',
+    notes: melodie([
+      ['sol3', 1.5], ['sol3', 1.5],
+      ['sol3', 1], ['la3', 0.5], ['si3', 1.5],
+      ['si3', 1], ['la3', 0.5], ['si3', 1], ['do4', 0.5],
+      ['re4', 3],
+      ['sol4', 0.5], ['sol4', 0.5], ['sol4', 0.5], ['re4', 0.5], ['re4', 0.5], ['re4', 0.5],
+      ['si3', 0.5], ['si3', 0.5], ['si3', 0.5], ['sol3', 0.5], ['sol3', 0.5], ['sol3', 0.5],
+      ['re4', 1], ['do4', 0.5], ['si3', 1], ['la3', 0.5],
+      ['sol3', 3]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'michael-row',
+    titre: 'Michael, Row the Boat Ashore',
+    sous_titre: 'Negro spiritual · traditionnel · domaine public',
+    niveau: 2, tempo: 84, signature: [4, 4],
+    description: 'En Sol, case 3 au plus. Des notes longues en fin de phrase : laisse-les sonner jusqu’au bout avant d’attaquer la suivante.',
+    notes: melodie([
+      ['sol3', 1], ['si3', 1], ['re4', 1.5], ['si3', 0.5],
+      ['re4', 1], ['mi4', 1], ['re4', 2],
+      ['si3', 1], ['re4', 1], ['mi4', 2],
+      ['re4', 4],
+      ['si3', 1], ['re4', 1], ['re4', 1.5], ['si3', 0.5],
+      ['do4', 1], ['si3', 1], ['la3', 2],
+      ['sol3', 1], ['la3', 1], ['si3', 1.5], ['la3', 0.5],
+      ['sol3', 4]
+    ], { alterne: true })
   });
 
   // --- Mélodies du domaine public -------------------------------------------
@@ -312,6 +529,10 @@
     sous_titre: 'Arpèges · écrite pour cette app',
     niveau: 3, tempo: 66, signature: [4, 4],
     description: 'Quatre accords, un arpège p-i-m-a, deux mesures chacun. La main gauche ne bouge qu’une fois toutes les huit notes : c’est là qu’on apprend à anticiper le changement.',
+    mains: mainsAccords(['Em', 'Am', 'B7'], [
+      'Pouce (p) sur la basse de l’accord, puis index (i) 3e corde, majeur (m) 2e, annulaire (a) 1re : p-i-m-a, une note par croche.',
+      'Chaque doigt reste au-dessus de SA corde ; poignet immobile au-dessus de la rosace.'
+    ]),
     notes: arpeges([
       { accord: 'Em', basse: 6, mesures: 2 },
       { accord: 'Am', basse: 5, mesures: 2 },
@@ -326,6 +547,10 @@
     sous_titre: 'Arpèges · écrite pour cette app',
     niveau: 3, tempo: 72, signature: [4, 4],
     description: 'Même travail que l’étude en Mi mineur, avec un accord de Ré mineur qui oblige les doigts à se replacer complètement.',
+    mains: mainsAccords(['Am', 'Dm', 'E7'], [
+      'Pouce (p) sur la basse de l’accord, puis index (i) 3e corde, majeur (m) 2e, annulaire (a) 1re : p-i-m-a, une note par croche.',
+      'Chaque doigt reste au-dessus de SA corde ; poignet immobile au-dessus de la rosace.'
+    ]),
     notes: arpeges([
       { accord: 'Am', basse: 5, mesures: 2 },
       { accord: 'Dm', basse: 4, mesures: 2 },
@@ -497,11 +722,13 @@
     return e;
   }
 
+  PIECES.forEach(function (p) { completerDoigtes(p.notes); });
+
   function tous() { return PIECES.slice(); }
   function get(id) { for (var i = 0; i < PIECES.length; i++) if (PIECES[i].id === id) return PIECES[i]; return null; }
 
   global.Morceaux = {
-    tous: tous, get: get, melodie: melodie, arpeges: arpeges, etapes: etapes,
+    tous: tous, get: get, melodie: melodie, arpeges: arpeges, etapes: etapes, completerDoigtes: completerDoigtes,
     caseEnPremierePosition: caseEnPremierePosition, midiDeNom: midiDeNom
   };
 })(typeof window !== 'undefined' ? window : globalThis);

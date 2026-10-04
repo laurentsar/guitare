@@ -541,6 +541,7 @@
       // étiquette en haut, flèche vers le doigt
       var g0 = poses[0];
       var lib = c.accord ? 'accord ' + c.accord + ' posé · ' + poses.length + ' doigt' + (poses.length > 1 ? 's' : '')
+        : (c.tenus || []).length ? poses.length + ' doigts posés (dont ' + c.tenus.length + ' tenu' + (c.tenus.length > 1 ? 's' : '') + ')'
         : poses.length === 1
         ? (g0.doigt ? NOM_DOIGT[g0.doigt] + ' (' + g0.doigt + ')' : 'un doigt') + ' · ' + ORD[g0.corde] + ' corde · case ' + g0.frette
         : poses.length + ' doigts · cases ' + Math.min.apply(null, poses.map(function (g) { return g.frette; })) +

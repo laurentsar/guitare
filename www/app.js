@@ -1334,6 +1334,7 @@
     $('regObjectif').value = String(r.objectifMinutes);
     $('regTv').value = r.modeTv == null ? 'auto' : (r.modeTv ? 'oui' : 'non');
     $('regCasque').value = r.modeCasque == null ? 'auto' : (r.modeCasque ? 'oui' : 'non');
+    $('regEcran').value = r.ecranAllume === false ? 'non' : 'oui';
     $('regCast').value = r.castAppId || '';
     $('castUrl').textContent = urlRecepteur();
     $('castAide').textContent = Cast.configure()
@@ -1384,6 +1385,7 @@
   // ------------------------------------------------------------ démarrage
   function init() {
     Tv.appliquer();
+    if (window.EcranAllume) EcranAllume.appliquer();
     $('chipVersion').textContent = 'v' + (window.APP_VERSION || '1.0');
     var inst = (Store.reglages().instrument || '').trim();
     $('sousTitre').textContent = (inst ? inst + ' · ' : '') + 'guitare classique · débutant';
@@ -1458,6 +1460,10 @@
       Store.reglage('modeCasque', this.value === 'auto' ? null : this.value === 'oui');
       if (window.CasqueVR) CasqueVR.appliquer();
       $('raccourciVR').hidden = !casqueActif();
+    };
+    $('regEcran').onchange = function () {
+      Store.reglage('ecranAllume', this.value === 'oui');
+      if (window.EcranAllume) EcranAllume.appliquer();
     };
     $('regTv').onchange = function () {
       Store.reglage('modeTv', this.value === 'auto' ? null : this.value === 'oui');

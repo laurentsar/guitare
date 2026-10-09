@@ -160,6 +160,12 @@
           <option value="30">30 min</option>
         </select>
       </label>
+      <label class="ligne">Écran allumé pendant l’utilisation
+        <select id="regEcran">
+          <option value="oui">Oui</option>
+          <option value="non">Non (veille normale)</option>
+        </select>
+      </label>
       <label class="ligne">Mode casque VR
         <select id="regCasque">
           <option value="auto">Automatique</option>
@@ -209,7 +215,7 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.14';
+  window.APP_VERSION = '1.15';
   // Mise à jour automatique : update-check.js interroge la dernière release
   // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
   // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.
@@ -229,6 +235,7 @@
 <script src="accordeur.js"></script>
 <script src="oreille.js"></script>
 <script src="store.js"></script>
+<script src="ecran.js"></script>
 <script src="dpad-nav.js"></script>
 <script src="tv.js"></script>
 <script src="cast.js"></script>

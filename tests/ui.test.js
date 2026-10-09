@@ -33,7 +33,7 @@ function charge(f) {
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
 ['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'morceaux.js', 'lecons.js',
- 'accordeur.js', 'oreille.js', 'store.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
+ 'accordeur.js', 'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -280,6 +280,35 @@ function verifie(nom, cond, detail) {
     for (let k = 0; k < 40 && !vu; k++) { suiv.click(); vu = /Laisse posé/.test(g.textContent); }
     verifie('répertoire : le guide dit quels doigts laisser posés pendant une note tenue', vu);
     verifie('répertoire : chaque note a un doigt gauche nommé (plus de « un doigt » au choix)', !/Pose un doigt/.test(g.textContent));
+  }
+
+  console.log('\n— Écran allumé —');
+  {
+    const demandes = [], relaches = [];
+    Object.defineProperty(w.navigator, 'wakeLock', { configurable: true, value: { request: (t) => {
+      demandes.push(t);
+      return Promise.resolve({ release() { relaches.push(1); }, addEventListener() {} });
+    } } });
+    w.Store.reglage('ecranAllume', true);
+    w.EcranAllume.appliquer();
+    await attendre(5);
+    verifie('navigateur : verrou d’écran demandé (Screen Wake Lock)', demandes.join() === 'screen' && w.EcranAllume.actif());
+    w.AppGuitare.aller('reglages');
+    verifie('réglage « Écran allumé » affiché sur Oui', $('regEcran').value === 'oui');
+    $('regEcran').value = 'non'; $('regEcran').dispatchEvent(new w.Event('change'));
+    verifie('réglage sur Non : verrou relâché, mémorisé', relaches.length === 1 && !w.EcranAllume.actif() && w.Store.reglages().ecranAllume === false);
+    $('regEcran').value = 'oui'; $('regEcran').dispatchEvent(new w.Event('change'));
+    await attendre(5);
+    verifie('réglage sur Oui : verrou redemandé', demandes.length === 2 && w.EcranAllume.actif());
+    // APK : le plugin natif est préféré au verrou web.
+    const appels = [];
+    w.Capacitor = { isNativePlatform: () => true, Plugins: { KeepAwake: {
+      keepAwake: () => { appels.push('allume'); return Promise.resolve(); },
+      allowSleep: () => { appels.push('veille'); return Promise.resolve(); } } } };
+    w.Store.reglage('ecranAllume', false); w.EcranAllume.appliquer();
+    w.Store.reglage('ecranAllume', true); w.EcranAllume.appliquer();
+    verifie('APK : plugin natif KeepAwake appelé (veille, puis allumé)', appels.join() === 'veille,allume' && demandes.length === 2);
+    delete w.Capacitor;
   }
 
   console.log('\n— Oreille —');

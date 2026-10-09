@@ -33,7 +33,8 @@
     vuePartition: 'deux',  // 'portee' | 'tablature' | 'deux'
     instrument: 'Prodipe Primera 4/4',
     decompte: true,        // une mesure de clics avant de jouer un morceau
-    clicLecture: false     // métronome pendant la lecture
+    clicLecture: false,    // métronome pendant la lecture
+    ecranAllume: true      // l'écran ne s'éteint pas pendant qu'on joue (ecran.js)
   };
 
   function reglages() {

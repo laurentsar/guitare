@@ -18,6 +18,7 @@ le téléviseur.
 | **Éditeur** | Écrire ses propres tablatures (corde, case, durée, accords), ou coller une tab texte trouvée sur internet ; elles se jouent dans le même lecteur. |
 | **Gammes** | 7 gammes (majeure, mineures, pentatoniques, blues, chromatique) sur les 12 tonalités, affichées sur tout le manche et jouées. |
 | **Oreille** | Trois jeux d'écoute, dix questions, notés. |
+| **Écran allumé** | L'écran ne se met pas en veille pendant qu'on joue (les deux mains sont sur la guitare) : drapeau Android FLAG_KEEP_SCREEN_ON dans l'APK (plugin `KeepAwake`, `ci/patch_keepawake.py`), Screen Wake Lock dans le navigateur. Seulement tant que l'app est au premier plan ; réglage pour revenir à la veille normale. |
 | **Suivi** | Minutes du jour, série de jours consécutifs, records de changements d'accords, sauvegarde vers Home Assistant. |
 
 ## Sur la télévision

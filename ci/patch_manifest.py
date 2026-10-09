@@ -35,8 +35,9 @@ if 'android.hardware.microphone' not in s:
     print("uses-feature microphone (optionnel) ajouté")
 
 # --- Écran qui s'éteint pendant qu'on joue -----------------------------------
-# On garde l'écran allumé côté web (wake lock) quand c'est possible, mais la
-# WebView n'y a pas toujours droit : ce drapeau natif est la garantie.
+# La permission seule n'allume rien : c'est ci/patch_keepawake.py qui pose
+# FLAG_KEEP_SCREEN_ON sur la fenêtre (la WebView n'a pas toujours la Screen
+# Wake Lock API). Gardée pour les versions d'Android qui l'exigent encore.
 if "android.permission.WAKE_LOCK" not in s:
     s = s.replace("<application", '<uses-permission android:name="android.permission.WAKE_LOCK" />\n\n    <application', 1)
     print("permission WAKE_LOCK ajoutée")

@@ -300,7 +300,12 @@
                     texte: (m ? cap(DOIGTS_D[m]) + ' (' + m + ')' : 'L’index ou le majeur (i ou m), en alternant,') +
                            ' pince ' + cordeTxt + '.' });
     });
-    if (notes.length > 1) {
+    // Accord balayé : toutes les cordes au pouce, c'est UN geste, pas six.
+    if (notes.length > 2 && notes.every(function (n) { return n.main === 'p'; })) {
+      droite = [{ corde: notes[0].corde, main: 'p', balaye: notes.map(function (n) { return n.corde; }),
+                  texte: 'Le pouce (p) balaie les ' + notes.length + ' cordes d’un seul geste, de la ' + ORDINAL[notes[0].corde] +
+                         ' (la plus grave jouée) à la ' + ORDINAL[notes[notes.length - 1].corde] + ', en glissant vers le sol.' }];
+    } else if (notes.length > 1) {
       droite.push({ corde: 0, main: '', texte: 'Les ' + notes.length + ' cordes se pincent en même temps.' });
     }
     return { gauche: gauche, droite: droite,

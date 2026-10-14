@@ -573,6 +573,13 @@
       return { m: m, x: mainX + (DX[m] !== undefined ? DX[m] : -20), y: yCorde(d.corde),
                depX: m === 'p' ? mainX - 26 : mainX - 18 + 'ima'.indexOf(m) * 12, depY: mainY + 10 };
     }
+    // Balayé : une flèche le long des cordes jouées, le pouce en haut.
+    var balaye = droites.length === 1 && droites[0].balaye;
+    if (balaye) {
+      var bx = mainX - 50, by0 = yCorde(Math.max.apply(null, balaye)), by1 = yCorde(Math.min.apply(null, balaye));
+      s += '<line x1="' + bx + '" y1="' + (by0 - 4) + '" x2="' + bx + '" y2="' + (by1 + 10) + '" class="sch-doigt-tube sch-doigt-tube-fin sch-droite" marker-end="url(#pointe)"/>';
+      droites = [{ corde: Math.max.apply(null, balaye), main: 'p' }];
+    }
     droites.forEach(function (d) {
       var b = bout(d);
       s += '<path d="M' + b.depX + ' ' + b.depY + ' Q ' + (b.depX - 4) + ' ' + ((b.depY + b.y) / 2) + ' ' + b.x + ' ' + b.y + '" class="sch-doigt-tube sch-doigt-tube-fin sch-droite"/>';
@@ -583,7 +590,8 @@
       s += '<text x="' + b.x + '" y="' + (b.y + 4) + '" class="sch-doigt-mini" text-anchor="middle">' + (d.main || 'i/m') + '</text>';
     });
     var d0 = droites[0] || {};
-    var libD = droites.length === 1
+    var libD = balaye ? 'pouce (p) : balaie ' + balaye.length + ' cordes'
+      : droites.length === 1
       ? (d0.main ? NOM_DROITE[d0.main] + ' (' + d0.main + ')' : 'i ou m') + ' → ' + ORD[d0.corde] + ' corde'
       : droites.length + ' cordes ensemble';
     s += txt(L - 8, 22, 'MAIN DROITE', 'sch-titre-main', 'end');

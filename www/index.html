@@ -27,6 +27,7 @@
   <section id="ecran-accueil" class="ecran actif">
     <div class="carte accent" id="carteReprendre"></div>
     <div class="grille-raccourcis">
+      <button class="raccourci" data-aller="entrainement"><span>💪</span>Entraînement</button>
       <button class="raccourci" data-aller="accordeur"><span>🎯</span>Accorder</button>
       <button class="raccourci" data-aller="metronome"><span>🥁</span>Métronome</button>
       <button class="raccourci" data-aller="accords"><span>🎸</span>Accords</button>
@@ -110,6 +111,10 @@
       </div>
       <button id="btnTap" class="btn large">Battre le tempo</button>
     </div>
+  </section>
+
+  <section id="ecran-entrainement" class="ecran">
+    <div id="pageEntrainement"></div>
   </section>
 
   <section id="ecran-morceaux" class="ecran">
@@ -204,6 +209,7 @@
 
 <nav class="onglets" id="onglets">
   <button data-aller="accueil" class="actif"><span>🏠</span>Accueil</button>
+  <button data-aller="entrainement"><span>💪</span>Entraîn.</button>
   <button data-aller="parcours"><span>📘</span>Parcours</button>
   <button data-aller="accords"><span>🎸</span>Accords</button>
   <button data-aller="accordeur"><span>🎯</span>Accordeur</button>
@@ -215,7 +221,7 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.15';
+  window.APP_VERSION = '1.16';
   // Mise à jour automatique : update-check.js interroge la dernière release
   // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
   // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.
@@ -231,6 +237,7 @@
 <script src="gammes.js"></script>
 <script src="repertoire.js"></script>
 <script src="morceaux.js"></script>
+<script src="entrainement.js"></script>
 <script src="lecons.js"></script>
 <script src="accordeur.js"></script>
 <script src="oreille.js"></script>

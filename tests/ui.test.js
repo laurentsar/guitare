@@ -32,10 +32,12 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'morceaux.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'morceaux.js', 'entrainement.js', 'lecons.js',
  'accordeur.js', 'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
+// Les exercices d'entraînement s'ouvrent depuis leur écran, pas depuis la liste.
+const listables = () => w.Morceaux.tous().filter((p) => p.categorie !== 'entrainement').length;
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
 let ok = 0, ko = 0;
 function verifie(nom, cond, detail) {
@@ -110,7 +112,7 @@ function verifie(nom, cond, detail) {
   console.log('\n— Morceaux —');
   w.AppGuitare.aller('morceaux');
   verifie('tous les morceaux sont listés',
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === w.Morceaux.tous().length);
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables());
   w.AppGuitare.ouvrirMorceau('ode-joie');
   const notesTab = $('detailMorceau').querySelectorAll('.tab-note');
   verifie('la tablature contient toutes les notes',
@@ -172,7 +174,7 @@ function verifie(nom, cond, detail) {
   verifie('enregistrée puis ouverte dans le lecteur', $('ecran-morceau').classList.contains('actif') && w.Store.tablatures().length === 1);
   w.AppGuitare.aller('morceaux');
   verifie('« Mes tablatures » la liste', /Mes tablatures/.test($('listeMorceaux').textContent) &&
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === w.Morceaux.tous().length + 1);
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + 1);
 
   console.log('\n— Gammes —');
   w.AppGuitare.aller('gammes');
@@ -309,6 +311,46 @@ function verifie(nom, cond, detail) {
     w.Store.reglage('ecranAllume', true); w.EcranAllume.appliquer();
     verifie('APK : plugin natif KeepAwake appelé (veille, puis allumé)', appels.join() === 'veille,allume' && demandes.length === 2);
     delete w.Capacitor;
+  }
+
+  w.AppGuitare.aller('morceaux');
+  {
+    const titres = [...$('listeMorceaux').querySelectorAll('h3')].map((x) => x.textContent);
+    verifie('liste : « Travailler les accords » en tête', /Travailler les accords/.test(titres[0]));
+  }
+  w.AppGuitare.ouvrirMorceau('acc-em-am');
+  verifie('exercice d’accords : position des mains (Em, Am) et pas à pas par paliers',
+          $('detailMorceau').querySelectorAll('.main-accord').length === 2 && /Palier 1 : balayé au pouce/.test($('detailMorceau').textContent));
+  w.AppGuitare.ouvrirAccord('Am');
+  verifie('fiche d’accord : les exercices qui l’utilisent', /S’entraîner avec cet accord/.test($('detailAccord').textContent) && /Mi mineur ↔ La mineur/.test($('detailAccord').textContent));
+
+  console.log('\n— Entraînement —');
+  w.AppGuitare.aller('entrainement');
+  {
+    const page = $('pageEntrainement');
+    const txt = page.textContent;
+    verifie('écran : les exercices du cours, par thème', /Balayages/.test(txt) && /saute-mouton/.test(txt) && /Pouce buté : 4 fois/.test(txt) && /Ve position : 0 1 0 1/.test(txt) && /Partir de la pince/.test(txt));
+    verifie('états : NOUVEAU, à continuer, pas encore vu en cours', /NOUVEAU/.test(txt) && /à continuer/.test(txt) && /pas encore vu en cours/.test(txt));
+    const total = w.Entrainement.tous().reduce((t, e) => t + w.Entrainement.cases(e), 0);
+    verifie('compteur du jour à zéro', new RegExp('Aujourd’hui : 0 / ' + total).test(txt));
+    const carte = [...page.querySelectorAll('.exercice')].find((c) => /saute-mouton/.test(c.textContent));
+    verifie('saute-mouton : deux variantes (en regardant, yeux fermés)', carte.querySelectorAll('input[type=checkbox]').length === 2 && /yeux fermés/.test(carte.textContent));
+    carte.querySelector('input').click();
+    verifie('case cochée : compteur à 1 et mémorisée pour aujourd’hui',
+            new RegExp('Aujourd’hui : 1 / ' + total).test($('pageEntrainement').textContent) && w.Store.entrainementJour()['saute-mouton'].join() === '0');
+    const quiz = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Les noms par cœur/.test(c.textContent));
+    [...quiz.querySelectorAll('button')].find((b) => /Interroge-moi/.test(b.textContent)).click();
+    [...quiz.querySelectorAll('button')].find((b) => /Réponse/.test(b.textContent)).click();
+    verifie('quiz des noms d’accords : question puis réponse', /(Em|Cmaj7|G|D) = \?/.test(quiz.textContent) && /(Mi mineur|Do majeur 7|Sol majeur|Ré majeur)/.test(quiz.querySelector('.quiz-reponse').textContent));
+    const ta = $('pageEntrainement').querySelector('textarea');
+    ta.value = 'Mardi : retour du pouce'; ta.dispatchEvent(new w.Event('input'));
+    verifie('notes de cours mémorisées', w.Store.notesCours() === 'Mardi : retour du pouce');
+    const b = [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Tablature : Ve position : 0 3 0 3/.test(x.textContent));
+    b.click();
+    verifie('bouton tablature : ouvre l’exercice en Ve position', /Ve position : 0 3 0 3/.test($('detailMorceau').querySelector('h2').textContent));
+    w.Store.cocherEntrainement('saute-mouton', 0, false);
+    w.AppGuitare.aller('accueil');
+    verifie('accueil : rappel « Entraînement du jour »', /Entraînement du jour : 0 \//.test($('carteReprendre').textContent));
   }
 
   console.log('\n— Oreille —');

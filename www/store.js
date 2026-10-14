@@ -139,7 +139,24 @@
     return t[id];
   }
 
+  // Entraînement : cases cochées par jour { 'AAAA-MM-JJ': { exercice: [0, 1] } },
+  // et notes de cours libres.
+  function entrainementJour(jour) { return lire('entrainement', {})[jour || jourCourant()] || {}; }
+  function cocherEntrainement(id, k, fait, jour) {
+    var t = lire('entrainement', {}), j = jour || jourCourant();
+    var d = t[j] = t[j] || {};
+    var l = (d[id] || []).filter(function (x) { return x !== k; });
+    if (fait) l.push(k);
+    if (l.length) d[id] = l; else delete d[id];
+    if (!Object.keys(d).length) delete t[j];
+    ecrire('entrainement', t);
+  }
+  function joursEntrainement() { return Object.keys(lire('entrainement', {})).sort(); }
+  function notesCours(txt) { return txt == null ? lire('notesCours', '') : ecrire('notesCours', txt); }
+
   global.Store = {
+    entrainementJour: entrainementJour, cocherEntrainement: cocherEntrainement,
+    joursEntrainement: joursEntrainement, notesCours: notesCours,
     etapesFaites: etapesFaites, marquerEtape: marquerEtape,
     tablatures: tablatures, tablature: tablature,
     sauverTablature: sauverTablature, supprimerTablature: supprimerTablature,

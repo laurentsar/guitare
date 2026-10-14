@@ -42,6 +42,7 @@
     if (nom === 'parcours') rendreParcours();
     if (nom === 'accords') rendreAccords();
     if (nom === 'morceaux') rendreMorceaux();
+    if (nom === 'entrainement') rendreEntrainement();
     if (nom === 'oreille') rendreOreilleAccueil();
     if (nom === 'reglages') rendreReglages();
     if (nom === 'gammes') rendreGammes();
@@ -57,7 +58,7 @@
   // Ne tourne que sur les écrans où l'on joue réellement, et s'arrête quand
   // l'app passe en arrière-plan : un compteur qui gonfle tout seul ne veut
   // plus rien dire.
-  var ECRANS_PRATIQUE = ['lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur', 'pupitre'];
+  var ECRANS_PRATIQUE = ['entrainement', 'lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur', 'pupitre'];
   setInterval(function () {
     if (document.hidden) return;
     if (ECRANS_PRATIQUE.indexOf(ecranCourant) === -1) return;
@@ -97,6 +98,15 @@
       carte.appendChild(el('p', 'aide', 'Toutes les leçons sont validées. Reprends les morceaux au métronome, et monte le tempo de cinq en cinq.'));
     }
 
+    if (window.Entrainement) {
+      var jourE = Store.entrainementJour();
+      var totalE = Entrainement.tous().reduce(function (t, e) { return t + Entrainement.cases(e); }, 0);
+      var faitesE = Entrainement.tous().reduce(function (t, e) { return t + (jourE[e.id] || []).length; }, 0);
+      var bE = el('button', 'btn large', '💪 Entraînement du jour : ' + faitesE + ' / ' + totalE);
+      bE.onclick = function () { aller('entrainement'); };
+      carte.appendChild(bE);
+    }
+
     var obj = Store.reglages().objectifMinutes;
     var faites = Store.minutesDuJour();
     var prog = vide($('carteProgression'));
@@ -115,6 +125,95 @@
     // Indexé sur la date : le même conseil toute la journée, un autre demain.
     var jour = Math.floor(Date.now() / 86400000);
     conseil.appendChild(el('p', null, CONSEILS[jour % CONSEILS.length]));
+  }
+
+  // ---------------------------------------------------------- entraînement
+  /* Les devoirs du cours, à refaire chaque jour. Chaque exercice se coche
+   * (une case par variante : en regardant, yeux fermés…) ; les cases
+   * repartent à zéro chaque matin, l'historique reste pour la série. */
+  var ETATS_ENTRAINEMENT = { nouveau: 'NOUVEAU', continuer: 'à continuer', pasvu: 'pas encore vu en cours' };
+
+  function rendreEntrainement() {
+    var h = vide($('pageEntrainement'));
+    var jour = Store.entrainementJour();
+    var tous = Entrainement.tous();
+    var total = tous.reduce(function (t, e) { return t + Entrainement.cases(e); }, 0);
+    var faites = tous.reduce(function (t, e) { return t + (jour[e.id] || []).length; }, 0);
+    var jours = Store.joursEntrainement();
+    var tete = el('div', 'carte');
+    tete.appendChild(el('h2', null, '💪 Entraînement'));
+    tete.appendChild(el('p', 'aide', 'Les exercices du cours, à refaire chaque jour. Coche-les au fur et à mesure : les cases repartent à zéro demain.'));
+    var barre = el('div', 'barre-objectif');
+    var i = el('i'); i.style.width = Math.round(faites / total * 100) + '%';
+    barre.appendChild(i);
+    tete.appendChild(barre);
+    tete.appendChild(el('p', 'aide', 'Aujourd’hui : ' + faites + ' / ' + total + ' · ' + jours.length + ' jour' + (jours.length > 1 ? 's' : '') + ' d’entraînement en tout'));
+    h.appendChild(tete);
+
+    Entrainement.groupes().forEach(function (g) {
+      h.appendChild(el('h3', 'titre-groupe', g.titre));
+      if (g.intro) h.appendChild(el('p', 'aide', g.intro));
+      g.exercices.forEach(function (e) {
+        var c = el('div', 'carte exercice' + ((jour[e.id] || []).length === Entrainement.cases(e) ? ' fait' : ''));
+        var t = el('div', 'exercice-titre');
+        t.appendChild(el('b', null, e.titre));
+        if (e.etat) t.appendChild(el('span', 'etat-' + e.etat, ETATS_ENTRAINEMENT[e.etat]));
+        c.appendChild(t);
+        var ul = el('ul');
+        e.consignes.forEach(function (x) { ul.appendChild(el('li', null, x)); });
+        c.appendChild(ul);
+        if (e.quiz) c.appendChild(quizEntrainement(e.quiz));
+        var coches = el('div', 'exercice-coches');
+        (e.variantes || ['Fait aujourd’hui']).forEach(function (v, k) {
+          var l = el('label', 'ligne-coche');
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = (jour[e.id] || []).indexOf(k) !== -1;
+          cb.onchange = function () { Store.cocherEntrainement(e.id, k, cb.checked); rendreEntrainement(); };
+          l.appendChild(cb);
+          l.appendChild(document.createTextNode(e.variantes ? (k + 1) + '. ' + v : v));
+          coches.appendChild(l);
+        });
+        c.appendChild(coches);
+        if (e.morceau && Morceaux.get(e.morceau)) {
+          var b = el('button', 'btn', '🎼 Tablature : ' + Morceaux.get(e.morceau).titre);
+          b.onclick = function () { ouvrirMorceau(e.morceau); };
+          c.appendChild(b);
+        }
+        h.appendChild(c);
+      });
+    });
+
+    // Notes de cours : ce que le professeur donne la semaine suivante.
+    var notes = el('div', 'carte');
+    notes.appendChild(el('h3', null, '📝 Mes notes de cours'));
+    var ta = document.createElement('textarea');
+    ta.className = 'notes-cours'; ta.rows = 6;
+    ta.placeholder = 'Recopie ici les consignes du prochain cours…';
+    ta.value = Store.notesCours();
+    ta.oninput = function () { Store.notesCours(ta.value); };
+    notes.appendChild(ta);
+    h.appendChild(notes);
+  }
+
+  // Révision « par cœur » : on montre la question, la réponse se dévoile.
+  function quizEntrainement(paires) {
+    var d = el('div', 'quiz');
+    var q = el('b', 'quiz-question'), r = el('span', 'quiz-reponse');
+    var bRep = el('button', 'btn', 'Réponse'), bSuiv = el('button', 'btn', 'Interroge-moi');
+    var k = -1;
+    function suivante() {
+      var n; do { n = Math.floor(Math.random() * paires.length); } while (paires.length > 1 && n === k);
+      k = n; q.textContent = paires[k][0] + ' = ?'; r.textContent = ''; bRep.disabled = false;
+    }
+    bSuiv.onclick = suivante;
+    bRep.onclick = function () { if (k >= 0) { r.textContent = paires[k][1]; bRep.disabled = true; } };
+    bRep.disabled = true;
+    q.textContent = 'Révise par cœur :';
+    d.appendChild(q); d.appendChild(r);
+    var a = el('div', 'actions'); a.appendChild(bSuiv); a.appendChild(bRep);
+    d.appendChild(a);
+    return d;
   }
 
   // -------------------------------------------------------------- parcours
@@ -335,6 +434,21 @@
     actions.appendChild(bJouer); actions.appendChild(bArp); actions.appendChild(bNotes);
     h.appendChild(actions);
 
+    // Le travailler en musique : les exercices d'accords qui l'utilisent.
+    var avec = Morceaux.tous().filter(function (p) {
+      return p.categorie === 'accords' && p.mains.gauche.some(function (g) { return g.id === a.id; });
+    });
+    if (avec.length) {
+      h.appendChild(el('h3', null, 'S’entraîner avec cet accord'));
+      var liste = el('div', 'actions');
+      avec.forEach(function (p) {
+        var b = el('button', 'btn', '🎸 ' + p.titre);
+        b.onclick = function () { ouvrirMorceau(p.id); };
+        liste.appendChild(b);
+      });
+      h.appendChild(liste);
+    }
+
     aller('accord');
     if (Cast.connecte()) Cast.afficherAccord(a.id);
   }
@@ -450,8 +564,11 @@
 
   function rendreMorceaux() {
     var h = vide($('listeMorceaux'));
-    var niveaux = {};
-    Morceaux.tous().forEach(function (p) { (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p); });
+    var niveaux = {}, exercices = [];
+    Morceaux.tous().forEach(function (p) {
+      if (p.categorie === 'accords') exercices.push(p);
+      else if (p.categorie !== 'entrainement') (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
+    });
     function ligne(p, droite) {
       var b = el('button', 'ligne-morceau');
       var t = el('span');
@@ -461,6 +578,14 @@
       b.appendChild(el('span', 'niveau', droite));
       b.onclick = function () { ouvrirMorceau(p.id); };
       return b;
+    }
+    // Les exercices d'accords d'abord : c'est par eux qu'on accompagne une
+    // chanson, bien avant de lire une pièce du répertoire.
+    if (exercices.length) {
+      h.appendChild(el('h3', null, '🎸 Travailler les accords'));
+      h.appendChild(el('p', 'aide', 'Des tablatures faites pour poser les accords et passer de l’un à l’autre en musique : balayé au pouce, puis basse et accord plaqué, puis arpège.'));
+      exercices.sort(function (a, b) { return a.niveau - b.niveau; })
+        .forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
     }
     var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études' };
     Object.keys(niveaux).sort().forEach(function (n) {
@@ -587,7 +712,9 @@
           }).join(', ') + ' — la note continue de sonner.' });
         }
       }
-      titre.textContent = 'Note ' + (i + 1) + ' sur ' + temps.length + ' : ' + c.noms.join(' + ');
+      var accTitre = ns.length > 2 && ns[0].accord && Accords.get(ns[0].accord);
+      titre.textContent = 'Note ' + (i + 1) + ' sur ' + temps.length + ' : ' +
+        (accTitre ? 'accord ' + accTitre.id + ' (' + accTitre.fr + ')' : c.noms.join(' + '));
       dessin.innerHTML = Illustrations.deuxMains(c);
       vide(corps);
       function colonne(nom, lignes, pastille) {

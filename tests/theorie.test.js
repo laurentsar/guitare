@@ -316,6 +316,16 @@ console.log('\n— Entraînement (tablatures du cours) —');
           ['ent-noms-cordes', 'ent-pouce-bute-1', 'ent-pouce-bute-4', 'ent-v-0303', 'ent-v-0101', 'ent-zombie-balaye'].every((id) => Morceaux.get(id).categorie === 'entrainement'));
 }
 
+console.log('\n— Tablature : main droite lisible —');
+{
+  const z = Morceaux.get('zombie'), svg = Tablature.svg(z, Tablature.miseEnPage(z));
+  const etiquettes = (svg.match(/class="tab-main"[^>]*>[^<]*/g) || []).map((x) => x.replace(/.*>/, ''));
+  verifie('une étiquette par attaque (plus de lettres superposées)', etiquettes.length === new Set(z.notes.map((n) => n.temps)).size, etiquettes.length);
+  verifie('accord plaqué i-m-a : une seule étiquette « ima »', etiquettes.includes('ima'));
+  const b = Morceaux.get('acc-em-am'), sb = Tablature.svg(b, Tablature.miseEnPage(b));
+  verifie('accord balayé au pouce : un seul « p »', !(sb.match(/class="tab-main"[^>]*>pp/)) && /class="tab-main"[^>]*>p</.test(sb));
+}
+
 console.log('\n— Tablature —');
 const p = Morceaux.get('au-clair');
 verifie('durée totale = somme des durées', Tablature.duree_totale(p) === p.notes.reduce((t, n) => Math.max(t, n.temps + n.duree), 0));

@@ -30,7 +30,7 @@
     modeCasque: null,    // casque VR : null = détection automatique (vr.js)
     castAppId: '',       // récepteur Chromecast personnalisé, voir cast.js
     objectifMinutes: 15,
-    vuePartition: 'deux',  // 'portee' | 'tablature' | 'deux'
+    vuePartition: 'tablature',  // 'portee' | 'tablature' | 'deux' — la tablature seule par défaut
     instrument: 'Prodipe Primera 4/4',
     decompte: true,        // une mesure de clics avant de jouer un morceau
     clicLecture: false,    // métronome pendant la lecture

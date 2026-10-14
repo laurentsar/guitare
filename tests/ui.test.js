@@ -114,6 +114,12 @@ function verifie(nom, cond, detail) {
   verifie('tous les morceaux sont listés',
           $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables());
   w.AppGuitare.ouvrirMorceau('ode-joie');
+  verifie('page d’un morceau : tablature seule par défaut, le reste replié',
+          !$('detailMorceau').querySelector('.portee-note') &&
+          [...$('detailMorceau').querySelectorAll('details')].every((d) => !d.open) &&
+          /Écouter/.test($('detailMorceau').querySelector('.barre-lecture').textContent));
+  // Portée + tablature, pour vérifier la portée (choix mémorisé dans les options).
+  [...$('detailMorceau').querySelectorAll('.filtres button')].find((b) => b.dataset.vue === 'deux').click();
   const notesTab = $('detailMorceau').querySelectorAll('.tab-note');
   verifie('la tablature contient toutes les notes',
           notesTab.length === w.Morceaux.get('ode-joie').notes.length, 'n=' + notesTab.length);
@@ -261,7 +267,7 @@ function verifie(nom, cond, detail) {
   w.AppGuitare.ouvrirMorceau('mary-agneau');
   {
     const bloc = $('detailMorceau').querySelector('.etapes-morceau');
-    verifie('pas à pas : liste d’étapes ouverte, 0 / 8', bloc && bloc.open && /0 \/ 8 étapes/.test(bloc.querySelector('summary').textContent));
+    verifie('pas à pas : replié, le résumé dit « 0 / 8 étapes »', bloc && !bloc.open && /0 \/ 8 étapes/.test(bloc.querySelector('summary').textContent));
     const etapes = bloc.querySelectorAll('.etape');
     etapes[3].querySelector('button').click();
     const txt = $('detailMorceau').textContent;

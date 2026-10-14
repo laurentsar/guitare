@@ -479,3 +479,9 @@ html.en-pupitre body { padding-bottom: 0; }
 .quiz { margin: 6px 0; }
 .quiz-reponse { margin-left: 8px; color: var(--accent); font-weight: 700; }
 .notes-cours { width: 100%; box-sizing: border-box; background: var(--fond-2); color: var(--texte); border: 1px solid var(--trait); border-radius: 8px; padding: 8px; font: inherit; }
+
+/* Page d'un morceau : la tablature d'abord, le reste replié dessous. */
+.barre-lecture { flex-wrap: wrap; }
+details.plie { margin-top: 10px; }
+details.plie > summary { font-weight: 700; }
+.bloc-guide .guide-mains { border: none; padding: 0; margin: 8px 0 0; background: none; }

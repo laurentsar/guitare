@@ -499,3 +499,7 @@ html.en-pupitre body { padding-bottom: 0; }
 html.plein-ecran-ouvert body { overflow: hidden; }
 .systeme { margin: 4px 0 18px; padding-bottom: 8px; border-bottom: 1px solid #222a3a; }
 .systeme .portee-ligne-bloc, .systeme .tab-ligne { margin: 0; }
+
+/* Légende des doigts de main droite, au-dessus de la tablature. */
+.legende-doigts { font-size: 13px; color: var(--texte-2); margin: 6px 0 4px; line-height: 1.4; }
+.legende-doigts b { color: var(--bois); }

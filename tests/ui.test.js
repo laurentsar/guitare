@@ -395,6 +395,15 @@ function verifie(nom, cond, detail) {
     verifie('accueil : rappel « Entraînement du jour »', /Entraînement du jour : 0 \//.test($('carteReprendre').textContent));
   }
 
+  w.AppGuitare.ouvrirMorceau('carulli-andantino');
+  {
+    const leg = $('detailMorceau').querySelector('.partition .legende-doigts');
+    verifie('légende p i m a au-dessus de la tablature (aussi en plein écran)', leg && /p.*pouce.*i.*index.*m.*majeur.*a.*annulaire/.test(leg.textContent) && /pincent en même temps/.test(leg.textContent));
+    const lettres = [...$('detailMorceau').querySelectorAll('.tab-main')].map((x) => x.textContent);
+    verifie('accord pouce + majeur : une étiquette « pm », plus de lettres superposées',
+            lettres.includes('pm') && lettres.every((l) => /^[pima]+$/.test(l) && new Set(l).size === l.length));
+  }
+
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
   w.AppGuitare.demarrerOreille('cordes');

@@ -1,6 +1,6 @@
 {
   "name": "guitare",
-  "version": "1.16",
+  "version": "1.17",
   "private": true,
   "description": "Apprendre la guitare classique en partant de zéro : parcours de leçons, accordeur au micro, métronome, bibliothèque d'accords, arpèges et morceaux joués par l'app — hors ligne, avec un mode télévision",
   "scripts": {

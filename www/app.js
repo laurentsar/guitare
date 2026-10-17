@@ -915,6 +915,13 @@
     peQuitter.setAttribute('aria-label', 'Quitter le plein écran');
     [peTitre, peJouer, peStop, peMoins, peTempo, pePlus, peQuitter].forEach(function (x) { peBarre.appendChild(x); });
     boitePartition.appendChild(peBarre);
+    // Les lettres sous la tablature : sans cette ligne, « pm » ou « im » ne
+    // veulent rien dire pour qui débute (et le pupitre plein écran n'a pas
+    // d'autre aide).
+    var legende = el('p', 'legende-doigts');
+    legende.innerHTML = 'Lettres sous la tablature = doigts de la <b>main droite</b> : <b>p</b> pouce · <b>i</b> index · <b>m</b> majeur · <b>a</b> annulaire. ' +
+      'Deux lettres (<b>pm</b>, <b>im</b>…) = deux doigts qui pincent en même temps, de la corde grave à l’aiguë.';
+    boitePartition.appendChild(legende);
     boitePartition.appendChild(zone);
     h.appendChild(boitePartition);
     var bPleinEcran = el('button', 'btn', '⛶ Plein écran');

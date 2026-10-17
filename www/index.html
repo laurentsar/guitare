@@ -166,6 +166,12 @@
           <option value="non">Non (veille normale)</option>
         </select>
       </label>
+      <label class="ligne">Aides débutant sur les morceaux
+        <select id="regAides">
+          <option value="non">Non (tablature d’abord)</option>
+          <option value="oui">Oui (mains, pas à pas, lecture)</option>
+        </select>
+      </label>
       <label class="ligne">Mode casque VR
         <select id="regCasque">
           <option value="auto">Automatique</option>
@@ -215,7 +221,7 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.15';
+  window.APP_VERSION = '1.16';
   // Mise à jour automatique : update-check.js interroge la dernière release
   // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
   // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.

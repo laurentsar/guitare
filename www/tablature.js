@@ -22,7 +22,7 @@
   /* Mise en page selon la densité : un morceau en doubles croches a besoin
    * de plus de place par temps, sinon les chiffres se chevauchent ; et si
    * deux mesures ne tiennent plus en largeur, on passe à une par ligne. */
-  function miseEnPage(piece) {
+  function miseEnPage(piece, largeur) {
     // Le plus petit écart FRÉQUENT entre deux attaques : quelques petites
     // notes d'ornement ne doivent pas étirer toute la partition.
     var temps = piece.notes.map(function (n) { return n.temps; }).sort(function (a, b) { return a - b; });
@@ -36,7 +36,13 @@
       if (comptes[d] >= total * 0.08 && +d < ecart) ecart = +d;
     });
     var px = Math.max(46, Math.ceil(19 / ecart));
-    return { pxParTemps: px, mesuresParLigne: noiresParMesure(piece) * px * 2 > 760 ? 1 : 2 };
+    // Mesures par ligne : autant qu'il en tient dans la largeur disponible
+    // sans réduire le dessin sous ~80 % (chiffres lisibles), de 1 à 4.
+    // Sans largeur connue (tests, texte), l'ancienne règle : 760 px.
+    var dispo = largeur || 760;
+    var mesure = noiresParMesure(piece) * px;
+    var n = Math.floor((dispo / 0.8 - 36) / mesure);
+    return { pxParTemps: px, mesuresParLigne: Math.max(1, Math.min(largeur ? 4 : 2, n)) };
   }
 
   function duree_totale(piece) {
@@ -68,7 +74,10 @@
     opts = opts || {};
     var parMesure = opts.parMesure || 4;
     var pxParTemps = opts.pxParTemps || 46;
-    var margeG = 26, margeD = 10, margeH = 16;
+    // margeG réglable : en vue « portée + tablature » entrelacées, on prend la
+    // marge de la portée (62) pour que les barres de mesure tombent l'une
+    // sous l'autre.
+    var margeG = opts.margeG || 26, margeD = 10, margeH = 16;
     var interligne = opts.interligne || 15;
     var L = margeG + (ligne.fin - ligne.debut) * pxParTemps + margeD;
     var H = margeH * 2 + interligne * 5;
@@ -107,7 +116,8 @@
       return '<div class="tab-ligne">' + svgSysteme(l, {
         parMesure: parMesure,
         pxParTemps: opts.pxParTemps,
-        interligne: opts.interligne
+        interligne: opts.interligne,
+        margeG: opts.margeG
       }) + '</div>';
     }).join('');
   }

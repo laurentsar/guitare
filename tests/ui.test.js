@@ -494,6 +494,35 @@ function verifie(nom, cond, detail) {
     w.Store.reglage('zoomPartition', 1);
   }
 
+  console.log('\n— Bouton retour —');
+  {
+    const actif = () => [...w.document.querySelectorAll('.ecran.actif')].map((e) => e.id.replace('ecran-', '')).join();
+    w.AppGuitare.aller('accueil', { retour: true });
+    while (w.AppGuitare.retour()) { /* vide la pile */ }
+    w.AppGuitare.aller('morceaux');
+    w.AppGuitare.ouvrirMorceau('mary-agneau');
+    w.AppGuitare.aller('metronome');
+    verifie('retour : métronome → morceau', w.AppGuitare.retour() && actif() === 'morceau');
+    verifie('retour : morceau → liste des morceaux', w.AppGuitare.retour() && actif() === 'morceaux');
+    verifie('retour : liste → accueil', w.AppGuitare.retour() && actif() === 'accueil');
+    verifie('retour à l’accueil : rien à défaire (l’APK demande alors de rappuyer pour quitter)', w.AppGuitare.retour() === false);
+    w.AppGuitare.ouvrirMorceau('ode-joie');
+    $('detailMorceau').querySelector('.partition-barre button').click();
+    verifie('plein écran ouvert', !!$('detailMorceau').querySelector('.partition.plein-ecran'));
+    verifie('retour : ferme d’abord le plein écran, reste sur le morceau',
+            w.AppGuitare.retour() && !$('detailMorceau').querySelector('.partition.plein-ecran') && actif() === 'morceau');
+    w.AppGuitare.aller('accords');
+    w.AppGuitare.ouvrirAccord('Am');
+    [...w.document.querySelectorAll('#ecran-accord .retour')][0].click();
+    verifie('bouton « ‹ Accords » : dépile (le retour suivant ne ramène pas sur la fiche Am)',
+            actif() === 'accords' && w.AppGuitare.retour() && actif() !== 'accord');
+    // pupitre → « ‹ Quitter » → morceau : le retour suivant ne ramène pas au pupitre
+    w.AppGuitare.ouvrirMorceau('ode-joie');
+    w.AppGuitare.aller('pupitre');
+    w.AppGuitare.aller('morceau');
+    verifie('pupitre puis retour au morceau : le bouton retour ne renvoie pas au pupitre', w.AppGuitare.retour() && actif() !== 'pupitre');
+  }
+
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
   w.AppGuitare.demarrerOreille('cordes');

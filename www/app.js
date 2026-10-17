@@ -20,7 +20,22 @@
   var ecranCourant = 'accueil';
 
   // ------------------------------------------------------------ navigation
-  function aller(nom) {
+  /* Pile des écrans visités, pour le bouton retour (Android, télécommande,
+   * geste retour du navigateur). `aller(nom, { retour: true })` revient sans
+   * empiler. */
+  var pile = [];
+  function aller(nom, opts) {
+    if (!(opts && opts.retour) && nom !== ecranCourant) {
+      // Revenir à l'écran d'où l'on vient (« ‹ Quitter » du pupitre…) est un
+      // retour : on dépile, sinon le bouton retour y ramènerait en boucle.
+      if (pile[pile.length - 1] === nom) pile.pop();
+      else pile.push(ecranCourant);
+      if (pile.length > 40) pile.shift();
+      // Une entrée d'historique par écran : le geste « retour » du navigateur
+      // (PWA) et la WebView de l'APK reviennent alors ici plutôt que de
+      // quitter l'app.
+      try { history.pushState({ ecran: nom }, ''); } catch (e) { /* file:// */ }
+    }
     // Quitter un écran coupe ce qu'il faisait : rien de pire qu'un métronome
     // qui continue pendant qu'on lit une leçon.
     if (ecranCourant === 'accordeur' && nom !== 'accordeur') arreterAccordeur();
@@ -53,7 +68,65 @@
 
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-aller]');
-    if (b) { aller(b.dataset.aller); }
+    if (!b) return;
+    // Les boutons « ‹ Morceaux », « ‹ Accords »… sont des retours : ils
+    // dépilent au lieu d'empiler, sinon le bouton retour y ramènerait.
+    if (b.classList.contains('retour')) {
+      var k = pile.lastIndexOf(b.dataset.aller);
+      if (k !== -1) pile.length = k;
+      aller(b.dataset.aller, { retour: true });
+    } else aller(b.dataset.aller);
+  });
+
+  /* Bouton retour. Dans l'ordre : fermer le plein écran, revenir à l'écran
+   * précédent, sinon à l'accueil. Renvoie false à l'accueil, où il n'y a
+   * plus rien à défaire (l'appelant décide alors de quitter). */
+  function retour() {
+    var pe = document.querySelector('.partition.plein-ecran [aria-label="Quitter le plein écran"]');
+    if (pe) { pe.click(); return true; }
+    if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) {} return true; }
+    if (pile.length) { aller(pile.pop(), { retour: true }); return true; }
+    if (ecranCourant !== 'accueil') { aller('accueil', { retour: true }); return true; }
+    return false;
+  }
+
+  // Sur l'accueil : un premier appui prévient, le second quitte — on ne
+  // ferme pas l'app par mégarde au milieu d'une séance.
+  var quitterArme = 0;
+  function messageBref(txt) {
+    var t = document.createElement('div');
+    t.className = 'toast-retour'; t.textContent = txt;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 2000);
+  }
+  function retourOuQuitter(quitter) {
+    if (retour()) { quitterArme = 0; return; }
+    if (Date.now() - quitterArme < 2000) { quitter(); return; }
+    quitterArme = Date.now();
+    messageBref('Appuie encore sur retour pour quitter');
+  }
+
+  // APK (Capacitor) : bouton retour d'Android et de la télécommande TV. Le
+  // plugin App remplace le comportement par défaut (quitter l'app).
+  (function () {
+    var cap = window.Capacitor;
+    var App = cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins && cap.Plugins.App;
+    if (!App || !App.addListener) return;
+    try {
+      var r = App.addListener('backButton', function () {
+        retourOuQuitter(function () { (App.exitApp || App.minimizeApp).call(App); });
+      });
+      if (r && r.catch) r.catch(function () {});
+    } catch (e) { /* plugin absent : la WebView revient dans l'historique */ }
+  })();
+  // Navigateur (PWA) et WebView sans plugin : le geste retour remonte
+  // l'historique ; on suit avec la même logique.
+  window.addEventListener('popstate', function () { retour(); });
+  // Clavier / télécommande dans un navigateur : Échap = retour.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' && e.key !== 'GoBack' && e.key !== 'BrowserBack') return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return;
+    if (retour()) e.preventDefault();
   });
 
   // ------------------------------------------- compteur de temps de pratique
@@ -2078,5 +2151,5 @@
   else init();
 
   // Exposé pour les tests d'interface (jsdom) : aucun autre usage.
-  window.AppGuitare = { aller: aller, ouvrirLecon: ouvrirLecon, ouvrirAccord: ouvrirAccord, ouvrirMorceau: ouvrirMorceau, demarrerOreille: demarrerOreille, ouvrirEditeur: ouvrirEditeur, pupitre: function () { return pupitreCourant; } };
+  window.AppGuitare = { aller: aller, retour: retour, ouvrirLecon: ouvrirLecon, ouvrirAccord: ouvrirAccord, ouvrirMorceau: ouvrirMorceau, demarrerOreille: demarrerOreille, ouvrirEditeur: ouvrirEditeur, pupitre: function () { return pupitreCourant; } };
 })();

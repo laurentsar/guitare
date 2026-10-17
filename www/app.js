@@ -28,6 +28,8 @@
     var lecteur = ['morceau', 'pupitre'];
     if (ecranCourant === 'editeur' && nom !== 'editeur') Tablature.arreter();
     if (lecteur.indexOf(ecranCourant) !== -1 && lecteur.indexOf(nom) === -1) Tablature.arreter();
+    // Quitter le lecteur termine l'enchaînement en cours.
+    if (lecteur.indexOf(nom) === -1 && typeof arreterSession === 'function') arreterSession();
     document.documentElement.classList.toggle('en-pupitre', nom === 'pupitre');
 
     ecranCourant = nom;
@@ -450,6 +452,7 @@
 
   function rendreMorceaux() {
     var h = vide($('listeMorceaux'));
+    h.appendChild(blocEnchainer());
     var niveaux = {};
     Morceaux.tous().forEach(function (p) { (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p); });
     function ligne(p, droite) {
@@ -673,7 +676,201 @@
     return d;
   }
 
-  function ouvrirMorceau(id) {
+  /* ================================================== Enchaînement ======
+   * Listes de morceaux joués à la suite, comme une répétition : à la fin d'un
+   * morceau, décompte de 5 s puis le suivant démarre seul, en plein écran.
+   * Tempo : celui de chaque morceau, ou un même pourcentage pour tous.
+   * « Révision du jour » : liste générée, ce qu'on n'a pas joué depuis le plus
+   * longtemps + de quoi découvrir, figée pour la journée. */
+  var session = null;      // {nom, ids, i, pct, boucle}
+  var minuteurSuite = null;
+
+  function titreDe(id) { var m = trouverMorceau(id); return m ? m.titre : '?'; }
+
+  function revisionDuJour() {
+    var jour = Store.jourCourant();
+    var r = Store.revision();
+    if (r && r.jour === jour && r.ids.every(trouverMorceau)) return r.ids;
+    var joues = Store.joues();
+    var tous = Morceaux.tous();
+    var debut = new Date(); debut.setHours(0, 0, 0, 0);
+    // Déjà joués (pas aujourd'hui), du plus ancien au plus récent : à revoir.
+    var anciens = tous.filter(function (m) { return joues[m.id] && joues[m.id].t < debut.getTime(); })
+      .sort(function (a, b) { return joues[a.id].t - joues[b.id].t; });
+    // Jamais joués, les plus faciles d'abord : à découvrir.
+    var neufs = tous.filter(function (m) { return !joues[m.id]; })
+      .sort(function (a, b) { return (a.niveau || 9) - (b.niveau || 9); });
+    var ids = anciens.slice(0, 3).map(function (m) { return m.id; });
+    neufs.forEach(function (m) { if (ids.length < 5) ids.push(m.id); });
+    anciens.slice(3).forEach(function (m) { if (ids.length < 5) ids.push(m.id); });
+    Store.sauverRevision({ jour: jour, ids: ids });
+    return ids;
+  }
+
+  function blocEnchainer() {
+    var bloc = el('section', 'carte enchainer');
+    bloc.appendChild(el('h3', null, '🎶 Enchaîner des morceaux'));
+
+    var rev = revisionDuJour();
+    var ligneRev = el('div', 'liste-ligne revision');
+    var t = el('span');
+    t.appendChild(el('b', null, '📅 Révision du jour'));
+    t.appendChild(el('small', null, rev.map(titreDe).join(' · ')));
+    ligneRev.appendChild(t);
+    var bRev = el('button', 'btn primaire', '▶ Lancer');
+    bRev.onclick = function () { lancerListe({ nom: 'Révision du jour', morceaux: rev, pct: null, boucle: false }); };
+    ligneRev.appendChild(bRev);
+    bloc.appendChild(ligneRev);
+
+    Store.listes().forEach(function (l) {
+      var li = el('div', 'liste-ligne');
+      var tt = el('span');
+      tt.appendChild(el('b', null, l.nom));
+      tt.appendChild(el('small', null, l.morceaux.length + ' morceau' + (l.morceaux.length > 1 ? 'x' : '') +
+        (l.pct ? ' · tempo ' + l.pct + ' %' : '') + (l.boucle ? ' · en boucle' : '')));
+      li.appendChild(tt);
+      var bL = el('button', 'btn primaire', '▶');
+      bL.setAttribute('aria-label', 'Lancer ' + l.nom);
+      bL.disabled = !l.morceaux.length;
+      bL.onclick = function () { lancerListe(l); };
+      var bE = el('button', 'btn', '✏️');
+      bE.setAttribute('aria-label', 'Modifier ' + l.nom);
+      bE.onclick = function () { ouvrirEditeurListe(l.id); };
+      li.appendChild(bL); li.appendChild(bE);
+      bloc.appendChild(li);
+    });
+    var bNouv = el('button', 'btn large', '➕ Nouvelle liste');
+    bNouv.onclick = function () { ouvrirEditeurListe(null); };
+    bloc.appendChild(bNouv);
+    return bloc;
+  }
+
+  function ouvrirEditeurListe(id) {
+    var l = id ? Store.listes().filter(function (x) { return x.id === id; })[0] : null;
+    var brouillon = l ? JSON.parse(JSON.stringify(l))
+      : { id: 'l' + Date.now().toString(36), nom: 'Ma liste', morceaux: [], pct: null, boucle: false };
+    var h = vide($('editeurListe'));
+    h.appendChild(el('h2', null, l ? 'Modifier la liste' : 'Nouvelle liste'));
+
+    var lNom = el('label', 'ligne', 'Nom');
+    var iNom = el('input'); iNom.value = brouillon.nom; iNom.maxLength = 40;
+    lNom.appendChild(iNom); h.appendChild(lNom);
+
+    var lTempo = el('label', 'ligne', 'Tempo');
+    var sTempo = el('select');
+    [['', 'Celui de chaque morceau'], ['100', 'Tous à 100 %'], ['90', 'Tous à 90 %'], ['80', 'Tous à 80 %'],
+     ['70', 'Tous à 70 %'], ['60', 'Tous à 60 %']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; sTempo.appendChild(op);
+    });
+    sTempo.value = brouillon.pct ? String(brouillon.pct) : '';
+    lTempo.appendChild(sTempo); h.appendChild(lTempo);
+
+    var bBoucle = el('button', 'interrupteur', '🔁 Tout reboucler à la fin');
+    function majBoucle() { bBoucle.classList.toggle('actif', !!brouillon.boucle); bBoucle.setAttribute('aria-pressed', brouillon.boucle ? 'true' : 'false'); }
+    bBoucle.onclick = function () { brouillon.boucle = !brouillon.boucle; majBoucle(); };
+    majBoucle();
+    var fb = el('div', 'filtres'); fb.appendChild(bBoucle); h.appendChild(fb);
+
+    h.appendChild(el('h3', null, 'Ordre de jeu'));
+    var ordre = el('ol', 'ordre-liste');
+    h.appendChild(ordre);
+    function rendreOrdre() {
+      vide(ordre);
+      if (!brouillon.morceaux.length) ordre.appendChild(el('p', 'aide', 'Ajoute des morceaux ci-dessous.'));
+      brouillon.morceaux.forEach(function (mid, k) {
+        var li = el('li', 'ordre-ligne');
+        li.appendChild(el('span', 'ordre-titre', titreDe(mid)));
+        [['↑', -1], ['↓', 1]].forEach(function (d) {
+          var b = el('button', 'btn', d[0]);
+          b.setAttribute('aria-label', d[1] < 0 ? 'Monter' : 'Descendre');
+          b.disabled = (d[1] < 0 && k === 0) || (d[1] > 0 && k === brouillon.morceaux.length - 1);
+          b.onclick = function () {
+            var x = brouillon.morceaux.splice(k, 1)[0];
+            brouillon.morceaux.splice(k + d[1], 0, x); rendreOrdre();
+          };
+          li.appendChild(b);
+        });
+        var bx = el('button', 'btn', '✕');
+        bx.setAttribute('aria-label', 'Retirer');
+        bx.onclick = function () { brouillon.morceaux.splice(k, 1); rendreOrdre(); rendreAjout(); };
+        li.appendChild(bx);
+        ordre.appendChild(li);
+      });
+    }
+
+    h.appendChild(el('h3', null, 'Ajouter des morceaux'));
+    var recherche = el('input'); recherche.placeholder = '🔎 Chercher un morceau'; recherche.type = 'search';
+    h.appendChild(recherche);
+    var ajout = el('div', 'ajout-liste');
+    h.appendChild(ajout);
+    function rendreAjout() {
+      vide(ajout);
+      var q = recherche.value.trim().toLowerCase();
+      Morceaux.tous().concat(Store.tablatures()).forEach(function (m) {
+        if (q && (m.titre + ' ' + (m.sous_titre || '')).toLowerCase().indexOf(q) === -1) return;
+        var b = el('button', 'ligne-morceau');
+        var tt = el('span');
+        tt.appendChild(el('b', null, m.titre));
+        tt.appendChild(el('small', null, m.sous_titre || ''));
+        b.appendChild(tt);
+        var n = brouillon.morceaux.filter(function (x) { return x === m.id; }).length;
+        b.appendChild(el('span', 'niveau', n ? '✓ ' + n : '➕'));
+        b.onclick = function () { brouillon.morceaux.push(m.id); rendreOrdre(); rendreAjout(); };
+        ajout.appendChild(b);
+      });
+    }
+    recherche.oninput = rendreAjout;
+    rendreOrdre(); rendreAjout();
+
+    var actions = el('div', 'actions');
+    var bSauver = el('button', 'btn primaire', '💾 Enregistrer');
+    function lireForm() {
+      brouillon.nom = iNom.value.trim() || 'Ma liste';
+      brouillon.pct = sTempo.value ? Number(sTempo.value) : null;
+      return brouillon;
+    }
+    bSauver.onclick = function () { Store.sauverListe(lireForm()); aller('morceaux'); };
+    var bJouerL = el('button', 'btn', '▶ Enregistrer et lancer');
+    bJouerL.onclick = function () { if (!brouillon.morceaux.length) return; Store.sauverListe(lireForm()); lancerListe(brouillon); };
+    actions.appendChild(bSauver); actions.appendChild(bJouerL);
+    if (l) {
+      var bSuppr = el('button', 'btn', '🗑 Supprimer');
+      bSuppr.onclick = function () {
+        if (!window.confirm('Supprimer la liste « ' + l.nom + ' » ?')) return;
+        Store.supprimerListe(l.id); aller('morceaux');
+      };
+      actions.appendChild(bSuppr);
+    }
+    h.appendChild(actions);
+    aller('liste');
+  }
+
+  function lancerListe(l) {
+    var ids = (l.morceaux || []).filter(trouverMorceau);
+    if (!ids.length) return;
+    session = { nom: l.nom, ids: ids, i: 0, pct: l.pct || null, boucle: !!l.boucle };
+    // Geste de l'utilisateur : c'est le moment de passer l'APPLI en plein
+    // écran (document entier) — la page d'un morceau est reconstruite à
+    // chaque titre, un plein écran sur un élément sauterait à chaque fois.
+    var de = document.documentElement, req = de.requestFullscreen || de.webkitRequestFullscreen;
+    if (req) { try { var pr = req.call(de); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }
+    jouerIndex(0);
+  }
+  function jouerIndex(i) {
+    clearInterval(minuteurSuite); minuteurSuite = null;
+    if (!session) return;
+    session.i = i;
+    ouvrirMorceau(session.ids[i], { session: true });
+  }
+  function arreterSession() {
+    clearInterval(minuteurSuite); minuteurSuite = null;
+    session = null;
+  }
+
+  function ouvrirMorceau(id, opts) {
+    opts = opts || {};
+    // Ouvrir un morceau hors de la liste en cours met fin à l'enchaînement.
+    if (!opts.session) arreterSession();
     var p = trouverMorceau(id);
     if (!p) return;
     var r = Store.reglages();
@@ -687,13 +884,29 @@
     var zone = null;
     var page = Tablature.miseEnPage(p, largeurDispo());
     var nbMesures = Math.max(1, Math.ceil(Tablature.duree_totale(p) / parMesure));
+    var enListe = !!(opts.session && session);
     var etat = {
       tempo: p.tempo, capo: 0, de: 1, a: nbMesures,
-      boucle: false, entraineur: false, pct: 100,
+      boucle: false, entraineur: false, pct: enListe && session.pct ? session.pct : 100,
       decompte: r.decompte, clic: r.clicLecture, muet: false, manche: true
     };
 
     var h = vide($('detailMorceau'));
+    var bandeau = null;
+    if (enListe) {
+      bandeau = el('div', 'bandeau-liste');
+      var suivantId = session.ids[session.i + 1] || (session.boucle ? session.ids[0] : null);
+      bandeau.appendChild(el('span', 'bl-txt', '🎶 ' + session.nom + ' — ' + (session.i + 1) + ' / ' + session.ids.length +
+        (suivantId ? ' · ensuite : ' + titreDe(suivantId) : ' · dernier morceau')));
+      var bPrec = el('button', 'btn', '⏮'), bSuiv = el('button', 'btn', '⏭'), bFin = el('button', 'btn', '⏹');
+      bPrec.setAttribute('aria-label', 'Morceau précédent'); bSuiv.setAttribute('aria-label', 'Morceau suivant');
+      bFin.setAttribute('aria-label', 'Arrêter l’enchaînement');
+      bPrec.disabled = session.i === 0;
+      bPrec.onclick = function () { Tablature.arreter(); jouerIndex(session.i - 1); };
+      bSuiv.onclick = function () { Tablature.arreter(); suite(true); };
+      bFin.onclick = function () { Tablature.arreter(); effacer(); arreterSession(); fermerPleinEcran(); bandeau.remove(); };
+      [bPrec, bSuiv, bFin].forEach(function (b) { bandeau.appendChild(b); });
+    }
     h.appendChild(el('h2', null, p.titre));
     h.appendChild(el('p', 'aide', p.sous_titre));
     if (p.description) h.appendChild(el('p', null, p.description));
@@ -788,7 +1001,48 @@
     peQuitter.setAttribute('aria-label', 'Quitter le plein écran');
     [peTitre, peJouer, peStop, peMoins, peTempo, pePlus, peQuitter].forEach(function (x) { peBarre.appendChild(x); });
     boitePartition.appendChild(peBarre);
+    if (bandeau) boitePartition.appendChild(bandeau);
+    var panneauSuite = el('div', 'suite-liste');
+    panneauSuite.hidden = true;
+    boitePartition.appendChild(panneauSuite);
     boitePartition.appendChild(zone);
+
+    /* Fin d'un morceau de la liste : décompte de 5 s puis le suivant. */
+    function suite(immediat) {
+      if (!session) return;
+      var n = session.i + 1;
+      if (n >= session.ids.length) {
+        if (!session.boucle) {
+          panneauSuite.hidden = false;
+          vide(panneauSuite);
+          panneauSuite.appendChild(el('b', null, '🎉 Liste « ' + session.nom + ' » terminée !'));
+          var bOk = el('button', 'btn primaire', 'OK');
+          bOk.onclick = function () { panneauSuite.hidden = true; fermerPleinEcran(); };
+          panneauSuite.appendChild(bOk);
+          arreterSession();
+          return;
+        }
+        n = 0;
+      }
+      if (immediat) return jouerIndex(n);
+      var reste = 5;
+      panneauSuite.hidden = false;
+      vide(panneauSuite);
+      var txt = el('b');
+      var bMaint = el('button', 'btn primaire', '▶ Maintenant');
+      var bStopS = el('button', 'btn', '⏹ Arrêter');
+      bMaint.onclick = function () { jouerIndex(n); };
+      bStopS.onclick = function () { arreterSession(); panneauSuite.hidden = true; if (bandeau) bandeau.remove(); };
+      panneauSuite.appendChild(txt); panneauSuite.appendChild(bMaint); panneauSuite.appendChild(bStopS);
+      function maj() { txt.textContent = 'Suivant : ' + titreDe(session.ids[n]) + ' dans ' + reste + ' s'; }
+      maj();
+      clearInterval(minuteurSuite);
+      minuteurSuite = setInterval(function () {
+        if (!session) { clearInterval(minuteurSuite); return; }
+        reste -= 1;
+        if (reste <= 0) jouerIndex(n); else maj();
+      }, 1000);
+    }
     h.appendChild(boitePartition);
     var bPleinEcran = el('button', 'btn', '⛶ Plein écran');
     var barrePE = el('div', 'partition-barre');
@@ -801,8 +1055,13 @@
       boitePartition.classList.add('plein-ecran');
       document.documentElement.classList.add('plein-ecran-ouvert');
       majPeTempo();
-      var req = boitePartition.requestFullscreen || boitePartition.webkitRequestFullscreen;
-      if (req) { try { var pr = req.call(boitePartition); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }
+      // Sur le document entier : la fiche est reconstruite à chaque morceau
+      // d'une liste, un plein écran posé sur un élément sauterait.
+      var de = document.documentElement;
+      var req = de.requestFullscreen || de.webkitRequestFullscreen;
+      if (req && !(document.fullscreenElement || document.webkitFullscreenElement)) {
+        try { var pr = req.call(de); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {}
+      }
       dessiner();
       boitePartition.scrollTop = 0;
     }
@@ -819,7 +1078,7 @@
     peQuitter.onclick = fermerPleinEcran;
     // Sortie par le geste « retour » du système ou la touche Échap.
     document.addEventListener('fullscreenchange', function () {
-      if (!document.fullscreenElement && pleinEcranOuvert()) fermerPleinEcran();
+      if (!document.fullscreenElement && pleinEcranOuvert() && boitePartition.isConnected) fermerPleinEcran();
     });
     // Rotation / redimensionnement : on remet en page à la nouvelle largeur.
     var dernierL = largeurDispo(), minuteurL = null;
@@ -978,6 +1237,7 @@
       pupitre.note(note);
     }
     function lancer(premier) {
+      if (premier) Store.morceauJoue(p.id);
       Tablature.jouer(p, {
         tempo: tempoEffectif(),
         de: (etat.de - 1) * parMesure,
@@ -992,6 +1252,7 @@
         surNote: function (n, i) { surligner(n); if (Cast.connecte()) Cast.afficherMorceau(p, i); },
         surFin: function () {
           effacer();
+          if (enListe && session && !etat.boucle && zone.isConnected) { suite(false); return; }
           if (!etat.boucle || (ecranCourant !== 'morceau' && ecranCourant !== 'pupitre')) { if (window.CasqueVR) CasqueVR.fin(); return; }
           if (etat.entraineur && etat.pct < 100) { etat.pct = Math.min(100, etat.pct + 5); majTempo(); pupitre.maj(); }
           lancer(false);
@@ -1055,6 +1316,11 @@
     pupitreCourant = pupitre;
 
     aller('morceau');
+    // Morceau d'une liste : plein écran et lecture tout de suite.
+    if (enListe) {
+      ouvrirPleinEcran();
+      setTimeout(function () { if (session && zone.isConnected) { lancer(true); pupitre.maj(); } }, 400);
+    }
   }
 
   function casqueActif() { return document.documentElement.classList.contains('casque'); }

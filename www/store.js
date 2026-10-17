@@ -130,6 +130,30 @@
   }
 
   // Étapes « apprendre pas à pas » cochées, par morceau : { id: [0, 2, …] }.
+  /* Listes d'enchaînement : [{id, nom, morceaux:[ids], pct:null|60..100, boucle}]. */
+  function listes() { return lire('listes', []); }
+  function sauverListe(l) {
+    var t = listes().filter(function (x) { return x.id !== l.id; });
+    t.push(l);
+    ecrire('listes', t);
+    return l;
+  }
+  function supprimerListe(id) { ecrire('listes', listes().filter(function (x) { return x.id !== id; })); }
+
+  /* Dernière fois qu'un morceau a été lancé (et combien de fois) : sert à la
+   * « Révision du jour », qui ressort ce qu'on n'a pas joué depuis longtemps. */
+  function joues() { return lire('joues', {}); }
+  function morceauJoue(id) {
+    var j = joues(), e = j[id] || { n: 0 };
+    e.n += 1; e.t = Date.now();
+    j[id] = e;
+    ecrire('joues', j);
+  }
+  /* Révision du jour, figée pour la journée (la liste ne doit pas changer
+   * sous les doigts à chaque morceau joué). */
+  function revision() { return lire('revision', null); }
+  function sauverRevision(r) { ecrire('revision', r); }
+
   function etapesFaites(id) { return (lire('etapes', {})[id] || []).slice(); }
   function marquerEtape(id, k, fait) {
     var t = lire('etapes', {});
@@ -142,6 +166,8 @@
 
   global.Store = {
     etapesFaites: etapesFaites, marquerEtape: marquerEtape,
+    listes: listes, sauverListe: sauverListe, supprimerListe: supprimerListe,
+    joues: joues, morceauJoue: morceauJoue, revision: revision, sauverRevision: sauverRevision,
     tablatures: tablatures, tablature: tablature,
     sauverTablature: sauverTablature, supprimerTablature: supprimerTablature,
     reglages: reglages, reglage: reglage,

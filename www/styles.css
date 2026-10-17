@@ -531,3 +531,17 @@ html.plein-ecran-ouvert body { overflow: hidden; }
 /* display:flex ci-dessus l'emportait sur l'attribut hidden : cadre vide affiché (v1.17). */
 .suite-liste[hidden], .bandeau-liste[hidden] { display: none; }
 .tab-accord { fill: var(--bois); font-size: 11px; font-weight: 700; }
+
+/* Zoom de la partition. */
+.zoom-ctl { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin: 4px 0; }
+.zoom-ctl .btn { min-width: 44px; padding: 6px 10px; }
+.zoom-ctl .zoom-valeur { min-width: 70px; font-variant-numeric: tabular-nums; }
+.zoom-icone { font-size: 16px; opacity: .8; }
+.partition { touch-action: pan-x pan-y; }
+.zoom-defile .tab-ligne, .zoom-defile .systeme { overflow-x: auto; }
+.zoom-defile .systeme .portee-ligne-bloc, .zoom-defile .systeme .tab-ligne { overflow: visible; }
+/* En plein écran, la barre du haut est pleine : le zoom flotte en bas. */
+.partition.plein-ecran .zoom-ctl {
+  position: fixed; z-index: 902; right: max(12px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom));
+  margin: 0; padding: 6px; border-radius: 14px; background: rgba(15, 18, 26, .94); border: 1px solid #2a3142;
+}

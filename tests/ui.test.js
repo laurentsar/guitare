@@ -469,6 +469,31 @@ function verifie(nom, cond, detail) {
             lettres.includes('pm') && lettres.every((l) => /^[pima]+$/.test(l) && new Set(l).size === l.length));
   }
 
+  console.log('\n— Zoom de la tablature —');
+  w.Store.reglage('vuePartition', 'tablature');
+  w.Store.reglage('zoomPartition', 1);
+  w.AppGuitare.ouvrirMorceau('mary-agneau');
+  {
+    const d = $('detailMorceau'), ctl = d.querySelector('.partition .zoom-ctl');
+    const nLignes = () => d.querySelectorAll('.tab-ligne').length;
+    const bouton = (re) => [...ctl.querySelectorAll('button')].find((b) => re.test(b.getAttribute('aria-label') || b.textContent));
+    verifie('commandes de zoom dans la partition (donc aussi en plein écran), 100 %', ctl && /100 %/.test(ctl.textContent));
+    const avant = nLignes();
+    bouton(/Zoom avant/).click(); bouton(/Zoom avant/).click();
+    verifie('zoom avant : 150 %, mémorisé, et moins de mesures par ligne (plus de lignes)',
+            /150 %/.test(ctl.textContent) && w.Store.reglages().zoomPartition === 1.5 && nLignes() > avant, avant + ' → ' + nLignes());
+    const svg = d.querySelector('svg.tab');
+    verifie('zoom avant : dessin agrandi à l’échelle (largeur en pixels posée)', /px$/.test(svg.style.width));
+    w.AppGuitare.ouvrirMorceau('ode-joie');
+    verifie('le zoom est conservé d’un morceau à l’autre', /150 %/.test($('detailMorceau').querySelector('.zoom-ctl').textContent));
+    const ctl2 = $('detailMorceau').querySelector('.zoom-ctl');
+    [...ctl2.querySelectorAll('button')].find((b) => /%/.test(b.textContent)).click();
+    verifie('toucher le pourcentage : retour à 100 %, largeur libre', w.Store.reglages().zoomPartition === 1 && !$('detailMorceau').querySelector('svg.tab').style.width);
+    for (let k = 0; k < 12; k++) [...$('detailMorceau').querySelectorAll('.zoom-ctl button')].find((b) => b.getAttribute('aria-label') === 'Zoom arrière').click();
+    verifie('zoom arrière borné à 60 %', w.Store.reglages().zoomPartition === 0.6);
+    w.Store.reglage('zoomPartition', 1);
+  }
+
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
   w.AppGuitare.demarrerOreille('cordes');

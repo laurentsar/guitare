@@ -1078,9 +1078,46 @@
      * morceau serait pénible. */
     var barreVue = el('div', 'filtres');
     zone = el('div');
+    /* Zoom de la partition (boutons − / + ou pincement à deux doigts).
+     * On ne grossit pas une image : on remet en page. L'échelle visée est
+     * « zoom × échelle à 100 % », et chaque ligne prend autant de mesures
+     * qu'il en tient à cette échelle ; à une seule mesure par ligne, la ligne
+     * dépasse et défile de côté. Le niveau est mémorisé pour tous les
+     * morceaux. */
+    var ZOOMS = [0.6, 0.75, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+    function zoom() { return Store.reglages().zoomPartition || 1; }
+    function reglerZoom(z) {
+      z = Math.max(ZOOMS[0], Math.min(ZOOMS[ZOOMS.length - 1], Math.round(z * 20) / 20));
+      Store.reglage('zoomPartition', z);
+      dessiner();
+    }
+    function pageZoomee(dispo) {
+      var p1 = Tablature.miseEnPage(p, dispo), z = zoom();
+      var mesure = parMesure * p1.pxParTemps;
+      var base = 36 + p1.mesuresParLigne * mesure;            // une ligne à 100 %
+      if (z === 1) return { page: p1, echelle: 0 };          // à 100 % : la ligne remplit la largeur
+      var echelle = (dispo / base) * z;                       // px par unité du dessin
+      var n = Math.max(1, Math.min(8, Math.floor((dispo / echelle - 36) / mesure)));
+      return { page: { pxParTemps: p1.pxParTemps, mesuresParLigne: n }, echelle: echelle };
+    }
+    function appliquerEchelle(echelle) {
+      var defile = false;
+      Array.prototype.forEach.call(zone.querySelectorAll('svg.tab, svg.portee'), function (svg) {
+        if (!echelle) { svg.style.width = ''; svg.style.maxWidth = ''; return; }
+        var w = parseFloat((svg.getAttribute('viewBox') || '0 0 0 0').split(' ')[2]) || 0;
+        var px = Math.round(w * echelle);
+        svg.style.width = px + 'px'; svg.style.maxWidth = 'none';
+        if (px > largeurDispo() + 2) defile = true;
+      });
+      zone.classList.toggle('zoom-defile', defile);
+      if (zoomTexte) zoomTexte.textContent = Math.round(zoom() * 100) + ' %';
+    }
+    var zoomTexte = null;
+
     function dessiner() {
       var vue = Store.reglages().vuePartition;
-      page = Tablature.miseEnPage(p, largeurDispo());
+      var zp = pageZoomee(largeurDispo());
+      page = zp.page;
       if (vue === 'deux') {
         // Entrelacées ligne par ligne (portée puis sa tablature, comme Guitar
         // Pro) : avant, toute la portée passait avant toute la tablature, qui
@@ -1099,6 +1136,7 @@
       } else {
         zone.innerHTML = vue === 'portee' ? Portee.svg(p, page) : Tablature.svg(p, page);
       }
+      appliquerEchelle(zp.echelle);
       Array.prototype.forEach.call(barreVue.children, function (b) {
         b.classList.toggle('actif', b.dataset.vue === vue);
       });
@@ -1141,7 +1179,41 @@
     legende.innerHTML = 'Lettres sous la tablature = doigts de la <b>main droite</b> : <b>p</b> pouce · <b>i</b> index · <b>m</b> majeur · <b>a</b> annulaire. ' +
       'Deux lettres (<b>pm</b>, <b>im</b>…) = deux doigts qui pincent en même temps, de la corde grave à l’aiguë.';
     boitePartition.appendChild(legende);
+    var zoomCtl = el('div', 'zoom-ctl');
+    var zMoins = el('button', 'btn', '−'), zPlus = el('button', 'btn', '+');
+    zoomTexte = el('button', 'btn zoom-valeur', '100 %');
+    zMoins.setAttribute('aria-label', 'Zoom arrière'); zPlus.setAttribute('aria-label', 'Zoom avant');
+    zoomTexte.title = 'Revenir à 100 %';
+    zMoins.onclick = function () { var z = zoom(); reglerZoom(ZOOMS.filter(function (x) { return x < z - 0.01; }).pop() || ZOOMS[0]); };
+    zPlus.onclick = function () { var z = zoom(); reglerZoom(ZOOMS.filter(function (x) { return x > z + 0.01; })[0] || ZOOMS[ZOOMS.length - 1]); };
+    zoomTexte.onclick = function () { reglerZoom(1); };
+    zoomCtl.appendChild(el('span', 'zoom-icone', '🔍'));
+    zoomCtl.appendChild(zMoins); zoomCtl.appendChild(zoomTexte); zoomCtl.appendChild(zPlus);
+    boitePartition.appendChild(zoomCtl);
     boitePartition.appendChild(zone);
+    // Pincement à deux doigts : aperçu immédiat (agrandissement CSS), puis
+    // remise en page au lâcher. La page elle-même ne zoome pas (touch-action).
+    var pince = null;
+    function ecart(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+    zone.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 2) return;
+      var r = zone.getBoundingClientRect();
+      pince = { d0: ecart(e.touches), z0: zoom(), r: 1 };
+      zone.style.transformOrigin = ((e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left) + 'px ' +
+                                   ((e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top) + 'px';
+    }, { passive: true });
+    zone.addEventListener('touchmove', function (e) {
+      if (!pince || e.touches.length !== 2) return;
+      e.preventDefault();
+      pince.r = Math.max(0.5, Math.min(3, ecart(e.touches) / pince.d0));
+      zone.style.transform = 'scale(' + pince.r + ')';
+    }, { passive: false });
+    zone.addEventListener('touchend', function (e) {
+      if (!pince || e.touches.length) return;
+      zone.style.transform = ''; zone.style.transformOrigin = '';
+      var z = pince.z0 * pince.r; pince = null;
+      reglerZoom(z);
+    });
 
     /* Fin d'un morceau de la liste : décompte de 5 s puis le suivant. */
     function suite(immediat) {

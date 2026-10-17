@@ -32,7 +32,7 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'morceaux.js', 'entrainement.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'entrainement.js', 'lecons.js',
  'accordeur.js', 'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
@@ -326,6 +326,69 @@ function verifie(nom, cond, detail) {
     verifie('aides rallumées : le pas à pas revient', !!$('detailMorceau').querySelector('.etapes-morceau') && w.Store.reglages().aides === true);
   }
 
+  console.log('\n— Enchaînement de morceaux (v1.17) —');
+  {
+    // Révision du jour : 5 morceaux, ce qui est joué depuis le plus longtemps d'abord.
+    const ids = w.Morceaux.tous().map((m) => m.id);
+    const jadis = Date.now() - 30 * 86400000;
+    w.Store.sauverRevision(null);
+    const j = {}; j[ids[7]] = { n: 2, t: jadis }; j[ids[3]] = { n: 1, t: jadis + 86400000 };
+    w.localStorage.setItem('guitare:joues', JSON.stringify(j));
+    w.AppGuitare.aller('morceaux');
+    const blocE = $('listeMorceaux').querySelector('.enchainer');
+    verifie('écran Morceaux : bloc « Enchaîner » avec la révision du jour', !!blocE && /Révision du jour/.test(blocE.textContent));
+    const rev = w.Store.revision();
+    verifie('révision du jour : 5 morceaux, figée pour la journée', rev && rev.ids.length === 5 && rev.jour === w.Store.jourCourant());
+    verifie('révision du jour : le plus anciennement joué d’abord, puis du neuf', rev.ids[0] === ids[7] && rev.ids[1] === ids[3] && !j[rev.ids[2]], rev.ids.join(','));
+
+    // Éditeur : nouvelle liste, ajout, réordonnancement, tempo commun.
+    [...blocE.querySelectorAll('button')].find((b) => /Nouvelle liste/.test(b.textContent)).click();
+    const ed = $('editeurListe');
+    verifie('éditeur de liste ouvert', $('ecran-liste').classList.contains('actif') && /Nouvelle liste/.test(ed.textContent));
+    ed.querySelector('input').value = 'Répét';
+    const ajout = (titre) => [...ed.querySelectorAll('.ajout-liste .ligne-morceau')].find((b) => b.textContent.indexOf(titre) !== -1).click();
+    const t = ids.slice(0, 3).map((id) => w.Morceaux.get(id).titre);
+    t.forEach(ajout);
+    verifie('éditeur : 3 morceaux ajoutés dans l’ordre', [...ed.querySelectorAll('.ordre-titre')].map((x) => x.textContent).join('|') === t.join('|'));
+    ed.querySelectorAll('.ordre-ligne')[2].querySelector('[aria-label="Monter"]').click();
+    verifie('éditeur : « Monter » réordonne', ed.querySelectorAll('.ordre-titre')[1].textContent === t[2]);
+    ed.querySelector('select').value = '80';
+    [...ed.querySelectorAll('button')].find((b) => /^💾/.test(b.textContent)).click();
+    const l = w.Store.listes().find((x) => x.nom === 'Répét');
+    verifie('liste enregistrée (nom, ordre, tempo 80 %)', l && l.morceaux.length === 3 && l.pct === 80 && l.morceaux[1] === ids[2]);
+
+    // Lecture enchaînée : bandeau, tempo commun, ⏭, fin de liste.
+    w.Tablature.jouer = () => {};       // pas d'audio dans jsdom
+    [...$('listeMorceaux').querySelectorAll('.liste-ligne')].find((x) => /Répét/.test(x.textContent)).querySelector('.btn.primaire').click();
+    let d = $('detailMorceau');
+    verifie('lancer : 1er morceau, bandeau « 1 / 3 » + suivant annoncé, plein écran',
+            /Répét — 1 \/ 3/.test(d.textContent) && d.textContent.indexOf('ensuite : ' + t[2]) !== -1 && !!d.querySelector('.partition.plein-ecran'));
+    await attendre(450);                // lecture auto d'un morceau de liste : +400 ms
+    verifie('lecture auto du 1er morceau, noté pour la révision', !!(w.Store.joues()[ids[0]] && w.Store.joues()[ids[0]].n >= 1));
+    verifie('tempo commun : 80 % du tempo du morceau', d.textContent.indexOf('♩ = ' + Math.round(w.Morceaux.get(ids[0]).tempo * 0.8)) !== -1);
+    d.querySelector('[aria-label="Morceau suivant"]').click();
+    d = $('detailMorceau');
+    verifie('⏭ : passe au morceau 2 / 3', /Répét — 2 \/ 3/.test(d.textContent) && d.querySelector('h2').textContent === t[2]);
+    d.querySelector('[aria-label="Morceau précédent"]').click();
+    verifie('⏮ : revient au morceau 1 / 3', /Répét — 1 \/ 3/.test($('detailMorceau').textContent));
+    $('detailMorceau').querySelector('[aria-label="Morceau suivant"]').click();
+    $('detailMorceau').querySelector('[aria-label="Morceau suivant"]').click();
+    $('detailMorceau').querySelector('[aria-label="Morceau suivant"]').click();
+    verifie('fin de liste : « terminée » affiché', /Liste « Répét » terminée/.test($('detailMorceau').textContent));
+    w.AppGuitare.ouvrirMorceau(ids[0]);
+    verifie('ouvrir un morceau hors liste : plus de bandeau', !$('detailMorceau').querySelector('.bandeau-liste'));
+  }
+
+  console.log('\n— Chansons (v1.18) —');
+  w.AppGuitare.aller('morceaux');
+  verifie('listes « grands classiques » et « hits récents » affichées',
+          /grands classiques/.test($('listeMorceaux').textContent) && /Hits récents/.test($('listeMorceaux').textContent) &&
+          /Mistral gagnant/.test($('listeMorceaux').textContent) && /Popcorn salé/.test($('listeMorceaux').textContent));
+  w.AppGuitare.ouvrirMorceau('ch-mistral-gagnant');
+  verifie('chanson : noms des accords au-dessus de la tablature', [...$('detailMorceau').querySelectorAll('.tab-accord')].slice(0, 4).map((t) => t.textContent).join(' ') === 'Am Dm G C');
+  verifie('panneau « suivant » caché hors enchaînement (cadre vide v1.17)', fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8').includes('.suite-liste[hidden]'));
+  verifie('chanson : capodastre réglé d’office sur la case du disque (3)', /Capodastre\s*−\s*case 3/.test($('detailMorceau').textContent));
+
   console.log('\n— Écran allumé —');
   {
     const demandes = [], relaches = [];
@@ -358,7 +421,9 @@ function verifie(nom, cond, detail) {
   w.AppGuitare.aller('morceaux');
   {
     const titres = [...$('listeMorceaux').querySelectorAll('h3')].map((x) => x.textContent);
-    verifie('liste : « Travailler les accords » en tête', /Travailler les accords/.test(titres[0]));
+    // Après le bloc « Enchaîner / révision du jour », avant les niveaux.
+    const iAcc = titres.findIndex((t) => /Travailler les accords/.test(t)), iNiv = titres.findIndex((t) => /^Niveau/.test(t));
+    verifie('liste : « Travailler les accords » avant les niveaux', iAcc !== -1 && iAcc < iNiv, titres.slice(0, 5).join(' | '));
   }
   w.AppGuitare.ouvrirMorceau('acc-em-am');
   verifie('exercice d’accords : position des mains (Em, Am) et pas à pas par paliers',

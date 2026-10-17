@@ -121,6 +121,11 @@
     <div id="listeMorceaux"></div>
   </section>
 
+  <section id="ecran-liste" class="ecran">
+    <button class="retour" data-aller="morceaux">‹ Morceaux</button>
+    <div id="editeurListe"></div>
+  </section>
+
   <section id="ecran-morceau" class="ecran">
     <button class="retour" data-aller="morceaux">‹ Morceaux</button>
     <div id="detailMorceau"></div>
@@ -227,7 +232,7 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.17';
+  window.APP_VERSION = '1.19';
   // Mise à jour automatique : update-check.js interroge la dernière release
   // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
   // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.
@@ -242,6 +247,7 @@
 <script src="manche.js"></script>
 <script src="gammes.js"></script>
 <script src="repertoire.js"></script>
+<script src="chansons.js"></script>
 <script src="morceaux.js"></script>
 <script src="entrainement.js"></script>
 <script src="lecons.js"></script>

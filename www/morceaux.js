@@ -580,9 +580,17 @@
     sections.forEach(function (s) {
       for (var tour = 0; tour < (s.tours || 1); tour++) {
         s.grille.forEach(function (id) {
-          var a = accords[id];
+          // 'F|G' : deux accords dans la mesure, 2 temps chacun ; le second
+          // reprend la basse au 3e temps.
+          var deux = String(id).split('|');
+          var a1 = accords[deux[0]], a2 = accords[deux[1] || deux[0]];
+          if (!a1 || !a2) throw new Error('accord inconnu : ' + id);
           s.motif.forEach(function (pas) {
-            pas.cordes.forEach(function (c) {
+            var a = pas.temps < 2 ? a1 : a2;
+            // Deux accords dans la mesure : le second reprend la basse au
+            // 3e temps — sauf un balayé, qui balaie aussi le second accord.
+            var cordes = deux.length > 1 && pas.temps === 2 && pas.cordes.indexOf('tout') === -1 ? ['basse'] : pas.cordes;
+            cordes.forEach(function (c) {
               // « tout » = toutes les cordes jouées de l'accord, balayées au
               // pouce de la grave vers l'aiguë.
               if (c === 'tout') {
@@ -904,6 +912,86 @@
     niveau: 2, tempo: 60, signature: [4, 4], categorie: 'entrainement', position: 5,
     description: 'Même chemin, avec le 1er doigt à la case V. Le 3e doigt reste au-dessus de sa case (VII) ; le 1er doigt s’écarte et se pose légèrement sur le côté gauche.',
     notes: cinquiemePosition([0, 1, 0, 1])
+  });
+
+  // --- Chansons françaises (grilles d'accords, voir chansons.js) ------------
+  /* Dictionnaire : la bibliothèque d'accords (accords.js) + quatre accords
+   * barrés que certaines grilles demandent. `basse` = corde de la basse (la
+   * plus grave jouée), `alt` = basse alternée (4e corde, ou la basse même). */
+  var ACCORDS_SUP = [
+    { id: 'Bb',    fr: 'Si♭ majeur (barré)',      frettes: [1, 3, 3, 3, 1, -1], doigts: [1, 3, 3, 3, 1, 0], barre: { frette: 1, de: 1, a: 5 } },
+    { id: 'Fm',    fr: 'Fa mineur (barré)',       frettes: [1, 1, 1, 3, 3, 1],  doigts: [1, 1, 1, 4, 3, 1], barre: { frette: 1, de: 1, a: 6 } },
+    { id: 'Gm',    fr: 'Sol mineur (barré)',      frettes: [3, 3, 3, 5, 5, 3],  doigts: [1, 1, 1, 4, 3, 1], barre: { frette: 3, de: 1, a: 6 } },
+    { id: 'Bm7b5', fr: 'Si mineur 7 quinte diminuée', frettes: [1, 0, 2, 0, 2, -1], doigts: [1, 0, 3, 0, 2, 0] }
+  ];
+  function accordChanson(id) {
+    var src = (global.Accords && Accords.get(id)) || ACCORDS_SUP.filter(function (a) { return a.id === id; })[0];
+    if (!src) throw new Error('accord absent de la bibliothèque : ' + id);
+    var basse = 6;
+    while (basse > 1 && src.frettes[basse - 1] < 0) basse--;
+    var poses = [];
+    src.frettes.forEach(function (f, i) {
+      if (f > 0 && src.doigts[i] && !(src.barre && f === src.barre.frette && src.doigts[i] === 1))
+        poses.push(NOMS_DOIGTS[src.doigts[i]] + ' case ' + f + ' sur la ' + (i + 1) + (i ? 'e' : 're') + ' corde');
+    });
+    var consigne = (src.barre ? 'Barré de l’index case ' + src.barre.frette + '. ' : '') +
+      (poses.length ? poses.join(', ') + '. ' : 'Toutes les cordes à vide. ') +
+      'Le pouce droit joue la ' + basse + 'e corde.';
+    return { id: src.id, fr: src.fr, frettes: src.frettes, doigts: src.doigts, barre: src.barre,
+             basse: basse, alt: basse >= 5 ? 4 : basse, consigne: consigne };
+  }
+  // Motifs des chansons (distincts de ceux des exercices d'accords, plus haut).
+  var MOTIFS_CHANSON = {
+    arpege: { texte: 'Arpège en croches p-i-m-a-m-i-m-i : le pouce (p) prend la basse, index (i) 3e corde, majeur (m) 2e, annulaire (a) 1re.',
+      pas: [{ temps: 0, duree: 0.5, cordes: ['basse'] }, { temps: 0.5, duree: 0.5, cordes: [3] },
+            { temps: 1, duree: 0.5, cordes: [2] }, { temps: 1.5, duree: 0.5, cordes: [1] },
+            { temps: 2, duree: 0.5, cordes: [2] }, { temps: 2.5, duree: 0.5, cordes: [3] },
+            { temps: 3, duree: 0.5, cordes: [2] }, { temps: 3.5, duree: 0.5, cordes: [3] }] },
+    balade: { texte: 'Balade en croches p-i-m-i, puis la basse alternée au 3e temps : p-i-m-i-p-i-m-i.',
+      pas: [{ temps: 0, duree: 0.5, cordes: ['basse'] }, { temps: 0.5, duree: 0.5, cordes: [3] },
+            { temps: 1, duree: 0.5, cordes: [2] }, { temps: 1.5, duree: 0.5, cordes: [3] },
+            { temps: 2, duree: 0.5, cordes: ['alt'] }, { temps: 2.5, duree: 0.5, cordes: [3] },
+            { temps: 3, duree: 0.5, cordes: [2] }, { temps: 3.5, duree: 0.5, cordes: [3] }] },
+    plaque: { texte: 'Basse et accord plaqué : pouce sur la basse au 1er temps, i-m-a pincés ensemble au 2e, basse alternée au 3e, i-m-a au 4e.',
+      pas: [{ temps: 0, duree: 1, cordes: ['basse'] }, { temps: 1, duree: 1, cordes: [3, 2, 1] },
+            { temps: 2, duree: 1, cordes: ['alt'] }, { temps: 3, duree: 1, cordes: [3, 2, 1] }] }
+  };
+  (global.CHANSONS || []).forEach(function (c) {
+    var dico = {}, ordre = [];
+    c.sections.forEach(function (s) {
+      s.grille.forEach(function (g) {
+        String(g).split('|').forEach(function (id) {
+          if (!dico[id]) { dico[id] = accordChanson(id); ordre.push(id); }
+        });
+      });
+    });
+    var mesure = 1, sections = [], motifsVus = [];
+    c.sections.forEach(function (s) {
+      var n = s.grille.length * (s.tours || 1);
+      sections.push({ titre: s.titre, de: mesure, a: mesure + n - 1,
+        texte: s.grille.join(' · ').replace(/\|/g, ' / ') + ((s.tours || 1) > 1 ? ' (×' + s.tours + ')' : '') + ' — ' + MOTIFS_CHANSON[s.motif].texte });
+      mesure += n;
+      if (motifsVus.indexOf(s.motif) === -1) motifsVus.push(s.motif);
+    });
+    var capoTxt = c.capo ? ' · capo case ' + c.capo : '';
+    ajoute({
+      id: c.id, titre: c.titre,
+      sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
+      niveau: c.groupe === 'hit' ? 7 : 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      chanson: true,
+      description: 'Grille d’accords de la chanson, accompagnement écrit pour cette app (ni mélodie ni paroles : elles sont sous droits). ' +
+        (c.capo ? 'Capodastre case ' + c.capo + ' pour retrouver la tonalité du disque : les accords se jouent comme écrits, le capo fait le reste. ' : '') +
+        (c.note ? c.note + ' ' : '') + 'Accords : ' + ordre.join(', ') + '.',
+      sections: sections,
+      mains: {
+        gauche: ordre.map(function (id) { return dico[id]; }),
+        droite: motifsVus.map(function (m) { return MOTIFS_CHANSON[m].texte; }).concat(
+          ['Une case de la grille = une mesure à 4 temps ; « F / G » = deux accords dans la mesure, 2 temps chacun.'])
+      },
+      notes: accompagnement(dico, c.sections.map(function (s) {
+        return { tours: s.tours || 1, grille: s.grille, motif: MOTIFS_CHANSON[s.motif].pas };
+      }))
+    });
   });
 
   // --- Répertoire du Mutopia Project ----------------------------------------

@@ -193,8 +193,10 @@ select, input[type=text] {
   padding: 12px 14px; margin-bottom: 8px; color: var(--texte); cursor: pointer;
 }
 .ligne-morceau .niveau { font-size: 11px; color: #22180C; background: var(--bois); border-radius: 999px; padding: 2px 8px; }
-.tab-ligne { overflow-x: auto; margin: 10px 0; }
-.tab { width: 100%; min-width: 420px; height: auto; }
+/* La largeur est choisie par Tablature.miseEnPage (mesures par ligne selon
+   l'écran) : le dessin remplit la ligne, sans défilement horizontal. */
+.tab-ligne { margin: 10px 0; }
+.tab { width: 100%; height: auto; display: block; }
 .tab-corde { stroke: #56607A; stroke-width: 1; }
 .tab-mesure { stroke: #6C7790; stroke-width: 1.5; }
 .tab-clef { fill: var(--texte-2); font-size: 9px; letter-spacing: 1px; }
@@ -315,7 +317,7 @@ html.tv .tv-seulement { display: block; }
 /* Notation classique, dessinée par portee.js. Les notes partagent
  * data-temps avec la tablature : un seul surlignage pour les deux. */
 .portee-ligne-bloc { overflow-x: auto; margin: 6px 0; }
-.portee { width: 100%; min-width: 420px; height: auto; }
+.portee { width: 100%; height: auto; display: block; }
 .portee-ligne { stroke: #6B7791; stroke-width: 1; }
 .portee-mesure { stroke: #8892A8; stroke-width: 1.5; }
 .portee-trait { fill: none; stroke: var(--texte); stroke-width: 1.8; stroke-linecap: round; }
@@ -480,8 +482,20 @@ html.en-pupitre body { padding-bottom: 0; }
 .quiz-reponse { margin-left: 8px; color: var(--accent); font-weight: 700; }
 .notes-cours { width: 100%; box-sizing: border-box; background: var(--fond-2); color: var(--texte); border: 1px solid var(--trait); border-radius: 8px; padding: 8px; font: inherit; }
 
-/* Page d'un morceau : la tablature d'abord, le reste replié dessous. */
-.barre-lecture { flex-wrap: wrap; }
-details.plie { margin-top: 10px; }
-details.plie > summary { font-weight: 700; }
-.bloc-guide .guide-mains { border: none; padding: 0; margin: 8px 0 0; background: none; }
+/* ------------------------------------------- Partition en plein écran */
+.partition-barre { display: flex; justify-content: flex-end; margin-top: 6px; }
+.partition.plein-ecran {
+  position: fixed; inset: 0; z-index: 900; overflow-y: auto; overflow-x: hidden;
+  background: var(--fond); padding: 64px max(14px, env(safe-area-inset-right)) 90px max(14px, env(safe-area-inset-left));
+}
+.pe-barre { display: none; }
+.partition.plein-ecran .pe-barre {
+  display: flex; gap: 8px; align-items: center; position: fixed; z-index: 901;
+  top: 0; left: 0; right: 0; padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top));
+  background: rgba(15, 18, 26, .94); backdrop-filter: blur(8px); border-bottom: 1px solid #2a3142;
+}
+.pe-barre .pe-titre { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pe-barre .btn { min-height: 44px; }
+html.plein-ecran-ouvert body { overflow: hidden; }
+.systeme { margin: 4px 0 18px; padding-bottom: 8px; border-bottom: 1px solid #222a3a; }
+.systeme .portee-ligne-bloc, .systeme .tab-ligne { margin: 0; }

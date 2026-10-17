@@ -610,10 +610,10 @@
    * Tablature.jouer — ce fichier ne fait que les exposer. */
   /* Accompagnement : chaque accord du morceau avec SON doigté (diagramme +
    * main dessinée + consigne de passage), puis le travail de la main droite.
-   * Replié sous la tablature ; le pas à pas l'ouvre à l'étape des accords. */
+   * Ouvert par défaut : c'est ce qu'on regarde avant de jouer la première note. */
   function blocMains(mains) {
-    var d = el('details', 'mains-morceau plie');
-    d.open = false;
+    var d = el('details', 'mains-morceau');
+    d.open = true;
     d.appendChild(el('summary', null, 'Position des mains'));
     d.appendChild(el('h3', null, 'Main gauche'));
     var grille = el('div', 'mains-grille');
@@ -795,9 +795,8 @@
       });
     }
     rendre();
-    // Replié : la page d'un morceau montre d'abord sa tablature ; le résumé
-    // dit où on en est.
-    d.open = false;
+    // Ouvert tant que le morceau n'est pas appris : c'est par là qu'on commence.
+    d.open = Store.etapesFaites(p.id).length < etapes.length;
     return d;
   }
 
@@ -806,7 +805,14 @@
     if (!p) return;
     var r = Store.reglages();
     var parMesure = Tablature.noiresParMesure(p);
-    var page = Tablature.miseEnPage(p);
+    // Largeur réelle disponible : la tablature tient dans l'écran, sans
+    // défilement horizontal (1 mesure par ligne en portrait, jusqu'à 4).
+    function largeurDispo() {
+      var d = $('detailMorceau');
+      return Math.max(260, (zone && zone.clientWidth) || (d && d.clientWidth) || (window.innerWidth - 32));
+    }
+    var zone = null;
+    var page = Tablature.miseEnPage(p, largeurDispo());
     var nbMesures = Math.max(1, Math.ceil(Tablature.duree_totale(p) / parMesure));
     var etat = {
       tempo: p.tempo, capo: 0, de: 1, a: nbMesures,
@@ -814,28 +820,26 @@
       decompte: r.decompte, clic: r.clicLecture, muet: false, manche: true
     };
 
-    /* La page d'un morceau, c'est d'abord sa tablature : titre, barre de
-     * lecture, partition. Tout le reste (mains, pas à pas, options, à propos)
-     * est replié dessous et ne s'ouvre qu'à la demande. */
     var h = vide($('detailMorceau'));
     h.appendChild(el('h2', null, p.titre));
     h.appendChild(el('p', 'aide', p.sous_titre));
-    function replie(titre, classe) {
-      var d = document.createElement('details');
-      d.className = 'plie' + (classe ? ' ' + classe : '');
-      d.appendChild(el('summary', null, titre));
-      return d;
-    }
-    var credit = null;
+    if (p.description) h.appendChild(el('p', null, p.description));
+    // Aides débutant (position des mains, pas à pas, « Que font mes mains ? »,
+    // lecture de la tablature) : derrière un réglage, éteint par défaut —
+    // une fois qu'on sait, elles repoussaient la tablature à 5 000 px.
+    var aides = !!Store.reglages().aides;
+    if (aides && p.mains) h.appendChild(blocMains(p.mains));
+    if (aides) h.appendChild(blocEtapes(p, nbMesures, function (action) { appliquerEtape(action); }));
     if (p.source) {
       // Mention exigée par la licence (CC-BY) et due dans tous les cas.
-      credit = el('p', 'aide credit');
+      var credit = el('p', 'aide credit');
       credit.appendChild(document.createTextNode('Partition : Mutopia Project' +
         (p.source.copiste ? ', édition de ' + p.source.copiste : '') + ' · ' + p.source.licence +
         (p.tempoOriginal ? ' · tempo de la partition ♩ = ' + p.tempoOriginal : '') + ' · '));
       var lien = el('a', null, 'fiche');
       lien.href = p.source.url; lien.target = '_blank'; lien.rel = 'noopener';
       credit.appendChild(lien);
+      h.appendChild(credit);
     }
 
     // Tempo : ±10, et, quand l'entraîneur tourne, le pourcentage en cours.
@@ -843,18 +847,13 @@
     var affiche = el('b');
     function majTempo() {
       affiche.textContent = '♩ = ' + tempoEffectif() + (etat.entraineur ? ' (' + etat.pct + ' %)' : '');
+      if (typeof majPeTempo === 'function' && peTempo) majPeTempo();
     }
     function tempoEffectif() { return Math.max(20, Math.round(etat.tempo * etat.pct / 100)); }
-    var moins = el('button', 'btn', '−');
-    var plus = el('button', 'btn', '+');
-    moins.title = 'Tempo −10'; plus.title = 'Tempo +10';
+    var moins = el('button', 'btn', '−10');
+    var plus = el('button', 'btn', '+10');
     moins.onclick = function () { etat.tempo = Math.max(30, etat.tempo - 10); majTempo(); };
     plus.onclick = function () { etat.tempo = Math.min(220, etat.tempo + 10); majTempo(); };
-    var bJouer = el('button', 'btn primaire', '▶ Écouter');
-    var bStop = el('button', 'btn', '■');
-    bStop.title = 'Arrêter';
-    ligneTempo.className = 'actions barre-lecture';
-    ligneTempo.appendChild(bJouer); ligneTempo.appendChild(bStop);
     ligneTempo.appendChild(moins); ligneTempo.appendChild(affiche); ligneTempo.appendChild(plus);
     h.appendChild(ligneTempo);
     majTempo();
@@ -863,12 +862,28 @@
      * apprend à lire la portée veut la portée SEULE, et rebasculer à chaque
      * morceau serait pénible. */
     var barreVue = el('div', 'filtres');
-    var zone = el('div');
+    zone = el('div');
     function dessiner() {
       var vue = Store.reglages().vuePartition;
-      zone.innerHTML =
-        (vue !== 'tablature' ? Portee.svg(p, page) : '') +
-        (vue !== 'portee' ? Tablature.svg(p, page) : '');
+      page = Tablature.miseEnPage(p, largeurDispo());
+      if (vue === 'deux') {
+        // Entrelacées ligne par ligne (portée puis sa tablature, comme Guitar
+        // Pro) : avant, toute la portée passait avant toute la tablature, qui
+        // commençait des milliers de pixels plus bas.
+        var po = document.createElement('div'), ta = document.createElement('div');
+        po.innerHTML = Portee.svg(p, page);
+        ta.innerHTML = Tablature.svg(p, { pxParTemps: page.pxParTemps, mesuresParLigne: page.mesuresParLigne, margeG: 62 });
+        var lp = Array.prototype.slice.call(po.children), lt = Array.prototype.slice.call(ta.children);
+        zone.innerHTML = '';
+        for (var i = 0; i < Math.max(lp.length, lt.length); i++) {
+          var paire = el('div', 'systeme');
+          if (lp[i]) paire.appendChild(lp[i]);
+          if (lt[i]) paire.appendChild(lt[i]);
+          zone.appendChild(paire);
+        }
+      } else {
+        zone.innerHTML = vue === 'portee' ? Portee.svg(p, page) : Tablature.svg(p, page);
+      }
       Array.prototype.forEach.call(barreVue.children, function (b) {
         b.classList.toggle('actif', b.dataset.vue === vue);
       });
@@ -880,7 +895,80 @@
       b.onclick = function () { Store.reglage('vuePartition', v[0]); dessiner(); };
       barreVue.appendChild(b);
     });
-    h.appendChild(zone);
+    h.appendChild(barreVue);
+
+    /* Partition en plein écran : la tablature (et/ou la portée) occupe tout
+     * l'écran, mise en page sur toute la largeur (plus de mesures par ligne
+     * en paysage), avec une barre Jouer / Arrêter / tempo / Quitter, et elle
+     * défile seule pour suivre la note jouée. API Fullscreen quand elle
+     * existe (masque aussi la barre d'état), sinon simple calque fixe. */
+    var boitePartition = el('div', 'partition');
+    var peBarre = el('div', 'pe-barre');
+    var peTitre = el('span', 'pe-titre', p.titre);
+    var peJouer = el('button', 'btn primaire', '▶');
+    var peStop = el('button', 'btn', '■');
+    var peMoins = el('button', 'btn', '−');
+    var peTempo = el('b');
+    var pePlus = el('button', 'btn', '+');
+    var peQuitter = el('button', 'btn', '✕');
+    peJouer.setAttribute('aria-label', 'Jouer'); peStop.setAttribute('aria-label', 'Arrêter');
+    peQuitter.setAttribute('aria-label', 'Quitter le plein écran');
+    [peTitre, peJouer, peStop, peMoins, peTempo, pePlus, peQuitter].forEach(function (x) { peBarre.appendChild(x); });
+    boitePartition.appendChild(peBarre);
+    boitePartition.appendChild(zone);
+    h.appendChild(boitePartition);
+    var bPleinEcran = el('button', 'btn', '⛶ Plein écran');
+    var barrePE = el('div', 'partition-barre');
+    barrePE.appendChild(bPleinEcran);
+    h.insertBefore(barrePE, boitePartition);
+
+    function pleinEcranOuvert() { return boitePartition.classList.contains('plein-ecran'); }
+    function majPeTempo() { peTempo.textContent = '♩ ' + tempoEffectif(); }
+    function ouvrirPleinEcran() {
+      boitePartition.classList.add('plein-ecran');
+      document.documentElement.classList.add('plein-ecran-ouvert');
+      majPeTempo();
+      var req = boitePartition.requestFullscreen || boitePartition.webkitRequestFullscreen;
+      if (req) { try { var pr = req.call(boitePartition); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }
+      dessiner();
+      boitePartition.scrollTop = 0;
+    }
+    function fermerPleinEcran() {
+      if (!pleinEcranOuvert()) return;
+      boitePartition.classList.remove('plein-ecran');
+      document.documentElement.classList.remove('plein-ecran-ouvert');
+      var fs = document.fullscreenElement || document.webkitFullscreenElement;
+      var exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (fs && exit) { try { var pr = exit.call(document); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }
+      dessiner();
+    }
+    bPleinEcran.onclick = ouvrirPleinEcran;
+    peQuitter.onclick = fermerPleinEcran;
+    // Sortie par le geste « retour » du système ou la touche Échap.
+    document.addEventListener('fullscreenchange', function () {
+      if (!document.fullscreenElement && pleinEcranOuvert()) fermerPleinEcran();
+    });
+    // Rotation / redimensionnement : on remet en page à la nouvelle largeur.
+    var dernierL = largeurDispo(), minuteurL = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(minuteurL);
+      minuteurL = setTimeout(function () {
+        if (!zone.isConnected) return;
+        var l = largeurDispo();
+        if (Math.abs(l - dernierL) > 20) { dernierL = l; dessiner(); }
+      }, 200);
+    });
+    /* Suit la note jouée : la ligne en cours reste visible (plein écran). */
+    function suivreLigne() {
+      if (!pleinEcranOuvert()) return;
+      var n = zone.querySelector('.en-cours');
+      var ligne = n && n.closest('.systeme, .tab-ligne, .portee-ligne-bloc');
+      if (!ligne) return;
+      var r = ligne.getBoundingClientRect();
+      if (r.top < 70 || r.bottom > window.innerHeight - 20) {
+        boitePartition.scrollTop += r.top - window.innerHeight * 0.3;
+      }
+    }
 
     // Manche virtuel : la note jouée s'allume là où poser le doigt.
     var manche = el('div', 'manche-boite');
@@ -889,6 +977,7 @@
       var maxCase = p.notes.reduce(function (m, n) { return Math.max(m, n.frette); }, 0);
       manche.innerHTML = Manche.svg({ cases: Math.max(5, Math.min(19, maxCase + 1)), points: pts });
     }
+    h.appendChild(manche);
     majManche(null);
 
     var guide = guideMains(p, function (temps) {
@@ -897,20 +986,14 @@
       });
       majManche(temps);
     });
-    var blocGuide = replie('✋ Que font mes mains ? — note par note', 'bloc-guide');
-    var titreGuide = guide.boite.querySelector('h3');
-    if (titreGuide) titreGuide.remove();
-    blocGuide.appendChild(guide.boite);
-    blocGuide.appendChild(manche);
-    h.appendChild(blocGuide);
-    h.appendChild(blocEtapes(p, nbMesures, function (action) { appliquerEtape(action); }));
-    if (p.mains) h.appendChild(blocMains(p.mains));
+    if (aides) h.insertBefore(guide.boite, manche);
 
-    var blocOptions = replie('⚙️ Options de travail');
-    blocOptions.appendChild(barreVue);
     var actions = el('div', 'actions');
+    var bJouer = el('button', 'btn primaire', '▶ Écouter');
+    var bStop = el('button', 'btn', '■ Arrêter');
     var bMetro = el('button', 'btn', '🥁 Métronome seul');
-    actions.appendChild(bMetro);
+    actions.appendChild(bJouer); actions.appendChild(bStop); actions.appendChild(bMetro);
+    h.appendChild(actions);
 
     // Options de travail : des interrupteurs, pas des cases à cocher — plus
     // gros au doigt, et atteignables à la télécommande.
@@ -936,8 +1019,8 @@
     interrupteur('clic', '🥁 Clic', function () { Store.reglage('clicLecture', etat.clic); });
     interrupteur('muet', '🔇 Guitare muette');
     interrupteur('manche', '🎸 Manche', function () { manche.hidden = !etat.manche; });
-    blocOptions.appendChild(opts);
-    blocOptions.appendChild(el('p', 'aide', 'Entraîneur de vitesse : démarre à 60 % du tempo et gagne 5 % à chaque tour, jusqu’à 100 %. Guitare muette : l’app tient le temps et suit la partition, c’est toi qui joues.'));
+    h.appendChild(opts);
+    if (aides) h.appendChild(el('p', 'aide', 'Entraîneur de vitesse : démarre à 60 % du tempo et gagne 5 % à chaque tour, jusqu’à 100 %. Guitare muette : l’app tient le temps et suit la partition, c’est toi qui joues.'));
 
     // Section (boucle A-B) et capodastre : des ± plutôt qu'un curseur, qui
     // capturerait les flèches de la télécommande.
@@ -951,7 +1034,7 @@
       l.appendChild(m); l.appendChild(v); l.appendChild(pl);
       maj();
       majs.push(maj);
-      blocOptions.appendChild(l);
+      h.appendChild(l);
     }
     reglage('Depuis la mesure', function () { return etat.de; },
       function () { etat.de = Math.max(1, etat.de - 1); },
@@ -962,14 +1045,6 @@
     reglage('Capodastre', function () { return etat.capo ? 'case ' + etat.capo : 'aucun'; },
       function () { etat.capo = Math.max(0, etat.capo - 1); },
       function () { etat.capo = Math.min(9, etat.capo + 1); });
-    blocOptions.appendChild(actions);
-    h.appendChild(blocOptions);
-
-    if (p.description || credit) {
-      var blocInfo = replie('ℹ️ À propos du morceau');
-      if (p.description) blocInfo.appendChild(el('p', null, p.description));
-      h.appendChild(blocInfo);
-    }
 
     // Les notes hors de la section sont estompées : on voit ce qu'on boucle.
     function marquerSection() {
@@ -994,11 +1069,11 @@
 
     // Rappel de lecture, replié : utile les premières semaines, encombrant
     // ensuite — <details> laisse l'élève décider, sans code de notre part.
-    var aide = document.createElement('details');
-    aide.innerHTML = '<summary>Comment lire cette tablature ?</summary>' + Illustrations.rendre('tablature');
-    h.appendChild(aide);
-    // Mention exigée par la licence (CC-BY) : visible, en bas de page.
-    if (credit) h.appendChild(credit);
+    if (aides) {
+      var aide = document.createElement('details');
+      aide.innerHTML = '<summary>Comment lire cette tablature ?</summary>' + Illustrations.rendre('tablature');
+      h.appendChild(aide);
+    }
 
     if (p.perso) {
       var gestion = el('div', 'actions');
@@ -1025,6 +1100,7 @@
       });
       if (etat.manche) majManche(note.temps);
       guide.suivre(note.temps);
+      suivreLigne();
       if (window.CasqueVR) CasqueVR.note(note);
       pupitre.note(note);
     }
@@ -1059,9 +1135,8 @@
         return;
       }
       if (action.type === 'guide') {
-        blocGuide.open = true;
         guide.aller(0);
-        defiler(blocGuide);
+        defiler(guide.boite);
         return;
       }
       Tablature.arreter(); effacer();
@@ -1078,6 +1153,10 @@
     }
 
     bJouer.onclick = function () { lancer(true); pupitre.maj(); };
+    peJouer.onclick = function () { bJouer.onclick(); };
+    peStop.onclick = function () { bStop.onclick(); };
+    peMoins.onclick = function () { moins.onclick(); };
+    pePlus.onclick = function () { plus.onclick(); };
     bStop.onclick = function () { Tablature.arreter(); effacer(); if (window.CasqueVR) CasqueVR.fin(); pupitre.maj(); };
     bMetro.onclick = function () { reglerTempo(tempoEffectif()); aller('metronome'); demarrerMetro(); };
 
@@ -1099,8 +1178,7 @@
     });
     var bPupitre = el('button', 'btn ' + (casqueActif() ? 'primaire ' : '') + 'large', '🥽 Mode casque (pupitre)');
     bPupitre.onclick = function () { pupitre.ouvrir(); };
-    if (casqueActif()) h.insertBefore(bPupitre, h.children[2]);
-    else actions.appendChild(bPupitre);
+    h.insertBefore(bPupitre, h.children[casqueActif() ? 2 : h.children.length]);
     pupitreCourant = pupitre;
 
     aller('morceau');
@@ -1491,6 +1569,7 @@
     $('regTv').value = r.modeTv == null ? 'auto' : (r.modeTv ? 'oui' : 'non');
     $('regCasque').value = r.modeCasque == null ? 'auto' : (r.modeCasque ? 'oui' : 'non');
     $('regEcran').value = r.ecranAllume === false ? 'non' : 'oui';
+    $('regAides').value = r.aides ? 'oui' : 'non';
     $('regCast').value = r.castAppId || '';
     $('castUrl').textContent = urlRecepteur();
     $('castAide').textContent = Cast.configure()
@@ -1617,6 +1696,7 @@
       if (window.CasqueVR) CasqueVR.appliquer();
       $('raccourciVR').hidden = !casqueActif();
     };
+    $('regAides').onchange = function () { Store.reglage('aides', this.value === 'oui'); };
     $('regEcran').onchange = function () {
       Store.reglage('ecranAllume', this.value === 'oui');
       if (window.EcranAllume) EcranAllume.appliquer();

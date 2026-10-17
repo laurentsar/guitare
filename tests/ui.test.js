@@ -38,6 +38,9 @@ vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.ge
 const $ = (id) => w.document.getElementById(id);
 // Les exercices d'entraînement s'ouvrent depuis leur écran, pas depuis la liste.
 const listables = () => w.Morceaux.tous().filter((p) => p.categorie !== 'entrainement').length;
+// Les aides débutant sont éteintes par défaut (v1.16) ; les blocs ci-dessous
+// les testent, on les allume. Le comportement par défaut a son propre bloc.
+w.Store.reglage('aides', true);
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
 let ok = 0, ko = 0;
 function verifie(nom, cond, detail) {
@@ -114,12 +117,6 @@ function verifie(nom, cond, detail) {
   verifie('tous les morceaux sont listés',
           $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables());
   w.AppGuitare.ouvrirMorceau('ode-joie');
-  verifie('page d’un morceau : tablature seule par défaut, le reste replié',
-          !$('detailMorceau').querySelector('.portee-note') &&
-          [...$('detailMorceau').querySelectorAll('details')].every((d) => !d.open) &&
-          /Écouter/.test($('detailMorceau').querySelector('.barre-lecture').textContent));
-  // Portée + tablature, pour vérifier la portée (choix mémorisé dans les options).
-  [...$('detailMorceau').querySelectorAll('.filtres button')].find((b) => b.dataset.vue === 'deux').click();
   const notesTab = $('detailMorceau').querySelectorAll('.tab-note');
   verifie('la tablature contient toutes les notes',
           notesTab.length === w.Morceaux.get('ode-joie').notes.length, 'n=' + notesTab.length);
@@ -267,7 +264,7 @@ function verifie(nom, cond, detail) {
   w.AppGuitare.ouvrirMorceau('mary-agneau');
   {
     const bloc = $('detailMorceau').querySelector('.etapes-morceau');
-    verifie('pas à pas : replié, le résumé dit « 0 / 8 étapes »', bloc && !bloc.open && /0 \/ 8 étapes/.test(bloc.querySelector('summary').textContent));
+    verifie('pas à pas : liste d’étapes ouverte, 0 / 8', bloc && bloc.open && /0 \/ 8 étapes/.test(bloc.querySelector('summary').textContent));
     const etapes = bloc.querySelectorAll('.etape');
     etapes[3].querySelector('button').click();
     const txt = $('detailMorceau').textContent;
@@ -288,6 +285,45 @@ function verifie(nom, cond, detail) {
     for (let k = 0; k < 40 && !vu; k++) { suiv.click(); vu = /Laisse posé/.test(g.textContent); }
     verifie('répertoire : le guide dit quels doigts laisser posés pendant une note tenue', vu);
     verifie('répertoire : chaque note a un doigt gauche nommé (plus de « un doigt » au choix)', !/Pose un doigt/.test(g.textContent));
+  }
+
+  console.log('\n— Tablature d’abord, plein écran (v1.16) —');
+  {
+    w.Store.reglage('aides', false);
+    w.AppGuitare.ouvrirMorceau('zombie');
+    const d = $('detailMorceau');
+    verifie('aides éteintes par défaut : ni mains, ni pas à pas, ni guide, ni légende',
+            !d.querySelector('.mains-morceau') && !d.querySelector('.etapes-morceau') && !d.querySelector('.guide-mains') &&
+            ![...d.querySelectorAll('summary')].some((x) => /Comment lire/.test(x.textContent)));
+    verifie('la tablature est dessinée en entier', d.querySelectorAll('.tab-note').length === w.Morceaux.get('zombie').notes.length);
+    const css = fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8');
+    verifie('plus de largeur minimale qui fait déborder tablature et portée', !/\.tab\s*\{[^}]*min-width:\s*420px/.test(css) && !/\.portee\s*\{[^}]*min-width:\s*420px/.test(css));
+    const z = w.Morceaux.get('zombie');
+    // Règle : le dessin n'est jamais réduit sous 80 % (sauf s'il ne reste qu'une
+    // mesure par ligne), sur TOUT le répertoire, au téléphone comme en paysage.
+    const tous = w.Morceaux.tous();
+    const lisible = (l) => tous.every((m) => {
+      const pg = w.Tablature.miseEnPage(m, l);
+      const nat = 36 + pg.mesuresParLigne * w.Tablature.noiresParMesure(m) * pg.pxParTemps;
+      return pg.mesuresParLigne === 1 || l / nat >= 0.8;
+    });
+    verifie('mesures par ligne selon la largeur : jamais réduit sous 80 % (380 px et 900 px)', lisible(380) && lisible(900));
+    verifie('paysage : plus de mesures par ligne qu’en portrait, 4 max',
+            w.Tablature.miseEnPage(z, 900).mesuresParLigne > w.Tablature.miseEnPage(z, 380).mesuresParLigne &&
+            w.Tablature.miseEnPage(z, 3000).mesuresParLigne === 4);
+    const bPE = [...d.querySelectorAll('button')].find((b) => /Plein écran/.test(b.textContent));
+    verifie('bouton « ⛶ Plein écran » présent', !!bPE);
+    bPE.click();
+    const boite = d.querySelector('.partition');
+    verifie('plein écran : la partition passe en calque plein écran avec sa barre',
+            boite.classList.contains('plein-ecran') && !!boite.querySelector('.pe-barre') && /♩ \d+/.test(boite.querySelector('.pe-barre').textContent));
+    [...boite.querySelectorAll('.pe-barre button')].find((b) => b.getAttribute('aria-label') === 'Quitter le plein écran').click();
+    verifie('plein écran : ✕ referme', !boite.classList.contains('plein-ecran'));
+    w.AppGuitare.aller('reglages');
+    verifie('réglage « Aides débutant » affiché sur Non', $('regAides').value === 'non');
+    $('regAides').value = 'oui'; $('regAides').dispatchEvent(new w.Event('change'));
+    w.AppGuitare.ouvrirMorceau('zombie');
+    verifie('aides rallumées : le pas à pas revient', !!$('detailMorceau').querySelector('.etapes-morceau') && w.Store.reglages().aides === true);
   }
 
   console.log('\n— Écran allumé —');

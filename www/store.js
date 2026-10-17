@@ -30,11 +30,12 @@
     modeCasque: null,    // casque VR : null = détection automatique (vr.js)
     castAppId: '',       // récepteur Chromecast personnalisé, voir cast.js
     objectifMinutes: 15,
-    vuePartition: 'tablature',  // 'portee' | 'tablature' | 'deux' — la tablature seule par défaut
+    vuePartition: 'deux',  // 'portee' | 'tablature' | 'deux'
     instrument: 'Prodipe Primera 4/4',
     decompte: true,        // une mesure de clics avant de jouer un morceau
     clicLecture: false,    // métronome pendant la lecture
-    ecranAllume: true      // l'écran ne s'éteint pas pendant qu'on joue (ecran.js)
+    ecranAllume: true,     // l'écran ne s'éteint pas pendant qu'on joue (ecran.js)
+    aides: false           // aides débutant sur la fiche morceau (mains, pas à pas, lecture)
   };
 
   function reglages() {

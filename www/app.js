@@ -465,7 +465,8 @@
       b.onclick = function () { ouvrirMorceau(p.id); };
       return b;
     }
-    var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études' };
+    var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
+                         6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)' };
     Object.keys(niveaux).sort().forEach(function (n) {
       h.appendChild(el('h3', null, NOMS_NIVEAUX[n] || 'Niveau ' + n));
       niveaux[n].forEach(function (p) { h.appendChild(ligne(p, '♩ = ' + p.tempo)); });
@@ -886,7 +887,8 @@
     var nbMesures = Math.max(1, Math.ceil(Tablature.duree_totale(p) / parMesure));
     var enListe = !!(opts.session && session);
     var etat = {
-      tempo: p.tempo, capo: 0, de: 1, a: nbMesures,
+      // Chansons : le capo qui redonne la tonalité du disque est réglé d'office.
+      tempo: p.tempo, capo: p.capo || 0, de: 1, a: nbMesures,
       boucle: false, entraineur: false, pct: enListe && session.pct ? session.pct : 100,
       decompte: r.decompte, clic: r.clicLecture, muet: false, manche: true
     };

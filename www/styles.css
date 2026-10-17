@@ -509,3 +509,6 @@ html.plein-ecran-ouvert body { overflow: hidden; }
 }
 .suite-liste b { flex: 1 1 100%; }
 .partition.plein-ecran .bandeau-liste { position: sticky; top: 64px; z-index: 2; }
+/* display:flex ci-dessus l'emportait sur l'attribut hidden : cadre vide affiché (v1.17). */
+.suite-liste[hidden], .bandeau-liste[hidden] { display: none; }
+.tab-accord { fill: var(--bois); font-size: 11px; font-weight: 700; }

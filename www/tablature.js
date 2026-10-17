@@ -77,7 +77,7 @@
     // margeG réglable : en vue « portée + tablature » entrelacées, on prend la
     // marge de la portée (62) pour que les barres de mesure tombent l'une
     // sous l'autre.
-    var margeG = opts.margeG || 26, margeD = 10, margeH = 16;
+    var margeG = opts.margeG || 26, margeD = 10, margeH = 20;
     var interligne = opts.interligne || 15;
     var L = margeG + (ligne.fin - ligne.debut) * pxParTemps + margeD;
     var H = margeH * 2 + interligne * 5;
@@ -94,6 +94,15 @@
       var x = margeG + (t - ligne.debut) * pxParTemps;
       p.push('<line x1="' + x + '" y1="' + margeH + '" x2="' + x + '" y2="' + (margeH + 5 * interligne) + '" class="tab-mesure"/>');
     }
+
+    // Nom de l'accord au-dessus de la portée, à chaque changement (et en
+    // début de ligne) : indispensable pour suivre une grille d'accords.
+    var accPrec = null;
+    ligne.notes.slice().sort(function (a, b) { return a.temps - b.temps; }).forEach(function (n) {
+      if (!n.accord || n.accord === accPrec) return;
+      accPrec = n.accord;
+      p.push('<text x="' + (margeG + (n.temps - ligne.debut) * pxParTemps + 2) + '" y="' + (margeH - 5) + '" class="tab-accord">' + n.accord + '</text>');
+    });
 
     ligne.notes.forEach(function (n, i) {
       var x = margeG + (n.temps - ligne.debut) * pxParTemps + 6;

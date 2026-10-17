@@ -43,7 +43,7 @@ ctx.AudioContext = function () {
   this.resume = () => {};
 };
 
-['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js']
+['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
 const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes } = ctx;
@@ -517,6 +517,46 @@ console.log('\n— Répertoire Mutopia —');
     return deb.join() === '43,62';
   })());
   verifie('la tablature de chaque pièce se dessine', rep.every((p) => (Tablature.svg(p, Tablature.miseEnPage(p)).match(/tab-note/g) || []).length === p.notes.length));
+}
+
+console.log('\n— Chansons : grilles d’accords (v1.18) —');
+{
+  const ch = Morceaux.tous().filter((p) => p.chanson);
+  verifie('au moins 20 chansons (classiques + hits récents)', ch.length >= 20, ch.length);
+  verifie('deux groupes : classiques (6) et hits récents (7)', ch.some((p) => p.niveau === 6) && ch.some((p) => p.niveau === 7));
+  // Chaque accord joué doit sonner EXACTEMENT les notes de son nom.
+  const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const INTERVALLES = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], m7b5: [0, 3, 6, 10] };
+  function attendu(id) {
+    const m = /^([A-G])(#|b)?(m7b5|maj7|m7|m|7)?$/.exec(id);
+    if (!m) return null;
+    const r = (PC[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + 12) % 12;
+    return { racine: r, notes: new Set(INTERVALLES[m[3] || ''].map((i) => (r + i) % 12)) };
+  }
+  const fautes = [];
+  ch.forEach((p) => p.mains.gauche.forEach((a) => {
+    const e = attendu(a.id);
+    if (!e) { fautes.push(p.id + ' : nom ' + a.id); return; }
+    const joue = new Set(a.frettes.map((f, i) => f < 0 ? null : Theorie.midiDeCase(i + 1, f) % 12).filter((x) => x !== null));
+    const ok = [...joue].every((x) => e.notes.has(x)) && joue.has(e.racine) && joue.size >= Math.min(3, e.notes.size);
+    // La basse jouée par le pouce doit être la fondamentale.
+    const basse = Theorie.midiDeCase(a.basse, a.frettes[a.basse - 1]) % 12;
+    if (!ok || basse !== e.racine) fautes.push(p.id + ' : ' + a.id);
+  }));
+  verifie('chaque accord des chansons sonne ses notes, basse = fondamentale', !fautes.length, [...new Set(fautes)].join(', '));
+  verifie('chaque note d’une chanson appartient à son accord', ch.every((p) => p.notes.every((n) => {
+    const a = p.mains.gauche.find((x) => x.id === n.accord);
+    return a && a.frettes[n.corde - 1] === n.frette;
+  })));
+  const nbMesures = (p) => Math.ceil(Tablature.duree_totale(p) / 4);
+  verifie('sections contiguës qui couvrent tout le morceau', ch.every((p) => p.sections[0].de === 1 &&
+    p.sections.every((s, i) => i === 0 || s.de === p.sections[i - 1].a + 1) && p.sections[p.sections.length - 1].a === nbMesures(p)));
+  const lb = Morceaux.get('ch-je-l-aime-a-mourir');
+  verifie('demi-mesure « F|G7 » : Fa sur les temps 1-2, Sol 7 (basse) au 3e temps',
+    lb.notes.some((n) => n.accord === 'F' && n.temps === 16) && lb.notes.some((n) => n.accord === 'G7' && n.temps === 18 && n.main === 'p'));
+  verifie('capo noté sur le morceau (Mistral gagnant : case 3)', Morceaux.get('ch-mistral-gagnant').capo === 3 && /capo case 3/.test(Morceaux.get('ch-mistral-gagnant').sous_titre));
+  verifie('ni paroles ni mélodie : la description le dit', ch.every((p) => /ni mélodie ni paroles/.test(p.description)));
+  verifie('chaque chanson se dessine en tablature', ch.every((p) => (Tablature.svg(p, Tablature.miseEnPage(p)).match(/tab-note/g) || []).length === p.notes.length));
 }
 
 console.log(`\n=== ${ok} réussis, ${ko} échoués ===`);

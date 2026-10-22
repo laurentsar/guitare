@@ -317,6 +317,26 @@ function verifie(nom, cond, detail) {
             boite.classList.contains('plein-ecran') && !!boite.querySelector('.pe-barre') && /♩ \d+/.test(boite.querySelector('.pe-barre').textContent));
     [...boite.querySelectorAll('.pe-barre button')].find((b) => b.getAttribute('aria-label') === 'Quitter le plein écran').click();
     verifie('plein écran : ✕ referme', !boite.classList.contains('plein-ecran'));
+    // Zoom (v1.19) : échelle fixe du dessin, mise en page à cette échelle.
+    verifie('télé : 2 mesures par ligne au plus quand c’est ajusté', w.Tablature.miseEnPage(z, 3000, 2).mesuresParLigne === 2);
+    const bZ = (lbl) => [...d.querySelectorAll('.partition-barre button')].find((b) => b.getAttribute('aria-label') === lbl);
+    verifie('zoom : boutons 🔍− / Ajusté / 🔍+ près du plein écran', !!bZ('Zoomer') && !!bZ('Dézoomer') && bZ('Ajuster à la largeur').textContent === 'Ajusté');
+    bZ('Zoomer').click();
+    const z1 = w.Store.reglages().zoomPartition;
+    const svgZ = d.querySelector('.partition svg.tab, .partition svg.portee');
+    verifie('zoom + : échelle mémorisée, largeur du dessin = viewBox × échelle',
+            z1 > 1 && svgZ.style.width === Math.round(+svgZ.getAttribute('viewBox').split(' ')[2] * z1) + 'px' && bZ('Ajuster à la largeur').textContent === Math.round(z1 * 100) + ' %');
+    bZ('Dézoomer').click(); bZ('Dézoomer').click();
+    verifie('zoom − : échelle plus petite', w.Store.reglages().zoomPartition < z1);
+    bZ('Ajuster à la largeur').click();
+    verifie('« Ajusté » rend la largeur à la page', w.Store.reglages().zoomPartition === null && !d.querySelector('.partition svg.tab').style.width);
+    bPE.click();
+    verifie('plein écran : le focus passe sur ▶ (plus caché sous le calque)', w.document.activeElement && w.document.activeElement.getAttribute('aria-label') === 'Jouer');
+    verifie('plein écran : la barre a aussi le zoom', !!boite.querySelector('.pe-barre .zoom-groupe'));
+    verifie('plein écran : flèches limitées au calque',
+            w.DpadNav && [...boite.querySelectorAll('button')].length > 0 && w.document.querySelector('.plein-ecran') === boite);
+    w.dispatchEvent(new w.PopStateEvent('popstate', { state: null }));
+    verifie('plein écran : la touche Retour (popstate) referme au lieu de quitter', !boite.classList.contains('plein-ecran'));
     w.AppGuitare.aller('reglages');
     verifie('réglage « Aides débutant » affiché sur Non', $('regAides').value === 'non');
     $('regAides').value = 'oui'; $('regAides').dispatchEvent(new w.Event('change'));

@@ -72,9 +72,12 @@
     return estVisible(el);
   }
 
+  // Un calque plein écran (partition) recouvre la page : ce qui est dessous
+  // reste « visible » pour offsetParent, mais le focus y disparaîtrait.
   function candidats(exclu) {
     var out = [];
-    var nodes = document.querySelectorAll(FOCUSABLE_SELECTOR);
+    var racine = document.querySelector('.plein-ecran') || document;
+    var nodes = racine.querySelectorAll(FOCUSABLE_SELECTOR);
     for (var i = 0; i < nodes.length; i++) {
       var n = nodes[i];
       if (n === exclu) continue;

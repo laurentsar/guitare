@@ -481,6 +481,22 @@ html.en-pupitre body { padding-bottom: 0; }
 .pe-barre .pe-titre { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pe-barre .btn { min-height: 44px; }
 html.plein-ecran-ouvert body { overflow: hidden; }
+/* Zoom : le dessin a une largeur fixe, centré quand il ne remplit pas la ligne. */
+.partition svg.tab, .partition svg.portee { margin: 0 auto; }
+.partition-barre { align-items: center; gap: 8px; flex-wrap: wrap; }
+.zoom-groupe { display: inline-flex; gap: 4px; align-items: center; }
+.zoom-val { min-width: 84px; }
+@media (max-width: 560px) {
+  .pe-barre { gap: 5px; }
+  .pe-barre .pe-titre, .pe-barre .zoom-val { display: none; }
+  .pe-barre .btn { padding-left: 8px; padding-right: 8px; min-width: 0; }
+}
+/* Télé : marges contre le surbalayage, barre à la taille d'une télécommande. */
+html.tv .partition.plein-ecran { padding: 96px 48px 48px; }
+html.tv .partition.plein-ecran .pe-barre { padding: 14px 48px; gap: 12px; }
+html.tv .pe-barre .btn { min-height: 60px; min-width: 64px; font-size: 22px; }
+html.tv .pe-barre .pe-titre { font-size: 24px; }
+html.tv .pe-barre b { font-size: 22px; }
 .systeme { margin: 4px 0 18px; padding-bottom: 8px; border-bottom: 1px solid #222a3a; }
 .systeme .portee-ligne-bloc, .systeme .tab-ligne { margin: 0; }
 

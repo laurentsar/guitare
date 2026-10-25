@@ -323,6 +323,88 @@
       sections: [
         { titre: 'Couplet et refrain', motif: 'plaque', tours: 2, grille: ['Em', 'C', 'G', 'G'] },
         { titre: 'Pont', motif: 'plaque', tours: 2, grille: ['Bm', 'Am'] }
+      ] },
+    { id: 'ch-go-far-kid', titre: 'You’re Gonna Go Far, Kid', artiste: 'The Offspring', annee: 2008,
+      capo: 0, tempo: 126, groupe: 'rock',
+      note: 'Accords ouverts grattés au pouce ; le Fa est barré.',
+      sections: [
+        { titre: 'Couplet', motif: 'rock', tours: 2, grille: ['Am', 'F', 'C', 'G'] },
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['F', 'Dm', 'F', 'Em', 'G', 'G'] }
+      ] },
+    { id: 'ch-get-a-job', titre: 'Why Don’t You Get a Job?', artiste: 'The Offspring', annee: 1998,
+      capo: 1, tempo: 108, groupe: 'rock',
+      note: 'Capo case 1 : les accords Fa – Si♭ – Do du disque se jouent Mi – La – Si7 (le Si7 remplace le Si, sans barré).',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'balade', tours: 4, grille: ['E', 'A', 'E', 'B7'] },
+        { titre: 'Pont', motif: 'plaque', grille: ['A', 'E', 'B7', 'A7', 'E', 'E'] }
+      ] },
+    { id: 'ch-want-you-bad', titre: 'Want You Bad', artiste: 'The Offspring', annee: 2000,
+      capo: 0, tempo: 106, groupe: 'rock',
+      note: 'Tout en power chords. Le Sol♯ m du disque est laissé de côté.',
+      sections: [
+        { titre: 'Intro', motif: 'rock', grille: ['E5', 'B5', 'A5', 'C#5|B5'] },
+        { titre: 'Couplet et refrain', motif: 'rock', tours: 2, grille: ['E5', 'C#5', 'B5', 'A5'] },
+        { titre: 'Pré-refrain', motif: 'rock', grille: ['A5', 'B5', 'C#5', 'E5'] },
+        { titre: 'Pont', motif: 'rock', grille: ['B5', 'A5', 'E5', 'E5'] }
+      ] },
+    { id: 'ch-lithium', titre: 'Lithium', artiste: 'Nirvana', annee: 1991,
+      capo: 0, tempo: 123, groupe: 'rock',
+      note: 'Power chords sur les fondamentales du disque (Ré, Fa♯, Si, Sol, Si♭) : la même forme glisse le long du manche.',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'rock', tours: 4, grille: ['D5', 'F#5', 'B5', 'G5', 'Bb5'] },
+        { titre: 'Fin du refrain', motif: 'rock', tours: 2, grille: ['G5', 'Bb5'] }
+      ] },
+    { id: 'ch-heart-shaped-box', titre: 'Heart-Shaped Box', artiste: 'Nirvana', annee: 1993,
+      capo: 0, tempo: 100, groupe: 'rock',
+      note: 'Power chords sur les fondamentales du disque (Sol♯, Mi, Do♯) ; les accords sus du disque sont joués simples.',
+      sections: [
+        { titre: 'Couplet', motif: 'rock', tours: 2, grille: ['G#5', 'E5', 'C#5', 'G#5'] },
+        { titre: 'Refrain', motif: 'rock', tours: 2, grille: ['G#5', 'E5', 'C#5', 'C#5'] }
+      ] },
+    { id: 'ch-when-youre-gone', titre: 'When You’re Gone', artiste: 'The Cranberries', annee: 1996,
+      capo: 3, tempo: 66, groupe: 'rock',
+      note: 'Capo case 3 : Mi♭ – Do m – Sol m – Si♭ se jouent Do – La m – Mi m – Sol. Au refrain, le La♭7 du disque devient Fa (barré).',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['C', 'Am', 'Em', 'G'] },
+        { titre: 'Refrain', motif: 'balade', tours: 2, grille: ['C', 'Am', 'Em', 'F'] }
+      ] },
+    { id: 'ch-ode-to-my-family', titre: 'Ode to My Family', artiste: 'The Cranberries', annee: 1994,
+      capo: 2, tempo: 87, groupe: 'rock',
+      note: 'Capo case 2 : Ré – Si m – Fa♯ m – Sol se jouent Do – La m – Mi m – Fa (ici Fa maj7, sans barré). La grille de l’intro, qui revient tout le long.',
+      sections: [
+        { titre: 'Intro', motif: 'arpege', tours: 2, grille: ['C', 'Am', 'Em', 'Fmaj7'] },
+        { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['C', 'Am', 'Em', 'Fmaj7'] }
+      ] },
+    { id: 'ch-so-lonely', titre: 'So Lonely', artiste: 'The Police', annee: 1978,
+      capo: 0, tempo: 150, groupe: 'rock',
+      note: 'La même grille du début à la fin (Do – Sol – La m – Fa) ; le Fa est barré.',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'plaque', tours: 4, grille: ['C', 'G', 'Am', 'F'] }
+      ] },
+    { id: 'ch-walking-on-the-moon', titre: 'Walking on the Moon', artiste: 'The Police', annee: 1979,
+      capo: 0, tempo: 72, groupe: 'rock',
+      note: 'Les accords enrichis du couplet (Ré m7, Do9sus4) sont joués simples. Le refrain demande deux barrés (Si♭, Sol m).',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['Dm', 'C', 'Am', 'Am'] },
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['Bb', 'F', 'C', 'Gm'] }
+      ] },
+    { id: 'ch-stir-it-up', titre: 'Stir It Up', artiste: 'Bob Marley', annee: 1973,
+      capo: 0, tempo: 75, groupe: 'rock',
+      note: 'Trois accords (La – Ré – Mi), joués plaqués à contretemps comme au reggae.',
+      sections: [
+        { titre: 'Refrain', motif: 'plaque', tours: 4, grille: ['A', 'A', 'D', 'E'] }
+      ] },
+    { id: 'ch-buffalo-soldier', titre: 'Buffalo Soldier', artiste: 'Bob Marley', annee: 1983,
+      capo: 2, tempo: 125, groupe: 'rock',
+      note: 'Capo case 2 : La – Fa♯ m – Ré7 se jouent Sol – Mi m – Do7, sans barré.',
+      sections: [
+        { titre: 'Couplet', motif: 'plaque', tours: 4, grille: ['G', 'Em', 'C7', 'Em'] }
+      ] },
+    { id: 'ch-one-love', titre: 'One Love', artiste: 'Bob Marley', annee: 1977,
+      capo: 3, tempo: 76, groupe: 'rock',
+      note: 'Capo case 3 : Si♭ – Fa – Mi♭ se jouent Sol – Ré – Do. Le refrain seulement.',
+      sections: [
+        { titre: 'Refrain', motif: 'plaque', tours: 4, grille: ['G', 'D', 'C', 'G|D'] }
       ] }
   ];
 })(typeof window !== 'undefined' ? window : globalThis);

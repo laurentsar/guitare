@@ -372,8 +372,14 @@ console.log('\n— Rock et reggae —');
 {
   const rk = Morceaux.tous().filter((p) => p.chanson && p.niveau === 9);
   const par = (a) => rk.filter((p) => new RegExp(a).test(p.sous_titre)).length;
-  verifie('12 chansons rock et reggae : Offspring 2, Nirvana 3, Cranberries 2, Police 2, Marley 3',
-          rk.length === 12 && par('Offspring') === 2 && par('Nirvana') === 3 && par('Cranberries') === 2 && par('Police') === 2 && par('Marley') === 3, rk.length);
+  verifie('24 chansons rock et reggae : Offspring 5, Nirvana 5, Cranberries 4, Police 4, Marley 6',
+          rk.length === 24 && par('Offspring') === 5 && par('Nirvana') === 5 && par('Cranberries') === 4 && par('Police') === 4 && par('Marley') === 6, rk.length);
+  verifie('capo : When You’re Gone 3, Ode to My Family 2, Buffalo Soldier 2, One Love 3, Get a Job 1',
+          Morceaux.get('ch-when-youre-gone').capo === 3 && Morceaux.get('ch-ode-to-my-family').capo === 2 &&
+          Morceaux.get('ch-buffalo-soldier').capo === 2 && Morceaux.get('ch-one-love').capo === 3 && Morceaux.get('ch-get-a-job').capo === 1);
+  verifie('Lithium et Heart-Shaped Box : tout en power chords',
+          ['ch-lithium', 'ch-heart-shaped-box'].every((id) => Morceaux.get(id).mains.gauche.every((a) => /5$/.test(a.id))));
+  verifie('Ode to My Family : Fa maj7, pas de barré', !Morceaux.get('ch-ode-to-my-family').mains.gauche.some((a) => a.barre));
   const ts = Morceaux.get('ch-teen-spirit');
   verifie('Teen Spirit : F5 Bb5 Ab5 Db5, deux par mesure, power chords sur 3 cordes',
           ts.notes.filter((n) => n.temps === 0).length === 3 && ['F5', 'Bb5', 'Ab5', 'Db5'].every((id) => ts.mains.gauche.some((a) => a.id === id)) &&

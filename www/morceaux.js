@@ -1002,6 +1002,7 @@
     { id: 'F#5', fr: 'Fa♯ 5 (power chord)', frettes: [-1, -1, -1, 4, 4, 2], doigts: [0, 0, 0, 4, 3, 1] },
     { id: 'G5',  fr: 'Sol 5 (power chord)', frettes: [-1, -1, -1, 5, 5, 3], doigts: [0, 0, 0, 4, 3, 1] },
     { id: 'Ab5', fr: 'La♭ 5 (power chord)', frettes: [-1, -1, -1, 6, 6, 4], doigts: [0, 0, 0, 4, 3, 1] },
+    { id: 'G#5', fr: 'Sol♯ 5 (power chord)', frettes: [-1, -1, -1, 6, 6, 4], doigts: [0, 0, 0, 4, 3, 1] },
     { id: 'Bb5', fr: 'Si♭ 5 (power chord)', frettes: [-1, -1, 3, 3, 1, -1], doigts: [0, 0, 4, 3, 1, 0] },
     { id: 'B5',  fr: 'Si 5 (power chord)',  frettes: [-1, -1, 4, 4, 2, -1], doigts: [0, 0, 4, 3, 1, 0] },
     { id: 'C5',  fr: 'Do 5 (power chord)',  frettes: [-1, -1, 5, 5, 3, -1], doigts: [0, 0, 4, 3, 1, 0] },

@@ -7,7 +7,19 @@ const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
 
-const ctx = { console, Math, Date, JSON, parseInt, parseFloat, isFinite, Object, Array, String, Number, Error, setTimeout, clearTimeout };
+// Hasard à graine fixe : la synthèse de la corde part d'un bruit aléatoire,
+// et un tirage malchanceux faisait échouer un test audio environ une fois
+// sur cent (détection à l'octave, extinction nylon/acier) — assez pour
+// bloquer un build au hasard. Même suite de tirages à chaque exécution.
+const MathTest = Object.create(Math);
+let graine = 0x9e3779b9;
+MathTest.random = () => {
+  graine = (graine + 0x6D2B79F5) | 0;
+  let t = Math.imul(graine ^ (graine >>> 15), 1 | graine);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const ctx = { console, Math: MathTest, Date, JSON, parseInt, parseFloat, isFinite, Object, Array, String, Number, Error, setTimeout, clearTimeout };
 ctx.window = ctx;
 ctx.globalThis = ctx;
 vm.createContext(ctx);

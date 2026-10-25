@@ -399,6 +399,19 @@ function verifie(nom, cond, detail) {
     verifie('ouvrir un morceau hors liste : plus de bandeau', !$('detailMorceau').querySelector('.bandeau-liste'));
   }
 
+  console.log('\n— Pouce seul (v1.25) —');
+  w.AppGuitare.aller('morceaux');
+  {
+    const titres = [...$('listeMorceaux').querySelectorAll('h3')].map((x) => x.textContent);
+    const iP = titres.indexOf('👍 Pouce seul — cordes à vide');
+    verifie('Morceaux : section « Pouce seul — cordes à vide » juste après les accords', iP > 0 && /accords/.test(titres[iP - 1]), titres.join(' | '));
+    verifie('puis « Pouce + main gauche » juste après', titres[iP + 1] === '👍✋ Pouce + main gauche');
+    verifie('section pouce : rythme, pom-tcha, contretemps, petit morceau listés', ['Le pouce en rythme', 'Pom-tcha à vide', 'Le contretemps (reggae)', 'Petit morceau à vide']
+      .every((t) => $('listeMorceaux').textContent.indexOf(t) !== -1));
+    w.AppGuitare.ouvrirMorceau('pouce-g-c-d');
+    verifie('fiche : main droite « pom-tcha » au pouce', /pom-tcha/i.test($('detailMorceau').textContent));
+  }
+
   console.log('\n— Programme progressif et ♥ (v1.22) —');
   {
     ['suivi', 'seance', 'aimes'].forEach((k) => w.localStorage.removeItem('guitare:' + k));

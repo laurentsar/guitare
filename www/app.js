@@ -831,9 +831,11 @@
     bProg.onclick = function () { aller('programme'); };
     h.appendChild(bProg);
     h.appendChild(blocEnchainer());
-    var niveaux = {}, exercices = [];
+    var niveaux = {}, exercices = [], pouce = [], pouceMain = [];
     Morceaux.tous().forEach(function (p) {
       if (p.categorie === 'accords') exercices.push(p);
+      else if (p.categorie === 'pouce') pouce.push(p);
+      else if (p.categorie === 'pouce-main') pouceMain.push(p);
       else if (p.categorie !== 'entrainement') (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
     });
     function ligne(p, droite) {
@@ -859,6 +861,16 @@
       h.appendChild(el('p', 'aide', 'Des tablatures faites pour poser les accords et passer de l’un à l’autre en musique : balayé au pouce, puis basse et accord plaqué, puis arpège.'));
       exercices.sort(function (a, b) { return a.niveau - b.niveau; })
         .forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
+    }
+    if (pouce.length) {
+      h.appendChild(el('h3', null, '👍 Pouce seul — cordes à vide'));
+      h.appendChild(el('p', 'aide', 'Uniquement le pouce de la main droite, uniquement des cordes à vide : la main gauche ne touche rien. Dans l’ordre : le rythme, les basses, les sauts de cordes, le balayé, le pom-tcha, le contretemps, le rock, et un petit morceau pour finir.'));
+      pouce.forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
+    }
+    if (pouceMain.length) {
+      h.appendChild(el('h3', null, '👍✋ Pouce + main gauche'));
+      h.appendChild(el('p', 'aide', 'L’étape suivante : toujours le pouce seul à droite, mais la main gauche appuie des cases — gamme dans les basses, basses sur des accords, mélodies au pouce, chansons en pom-tcha.'));
+      pouceMain.forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
     }
     var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
                          6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)', 9: 'Rock et reggae — Offspring, Nirvana, Cranberries, Police, Marley' };

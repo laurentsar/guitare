@@ -106,13 +106,28 @@
       p.push('<text x="' + (margeG + (n.temps - ligne.debut) * pxParTemps + 2) + '" y="' + (margeH - 5) + '" class="tab-accord">' + n.accord + '</text>');
     });
 
+    // Main droite : une seule étiquette par attaque. Pour un accord plaqué,
+    // les lettres s'écrivaient l'une sur l'autre au même endroit ; on les
+    // réunit, de la corde grave à l'aiguë (« ima », « pim »…). Un accord
+    // balayé au pouce garde un seul « p ».
+    var mains = {};
+    ligne.notes.forEach(function (n) {
+      if (!n.main) return;
+      (mains[n.temps] = mains[n.temps] || []).push(n);
+    });
     ligne.notes.forEach(function (n, i) {
       var x = margeG + (n.temps - ligne.debut) * pxParTemps + 6;
       var y = margeH + (n.corde - 1) * interligne;
       p.push('<g class="tab-note" data-temps="' + n.temps + '">');
       p.push('<rect x="' + (x - 7) + '" y="' + (y - 7) + '" width="15" height="14" class="tab-fond"/>');
       p.push('<text x="' + x + '" y="' + (y + 4) + '" class="tab-chiffre" text-anchor="middle">' + n.frette + '</text>');
-      if (n.main) p.push('<text x="' + x + '" y="' + (margeH + 5 * interligne + 12) + '" class="tab-main" text-anchor="middle">' + n.main + '</text>');
+      var groupe = mains[n.temps];
+      if (groupe && groupe[0] === n) {
+        var lettres = groupe.slice().sort(function (a, b) { return b.corde - a.corde; })
+          .map(function (m) { return m.main; })
+          .filter(function (l, k, t) { return t.indexOf(l) === k; }).join('');
+        p.push('<text x="' + x + '" y="' + (margeH + 5 * interligne + 12) + '" class="tab-main" text-anchor="middle">' + lettres + '</text>');
+      }
       p.push('</g>');
     });
     p.push('</svg>');
@@ -321,7 +336,12 @@
                     texte: (m ? cap(DOIGTS_D[m]) + ' (' + m + ')' : 'L’index ou le majeur (i ou m), en alternant,') +
                            ' pince ' + cordeTxt + '.' });
     });
-    if (notes.length > 1) {
+    // Accord balayé : toutes les cordes au pouce, c'est UN geste, pas six.
+    if (notes.length > 2 && notes.every(function (n) { return n.main === 'p'; })) {
+      droite = [{ corde: notes[0].corde, main: 'p', balaye: notes.map(function (n) { return n.corde; }),
+                  texte: 'Le pouce (p) balaie les ' + notes.length + ' cordes d’un seul geste, de la ' + ORDINAL[notes[0].corde] +
+                         ' (la plus grave jouée) à la ' + ORDINAL[notes[notes.length - 1].corde] + ', en glissant vers le sol.' }];
+    } else if (notes.length > 1) {
       droite.push({ corde: 0, main: '', texte: 'Les ' + notes.length + ' cordes se pincent en même temps.' });
     }
     return { gauche: gauche, droite: droite,

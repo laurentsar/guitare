@@ -587,8 +587,16 @@
           if (!a1 || !a2) throw new Error('accord inconnu : ' + id);
           s.motif.forEach(function (pas) {
             var a = pas.temps < 2 ? a1 : a2;
-            var cordes = deux.length > 1 && pas.temps === 2 ? ['basse'] : pas.cordes;
+            // Deux accords dans la mesure : le second reprend la basse au
+            // 3e temps — sauf un balayé, qui balaie aussi le second accord.
+            var cordes = deux.length > 1 && pas.temps === 2 && pas.cordes.indexOf('tout') === -1 ? ['basse'] : pas.cordes;
             cordes.forEach(function (c) {
+              // « tout » = toutes les cordes jouées de l'accord, balayées au
+              // pouce de la grave vers l'aiguë.
+              if (c === 'tout') {
+                for (var k = 6; k >= 1; k--) if (a.frettes[k - 1] >= 0) note(a, k, t + pas.temps, pas.duree, 'p');
+                return;
+              }
               // « basse » = la basse de l'accord, « alt » = sa basse alternée.
               var corde = c === 'basse' ? a.basse : (c === 'alt' ? a.alt : c);
               var main = c === 'basse' || c === 'alt' ? 'p' : ({ 3: 'i', 2: 'm', 1: 'a' })[corde];
@@ -654,6 +662,258 @@
     ])
   });
 
+  // --- Travailler les accords -----------------------------------------------
+  /* Des tablatures faites pour une chose : poser les accords et passer de
+   * l'un à l'autre en musique. Chaque exercice monte par paliers, sur la même
+   * grille :
+   *   1. balayé — le pouce balaie l'accord, deux fois par mesure : toute
+   *      l'attention va à la main gauche ;
+   *   2. basse et accord plaqué — pouce sur la basse, i-m-a ensemble ;
+   *   3. arpège — p-i-m-a-m-i-m-i, l'accord égrené.
+   * Les doigtés sont ceux de la bibliothèque d'accords (même diagramme, même
+   * dessin de main), et chaque palier devient une étape du « pas à pas ». */
+  var MOTIFS = {
+    'balaye': { nom: 'balayé au pouce', motif: [
+      { temps: 0, duree: 2, cordes: ['tout'] }, { temps: 2, duree: 2, cordes: ['tout'] }] },
+    'balaye-noires': { nom: 'balayé, quatre temps', motif: [
+      { temps: 0, duree: 1, cordes: ['tout'] }, { temps: 1, duree: 1, cordes: ['tout'] },
+      { temps: 2, duree: 1, cordes: ['tout'] }, { temps: 3, duree: 1, cordes: ['tout'] }] },
+    'basse-plaque': { nom: 'basse et accord plaqué', motif: [
+      { temps: 0, duree: 1, cordes: ['basse'] }, { temps: 1, duree: 1, cordes: [3, 2, 1] },
+      { temps: 2, duree: 1, cordes: ['alt'] },   { temps: 3, duree: 1, cordes: [3, 2, 1] }] },
+    'arpege': { nom: 'arpège p-i-m-a-m-i-m-i', motif: [
+      { temps: 0,   duree: 0.5, cordes: ['basse'] }, { temps: 0.5, duree: 0.5, cordes: [3] },
+      { temps: 1,   duree: 0.5, cordes: [2] },       { temps: 1.5, duree: 0.5, cordes: [1] },
+      { temps: 2,   duree: 0.5, cordes: [2] },       { temps: 2.5, duree: 0.5, cordes: [3] },
+      { temps: 3,   duree: 0.5, cordes: [2] },       { temps: 3.5, duree: 0.5, cordes: [3] }] }
+  };
+  var CONSIGNES_MOTIFS = {
+    'balaye': 'Le pouce balaie toutes les cordes de l’accord, de la plus grosse à la plus fine, deux fois par mesure. Toute l’attention va à la main gauche : change d’accord pendant le 4e temps, pas après.',
+    'balaye-noires': 'Un coup de pouce par temps. Les accords changent plus souvent : prépare le suivant dès le 3e temps.',
+    'basse-plaque': 'Pouce sur la basse au 1er temps, index-majeur-annulaire pincés ensemble au 2e (cordes 3, 2, 1), pouce sur la 4e corde au 3e, i-m-a au 4e.',
+    'arpege': 'Pouce sur la basse, puis i (3e corde), m (2e), a (1re), m, i, m, i — une note par croche. Chaque doigt reste au-dessus de SA corde.'
+  };
+
+  function defAccord(id) {
+    var a = Accords.get(id);
+    var basse = 6;
+    while (basse > 1 && a.frettes[basse - 1] < 0) basse--;
+    return { id: a.id, fr: a.fr, frettes: a.frettes, doigts: a.doigts, barre: a.barre,
+             basse: basse, alt: basse >= 5 ? 4 : basse, consigne: consigneAccord(a) };
+  }
+
+  function exerciceAccords(def) {
+    var ids = [];
+    def.paliers.forEach(function (pl) { pl.grille.forEach(function (id) { if (ids.indexOf(id) === -1) ids.push(id); }); });
+    var accords = {};
+    ids.forEach(function (id) { accords[id] = (def.accords && def.accords[id]) || defAccord(id); });
+    var mesure = 1, sections = [];
+    def.paliers.forEach(function (pl) {
+      sections.push({ titre: 'Palier ' + (sections.length + 1) + ' : ' + MOTIFS[pl.motif].nom,
+                      de: mesure, a: mesure + pl.grille.length - 1,
+                      texte: CONSIGNES_MOTIFS[pl.motif] + (pl.tours > 1 ? ' La grille revient ' + pl.tours + ' fois de suite.' : '') });
+      mesure += pl.grille.length * (pl.tours || 1);
+    });
+    var motifsUtiles = [];
+    def.paliers.forEach(function (pl) { if (motifsUtiles.indexOf(pl.motif) === -1) motifsUtiles.push(pl.motif); });
+    return ajoute({
+      id: def.id, titre: def.titre, sous_titre: def.sous_titre || 'Accords · ' + ids.join(' – '),
+      niveau: def.niveau, tempo: def.tempo, signature: [4, 4], categorie: def.categorie || 'accords',
+      description: def.description,
+      sections: sections,
+      mains: { gauche: ids.map(function (id) { return accords[id]; }),
+               droite: motifsUtiles.map(function (m) { return cap(MOTIFS[m].nom) + ' : ' + CONSIGNES_MOTIFS[m]; }) },
+      notes: accompagnement(accords, def.paliers.map(function (pl) {
+        return { tours: pl.tours || 1, grille: pl.grille, motif: MOTIFS[pl.motif].motif };
+      }))
+    });
+  }
+
+  exerciceAccords({
+    id: 'acc-em-am', titre: 'Mi mineur ↔ La mineur', niveau: 1, tempo: 60,
+    description: 'Le premier changement d’accord. Em (deux doigts) et Am (trois doigts) : le majeur et l’annulaire glissent ensemble d’une corde vers le bas, l’index se pose sur la 2e corde.',
+    paliers: [
+      { motif: 'balaye', grille: ['Em', 'Em', 'Am', 'Am'], tours: 2 },
+      { motif: 'balaye', grille: ['Em', 'Am', 'Em', 'Am'], tours: 2 },
+      { motif: 'basse-plaque', grille: ['Em', 'Am', 'Em', 'Am'] }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-am-e', titre: 'La mineur ↔ Mi majeur', niveau: 1, tempo: 60,
+    description: 'Le même dessin de doigts, décalé d’une corde : Am sur les cordes 4-3-2, E sur les cordes 5-4-3. Ne recompose pas l’accord : déplace la forme entière d’un bloc.',
+    paliers: [
+      { motif: 'balaye', grille: ['Am', 'Am', 'E', 'E'], tours: 2 },
+      { motif: 'balaye', grille: ['Am', 'E', 'Am', 'E'], tours: 2 },
+      { motif: 'arpege', grille: ['Am', 'E', 'Am', 'E'] }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-d-a', titre: 'Ré ↔ La', niveau: 2, tempo: 60,
+    description: 'Deux accords en triangle. Ré se joue sur 4 cordes seulement (basse : 4e à vide), La sur 5 (basse : 5e à vide) : le pouce doit changer de corde en même temps que la main gauche change d’accord.',
+    paliers: [
+      { motif: 'balaye', grille: ['D', 'D', 'A', 'A'], tours: 2 },
+      { motif: 'balaye', grille: ['D', 'A', 'D', 'A'], tours: 2 },
+      { motif: 'basse-plaque', grille: ['D', 'A', 'D', 'A'] }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-g-c-d', titre: 'Sol, Do, Ré', niveau: 2, tempo: 66,
+    description: 'Les trois accords de la tonalité de Sol (I, IV, V) : on les retrouve dans des centaines de chansons. Passage le plus dur : Do → Ré, toute la main change.',
+    paliers: [
+      { motif: 'balaye', grille: ['G', 'C', 'G', 'D'], tours: 2 },
+      { motif: 'basse-plaque', grille: ['G', 'C', 'G', 'D'], tours: 2 },
+      { motif: 'arpege', grille: ['G', 'C', 'D', 'G'] }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-am-dm-e7', titre: 'La mineur, Ré mineur, Mi 7', niveau: 2, tempo: 66,
+    description: 'La grille mineure par excellence (I, IV, V7 en La mineur). E7, c’est Mi majeur sans l’annulaire : un doigt de moins.',
+    paliers: [
+      { motif: 'balaye', grille: ['Am', 'Dm', 'E7', 'Am'], tours: 2 },
+      { motif: 'basse-plaque', grille: ['Am', 'Dm', 'E7', 'Am'], tours: 2 },
+      { motif: 'arpege', grille: ['Am', 'Dm', 'E7', 'Am'], tours: 2 }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-c-am-f-g', titre: 'Do, La mineur, Fa, Sol', niveau: 2, tempo: 66,
+    description: 'La grille des ballades des années 50 (I, VI, IV, V). Le Fa est la version sans barré (Fa maj7) : quatre cordes, trois doigts en escalier.',
+    paliers: [
+      { motif: 'balaye', grille: ['C', 'Am', 'Fmaj7', 'G'], tours: 2 },
+      { motif: 'basse-plaque', grille: ['C', 'Am', 'Fmaj7', 'G'] },
+      { motif: 'arpege', grille: ['C', 'Am', 'Fmaj7', 'G'], tours: 2 }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-g-em-c-d', titre: 'Sol, Mi mineur, Do, Ré', niveau: 2, tempo: 66,
+    description: 'La même grille en Sol. G → Em : le majeur et l’annulaire restent, l’index et l’auriculaire se lèvent — c’est le passage le plus économique de la guitare.',
+    paliers: [
+      { motif: 'balaye', grille: ['G', 'Em', 'C', 'D'], tours: 2 },
+      { motif: 'basse-plaque', grille: ['G', 'Em', 'C', 'D'] },
+      { motif: 'arpege', grille: ['G', 'Em', 'C', 'D'], tours: 2 }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-blues-la', titre: 'Blues en La', sous_titre: 'Accords · grille de blues en 12 mesures', niveau: 3, tempo: 72,
+    description: 'La grille de blues : 12 mesures, trois accords de septième (A7, D7, E7). Compte les mesures à voix haute, c’est la forme qu’on apprend ici autant que les accords.',
+    paliers: [
+      { motif: 'balaye-noires', grille: ['A7', 'A7', 'A7', 'A7', 'D7', 'D7', 'A7', 'A7', 'E7', 'D7', 'A7', 'E7'] },
+      { motif: 'basse-plaque', grille: ['A7', 'A7', 'A7', 'A7', 'D7', 'D7', 'A7', 'A7', 'E7', 'D7', 'A7', 'A7'] }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-septiemes', titre: 'Les septièmes qui résolvent', niveau: 3, tempo: 66,
+    description: 'Un accord de septième « appelle » l’accord suivant : G7 → C, D7 → G, E7 → Am, B7 → Em. Écoute la tension, puis la détente.',
+    paliers: [
+      { motif: 'balaye', grille: ['G7', 'C', 'D7', 'G', 'E7', 'Am', 'B7', 'Em'] },
+      { motif: 'basse-plaque', grille: ['G7', 'C', 'D7', 'G', 'E7', 'Am', 'B7', 'Em'] }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-barre', titre: 'Premiers barrés : Fa et Si mineur', niveau: 4, tempo: 60,
+    description: 'L’index à plat sur toutes les cordes. Commence par Fa, entre Do et Sol qui te reposent la main ; puis Si mineur, entre Sol et Ré. Si une corde frise, roule l’index très légèrement sur sa tranche.',
+    paliers: [
+      { motif: 'balaye', grille: ['C', 'F', 'C', 'G'], tours: 2 },
+      { motif: 'balaye', grille: ['G', 'Bm', 'C', 'D'], tours: 2 },
+      { motif: 'basse-plaque', grille: ['Am', 'F', 'C', 'G'] }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'ent-zombie-balaye', titre: 'Balayages sur les accords de Zombie', categorie: 'entrainement',
+    sous_titre: 'Entraînement · Em – Cmaj7 – G – D', niveau: 1, tempo: 56, accords: ZOMBIE,
+    description: 'Guitare posée sur la jambe droite. Le pouce passe d’un coup sec sur les cordes en faisant tourner l’avant-bras — pas le poignet — dans un mouvement ample, un « O » à l’envers, devant la guitare et pas sur le côté.',
+    paliers: [
+      { motif: 'balaye', grille: ['Em', 'Em', 'Cmaj7', 'Cmaj7', 'G', 'G', 'D', 'D'] },
+      { motif: 'balaye', grille: ['Em', 'Cmaj7', 'G', 'D'], tours: 2 },
+      { motif: 'balaye-noires', grille: ['Em', 'Cmaj7', 'G', 'D'], tours: 2 }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-revue', titre: 'Revue des accords', sous_titre: 'Accords · les 23 de la bibliothèque, un par mesure', niveau: 3, tempo: 50,
+    description: 'Tous les accords de l’app, dans l’ordre où on les apprend, un par mesure, balayés deux fois. Pour faire le point : ceux qui frisent ou qui arrivent en retard sont ceux à retravailler.',
+    paliers: [
+      { motif: 'balaye', grille: Accords.tous().slice().sort(function (a, b) { return a.rang - b.rang; }).map(function (a) { return a.id; }) }
+    ]
+  });
+
+  // --- Entraînement : les exercices du cours ---------------------------------
+  /* Tablatures des devoirs donnés en cours (écran « Entraînement »,
+   * www/entrainement.js). Elles ne figurent pas dans la liste des morceaux :
+   * on y arrive depuis l'exercice qui les décrit. */
+  var ALLER_RETOUR = [6, 5, 4, 3, 2, 3, 4, 5];   // de la 6e à la 2e, et retour
+
+  function cordesAVide(sequence, fois) {
+    var n = [], t = 0;
+    sequence.forEach(function (c) {
+      for (var k = 0; k < fois; k++) {
+        n.push({ corde: c, frette: 0, temps: t, duree: 1, main: 'p', midi: Theorie.midiDeCase(c, 0) });
+        t += 1;
+      }
+    });
+    return n;
+  }
+
+  // Ve position : l'index à la case 5, un doigt par case jusqu'à la 8.
+  function cinquiemePosition(motif) {
+    var n = [], t = 0;
+    ALLER_RETOUR.concat([6]).forEach(function (c) {
+      motif.forEach(function (doigt) {
+        var f = doigt ? 4 + doigt : 0;
+        var note = { corde: c, frette: f, temps: t, duree: 1, main: 'p', midi: Theorie.midiDeCase(c, f) };
+        if (doigt) note.doigt = doigt;
+        n.push(note);
+        t += 1;
+      });
+    });
+    return n;
+  }
+
+  ajoute({
+    id: 'ent-noms-cordes', titre: 'Le nom des 6 cordes', sous_titre: 'Entraînement · cordes à vide',
+    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'entrainement',
+    description: 'Mi, La, Ré, Sol, Si, Mi : de la plus grosse (6e) à la plus fine (1re), puis retour. Dis le nom de chaque corde à voix haute en la jouant.',
+    notes: cordesAVide([6, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 6], 2).map(function (n, i) { n.temps = i * 2; n.duree = 2; return n; })
+  });
+
+  ajoute({
+    id: 'ent-pouce-bute-1', titre: 'Pouce buté : 1 fois sur chaque corde', sous_titre: 'Entraînement · main droite',
+    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'entrainement',
+    description: 'Le pouce joue chaque corde une fois, de la 6e à la 2e puis retour, et vient se poser (buter) sur la corde suivante. i, m, a restent posés sur la 1re corde. Bien soulever le pouce à chaque attaque.',
+    notes: cordesAVide(ALLER_RETOUR.concat(ALLER_RETOUR), 1).concat(
+      [{ corde: 6, frette: 0, temps: 16, duree: 4, main: 'p', midi: Theorie.midiDeCase(6, 0) }])
+  });
+
+  ajoute({
+    id: 'ent-pouce-bute-4', titre: 'Pouce buté : 4 fois sur chaque corde', sous_titre: 'Entraînement · main droite',
+    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'entrainement',
+    description: 'Quatre fois la même corde, puis la suivante : de la 6e à la 2e, et retour à la 6e. D’abord en regardant la main droite, puis les yeux fermés.',
+    notes: cordesAVide(ALLER_RETOUR.concat([6]), 4)
+  });
+
+  ajoute({
+    id: 'ent-v-0303', titre: 'Ve position : 0 3 0 3', sous_titre: 'Entraînement · main gauche · pouce buté',
+    niveau: 2, tempo: 60, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: 'En Ve position (index à la case V), le 3e doigt joue à la case VII : corde à vide, case VII, à vide, case VII, sur chaque corde de la 6e à la 2e puis retour. Le doigt enfonce la corde du bout de l’os, se pose droit le long de la barrette en tirant légèrement vers la droite, le plus près possible de la barrette.',
+    notes: cinquiemePosition([0, 3, 0, 3])
+  });
+
+  ajoute({
+    id: 'ent-v-0101', titre: 'Ve position : 0 1 0 1', sous_titre: 'Entraînement · main gauche · pouce buté',
+    niveau: 2, tempo: 60, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: 'Même chemin, avec le 1er doigt à la case V. Le 3e doigt reste au-dessus de sa case (VII) ; le 1er doigt s’écarte et se pose légèrement sur le côté gauche.',
+    notes: cinquiemePosition([0, 1, 0, 1])
+  });
+
   // --- Chansons françaises (grilles d'accords, voir chansons.js) ------------
   /* Dictionnaire : la bibliothèque d'accords (accords.js) + quatre accords
    * barrés que certaines grilles demandent. `basse` = corde de la basse (la
@@ -664,7 +924,6 @@
     { id: 'Gm',    fr: 'Sol mineur (barré)',      frettes: [3, 3, 3, 5, 5, 3],  doigts: [1, 1, 1, 4, 3, 1], barre: { frette: 3, de: 1, a: 6 } },
     { id: 'Bm7b5', fr: 'Si mineur 7 quinte diminuée', frettes: [1, 0, 2, 0, 2, -1], doigts: [1, 0, 3, 0, 2, 0] }
   ];
-  var NOMS_DOIGTS = { 1: 'index', 2: 'majeur', 3: 'annulaire', 4: 'auriculaire' };
   function accordChanson(id) {
     var src = (global.Accords && Accords.get(id)) || ACCORDS_SUP.filter(function (a) { return a.id === id; })[0];
     if (!src) throw new Error('accord absent de la bibliothèque : ' + id);
@@ -681,7 +940,8 @@
     return { id: src.id, fr: src.fr, frettes: src.frettes, doigts: src.doigts, barre: src.barre,
              basse: basse, alt: basse >= 5 ? 4 : basse, consigne: consigne };
   }
-  var MOTIFS = {
+  // Motifs des chansons (distincts de ceux des exercices d'accords, plus haut).
+  var MOTIFS_CHANSON = {
     arpege: { texte: 'Arpège en croches p-i-m-a-m-i-m-i : le pouce (p) prend la basse, index (i) 3e corde, majeur (m) 2e, annulaire (a) 1re.',
       pas: [{ temps: 0, duree: 0.5, cordes: ['basse'] }, { temps: 0.5, duree: 0.5, cordes: [3] },
             { temps: 1, duree: 0.5, cordes: [2] }, { temps: 1.5, duree: 0.5, cordes: [1] },
@@ -709,7 +969,7 @@
     c.sections.forEach(function (s) {
       var n = s.grille.length * (s.tours || 1);
       sections.push({ titre: s.titre, de: mesure, a: mesure + n - 1,
-        texte: s.grille.join(' · ').replace(/\|/g, ' / ') + ((s.tours || 1) > 1 ? ' (×' + s.tours + ')' : '') + ' — ' + MOTIFS[s.motif].texte });
+        texte: s.grille.join(' · ').replace(/\|/g, ' / ') + ((s.tours || 1) > 1 ? ' (×' + s.tours + ')' : '') + ' — ' + MOTIFS_CHANSON[s.motif].texte });
       mesure += n;
       if (motifsVus.indexOf(s.motif) === -1) motifsVus.push(s.motif);
     });
@@ -725,11 +985,11 @@
       sections: sections,
       mains: {
         gauche: ordre.map(function (id) { return dico[id]; }),
-        droite: motifsVus.map(function (m) { return MOTIFS[m].texte; }).concat(
+        droite: motifsVus.map(function (m) { return MOTIFS_CHANSON[m].texte; }).concat(
           ['Une case de la grille = une mesure à 4 temps ; « F / G » = deux accords dans la mesure, 2 temps chacun.'])
       },
       notes: accompagnement(dico, c.sections.map(function (s) {
-        return { tours: s.tours || 1, grille: s.grille, motif: MOTIFS[s.motif].pas };
+        return { tours: s.tours || 1, grille: s.grille, motif: MOTIFS_CHANSON[s.motif].pas };
       }))
     });
   });

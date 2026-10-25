@@ -466,6 +466,22 @@ html.en-pupitre body { padding-bottom: 0; }
 .pupitre-barre .btn.actif { border-color: var(--bois); color: var(--bois); }
 .credit a { color: var(--accent); }
 
+/* -------------------------------------------------------- entraînement */
+.titre-groupe { margin: 18px 0 6px; }
+.exercice ul { margin: 6px 0; padding-left: 18px; }
+.exercice.fait { opacity: .7; border-color: var(--ok); }
+.exercice-titre { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.exercice-titre span { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.etat-nouveau { background: var(--accent); color: #0B1220; }
+.etat-continuer { background: var(--fond-3); color: var(--texte-2); border: 1px solid var(--trait); }
+.etat-pasvu { background: var(--presque); color: #22180C; }
+.exercice-coches { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.ligne-coche { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.ligne-coche input { width: 22px; height: 22px; flex: none; }
+.quiz { margin: 6px 0; }
+.quiz-reponse { margin-left: 8px; color: var(--accent); font-weight: 700; }
+.notes-cours { width: 100%; box-sizing: border-box; background: var(--fond-2); color: var(--texte); border: 1px solid var(--trait); border-radius: 8px; padding: 8px; font: inherit; }
+
 /* ------------------------------------------- Partition en plein écran */
 .partition-barre { display: flex; justify-content: flex-end; margin-top: 6px; }
 .partition.plein-ecran {
@@ -500,6 +516,9 @@ html.tv .pe-barre b { font-size: 22px; }
 .systeme { margin: 4px 0 18px; padding-bottom: 8px; border-bottom: 1px solid #222a3a; }
 .systeme .portee-ligne-bloc, .systeme .tab-ligne { margin: 0; }
 
+/* Légende des doigts de main droite, au-dessus de la tablature. */
+.legende-doigts { font-size: 13px; color: var(--texte-2); margin: 6px 0 4px; line-height: 1.4; }
+.legende-doigts b { color: var(--bois); }
 /* ------------------------------------------------------- Enchaînement */
 .enchainer { margin-bottom: 16px; }
 .enchainer h3 { margin-top: 0; }
@@ -528,3 +547,10 @@ html.tv .pe-barre b { font-size: 22px; }
 /* display:flex ci-dessus l'emportait sur l'attribut hidden : cadre vide affiché (v1.17). */
 .suite-liste[hidden], .bandeau-liste[hidden] { display: none; }
 .tab-accord { fill: var(--bois); font-size: 11px; font-weight: 700; }
+
+/* Pincement à deux doigts sur la partition : la page elle-même ne zoome pas. */
+.partition { touch-action: pan-x pan-y; }
+
+/* Bouton retour : « appuie encore pour quitter ». */
+.toast-retour { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); z-index: 1000;
+  background: rgba(15, 18, 26, .95); color: var(--texte); border: 1px solid var(--trait); border-radius: 20px; padding: 10px 18px; font-size: 14px; }

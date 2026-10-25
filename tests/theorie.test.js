@@ -7,7 +7,19 @@ const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
 
-const ctx = { console, Math, Date, JSON, parseInt, parseFloat, isFinite, Object, Array, String, Number, Error, setTimeout, clearTimeout };
+// Hasard à graine fixe : la synthèse de la corde part d'un bruit aléatoire,
+// et un tirage malchanceux faisait échouer un test audio environ une fois
+// sur cent (détection à l'octave, extinction nylon/acier) — assez pour
+// bloquer un build au hasard. Même suite de tirages à chaque exécution.
+const MathTest = Object.create(Math);
+let graine = 0x9e3779b9;
+MathTest.random = () => {
+  graine = (graine + 0x6D2B79F5) | 0;
+  let t = Math.imul(graine ^ (graine >>> 15), 1 | graine);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const ctx = { console, Math: MathTest, Date, JSON, parseInt, parseFloat, isFinite, Object, Array, String, Number, Error, setTimeout, clearTimeout };
 ctx.window = ctx;
 ctx.globalThis = ctx;
 vm.createContext(ctx);
@@ -124,7 +136,11 @@ Morceaux.tous().forEach(p => {
           p.notes.every(n => !n.midi || n.midi === Theorie.midiDeCase(n.corde, n.frette)));
   // Le répertoire Mutopia monte parfois plus haut, et c'est voulu : il est
   // contrôlé à part plus bas. Ici, les morceaux écrits pour l'app.
-  if (!p.source) verifie(p.id + ' : rien au-delà de la 5e case (première position)',
+  // Un exercice qui annonce sa position (Ve position…) reste dans ses quatre
+  // cases ; les autres morceaux écrits pour l'app, en première position.
+  if (p.position) verifie(p.id + ' : cordes à vide ou cases ' + p.position + ' à ' + (p.position + 3),
+          p.notes.every(n => n.frette === 0 || (n.frette >= p.position && n.frette <= p.position + 3)));
+  else if (!p.source) verifie(p.id + ' : rien au-delà de la 5e case (première position)',
           p.notes.every(n => n.frette >= 0 && n.frette <= 5),
           p.notes.filter(n => n.frette > 5).map(n => n.frette).join(','));
   verifie(p.id + ' : durées et temps positifs',
@@ -234,9 +250,12 @@ console.log('\n— Doigtés de tous les morceaux —');
   verifie('chaque note de chaque morceau : doigt gauche (si case pressée) et doigt droit',
           tous.every((p) => p.notes.every((n) => (n.frette === 0 || (n.doigt >= 1 && n.doigt <= 4)) && /^[pima]$/.test(n.main))),
           tous.filter((p) => p.notes.some((n) => (n.frette > 0 && !(n.doigt >= 1 && n.doigt <= 4)) || !/^[pima]$/.test(n.main))).map((p) => p.id).join(','));
-  verifie('dans un accord, une case plus haute ne prend jamais un doigt plus bas', tous.every((p) => {
+  // Doigtés CALCULÉS seulement : un accord de la bibliothèque peut croiser les
+  // doigts d'une corde éloignée à l'autre (Gmaj7 : majeur case 3 sur la 6e,
+  // annulaire case 2 sur la 1re), et c'est voulu.
+  verifie('doigtés calculés : dans un accord, une case plus haute ne prend jamais un doigt plus bas', tous.every((p) => {
     const par = {};
-    p.notes.forEach((n) => { if (n.frette > 0) (par[n.temps] = par[n.temps] || []).push(n); });
+    p.notes.forEach((n) => { if (n.frette > 0 && !n.accord) (par[n.temps] = par[n.temps] || []).push(n); });
     return Object.values(par).every((g) => g.every((a) => g.every((b) => !(b.frette > a.frette && b.doigt < a.doigt))));
   }));
   verifie('main droite : la basse d’un accord (corde 4 à 6) est au pouce', tous.filter((p) => p.source).every((p) => {
@@ -258,6 +277,65 @@ console.log('\n— Doigtés de tous les morceaux —');
     return Tablature.duree_totale(p) % m === 0 && p.notes.every((n) => Math.floor(n.temps / m + 1e-9) === Math.floor((n.temps + n.duree) / m - 1e-9));
   }));
   verifie('niveaux 1 à 3 : au moins 35 morceaux', tous.filter((p) => p.niveau <= 3).length >= 35, tous.filter((p) => p.niveau <= 3).length);
+}
+
+console.log('\n— Travailler les accords —');
+{
+  const ex = Morceaux.tous().filter((p) => p.categorie === 'accords');
+  verifie('11 exercices d’accords', ex.length === 11, ex.map((p) => p.id).join(','));
+  verifie('chaque note d’un exercice appartient à l’accord en cours (même case que la bibliothèque)',
+          ex.every((p) => p.notes.every((n) => Accords.get(n.accord).frettes[n.corde - 1] === n.frette)));
+  verifie('jamais une corde étouffée jouée', ex.every((p) => p.notes.every((n) => Accords.get(n.accord).frettes[n.corde - 1] >= 0)));
+  verifie('doigts de la main gauche = ceux du diagramme de l’accord',
+          ex.every((p) => p.notes.every((n) => n.frette === 0 || n.doigt === Accords.get(n.accord).doigts[n.corde - 1])));
+  verifie('un accord par mesure (4/4) : toutes les notes d’une mesure viennent du même accord', ex.every((p) => {
+    const par = {};
+    p.notes.forEach((n) => { const m = Math.floor(n.temps / 4); (par[m] = par[m] || new Set()).add(n.accord); });
+    return Object.values(par).every((x) => x.size === 1);
+  }));
+  verifie('balayé : toutes les cordes jouables de l’accord, au pouce', (() => {
+    const p = Morceaux.get('acc-em-am'), t0 = p.notes.filter((n) => n.temps === 0);
+    return t0.length === 6 && t0.every((n) => n.main === 'p');
+  })());
+  verifie('balayé sur Ré : seulement les 4 cordes jouables', Morceaux.get('acc-d-a').notes.filter((n) => n.temps === 0).length === 4);
+  verifie('paliers = sections qui couvrent un tour de grille chacun', ex.every((p) => p.sections.length >= 1 && p.sections.every((s) => s.a >= s.de)));
+  verifie('blues en La : 12 mesures par grille', Morceaux.get('acc-blues-la').sections[0].a === 12);
+  verifie('revue : les 23 accords, dans l’ordre d’apprentissage', Morceaux.get('acc-revue').mains.gauche.length === 23);
+  verifie('consigne de chaque accord rédigée (doigts, cases, cordes à vide ou muettes)',
+          ex.every((p) => p.mains.gauche.every((a) => /case \d sur la/.test(a.consigne) || /vide/.test(a.consigne))));
+  verifie('barré : la consigne le dit', /Barré : l’index couche/.test(Morceaux.get('acc-barre').mains.gauche.find((a) => a.id === 'F').consigne));
+  verifie('pas à pas : une étape par palier', (() => {
+    const p = Morceaux.get('acc-g-c-d'), e = Morceaux.etapes(p, 20);
+    return e.filter((x) => /^Palier/.test(x.titre)).length === 3 && /G → C → D → G/.test(e[3].texte);
+  })());
+}
+
+console.log('\n— Entraînement (tablatures du cours) —');
+{
+  const v3 = Morceaux.get('ent-v-0303').notes, v1 = Morceaux.get('ent-v-0101').notes;
+  verifie('0 3 0 3 : à vide puis case VII au 3e doigt, pouce buté', v3.slice(0, 4).map((n) => n.frette).join() === '0,7,0,7' &&
+          v3.filter((n) => n.frette).every((n) => n.frette === 7 && n.doigt === 3) && v3.every((n) => n.main === 'p'));
+  verifie('0 1 0 1 : case V au 1er doigt', v1.filter((n) => n.frette).every((n) => n.frette === 5 && n.doigt === 1));
+  const chemin = (notes) => notes.map((n) => n.corde).filter((c, i, a) => i === 0 || c !== a[i - 1]).join('');
+  verifie('chemin de la 6e à la 2e corde et retour à la 6e', chemin(v3) === '654323456' && chemin(Morceaux.get('ent-pouce-bute-4').notes) === '654323456');
+  verifie('pouce buté 4 fois : quatre attaques par corde', Morceaux.get('ent-pouce-bute-4').notes.length === 36);
+  verifie('nom des cordes : 6 → 1 puis 1 → 6, à vide', chemin(Morceaux.get('ent-noms-cordes').notes) === '654321123456'.replace('11', '1') &&
+          Morceaux.get('ent-noms-cordes').notes.every((n) => n.frette === 0));
+  const zb = Morceaux.get('ent-zombie-balaye');
+  verifie('balayages Zombie : mêmes doigtés que le morceau Zombie (Em à l’index et au majeur)',
+          zb.mains.gauche[0].id === 'Em' && zb.mains.gauche[0].doigts.join() === Morceaux.get('zombie').mains.gauche[0].doigts.join());
+  verifie('exercices du cours hors de la liste des morceaux (catégorie entraînement)',
+          ['ent-noms-cordes', 'ent-pouce-bute-1', 'ent-pouce-bute-4', 'ent-v-0303', 'ent-v-0101', 'ent-zombie-balaye'].every((id) => Morceaux.get(id).categorie === 'entrainement'));
+}
+
+console.log('\n— Tablature : main droite lisible —');
+{
+  const z = Morceaux.get('zombie'), svg = Tablature.svg(z, Tablature.miseEnPage(z));
+  const etiquettes = (svg.match(/class="tab-main"[^>]*>[^<]*/g) || []).map((x) => x.replace(/.*>/, ''));
+  verifie('une étiquette par attaque (plus de lettres superposées)', etiquettes.length === new Set(z.notes.map((n) => n.temps)).size, etiquettes.length);
+  verifie('accord plaqué i-m-a : une seule étiquette « ima »', etiquettes.includes('ima'));
+  const b = Morceaux.get('acc-em-am'), sb = Tablature.svg(b, Tablature.miseEnPage(b));
+  verifie('accord balayé au pouce : un seul « p »', !(sb.match(/class="tab-main"[^>]*>pp/)) && /class="tab-main"[^>]*>p</.test(sb));
 }
 
 console.log('\n— Tablature —');
@@ -306,12 +384,18 @@ console.log('\n— Synthèse des cordes —');
 {
   // Le nylon doit s'éteindre plus vite que l'acier : c'est le repère qui
   // distingue les deux timbres à l'oreille, et il se mesure.
+  // Rapport fin / début de la note : c'est l'extinction qu'on compare, pas le
+  // volume. Les deux sons partent d'un bruit tiré au hasard ; comparer leurs
+  // énergies absolues faisait échouer le test au hasard (1 fois sur 30).
   function energieFin(timbre) {
     buffersProduits.length = 0;
     Audio5.jouerCase(3, 0, { duree: 2.0, timbre: timbre });
     const b = buffersProduits[0].getChannelData(0);
-    const fin = b.slice(b.length - 8192);
-    return Math.sqrt(fin.reduce((t, v) => t + v * v, 0) / fin.length);
+    const rms = (x) => Math.sqrt(x.reduce((t, v) => t + v * v, 0) / x.length);
+    // Fenêtres « établies » : après l'attaque (plus brillante à l'acier) et
+    // avant le fondu de fin, sinon l'un ou l'autre fausse le rapport.
+    const a = Math.round(0.5 * 44100), z = Math.round(1.5 * 44100);
+    return rms(b.slice(z, z + 4096)) / rms(b.slice(a, a + 4096));
   }
   const nylon = energieFin('nylon'), acier = energieFin('acier');
   verifie('le nylon s’éteint plus vite que l’acier', nylon < acier,

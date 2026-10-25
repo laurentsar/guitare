@@ -20,7 +20,22 @@
   var ecranCourant = 'accueil';
 
   // ------------------------------------------------------------ navigation
-  function aller(nom) {
+  /* Pile des écrans visités, pour le bouton retour (Android, télécommande,
+   * geste retour du navigateur). `aller(nom, { retour: true })` revient sans
+   * empiler. */
+  var pile = [];
+  function aller(nom, opts) {
+    if (!(opts && opts.retour) && nom !== ecranCourant) {
+      // Revenir à l'écran d'où l'on vient (« ‹ Quitter » du pupitre…) est un
+      // retour : on dépile, sinon le bouton retour y ramènerait en boucle.
+      if (pile[pile.length - 1] === nom) pile.pop();
+      else pile.push(ecranCourant);
+      if (pile.length > 40) pile.shift();
+      // Une entrée d'historique par écran : le geste « retour » du navigateur
+      // (PWA) et la WebView de l'APK reviennent alors ici plutôt que de
+      // quitter l'app.
+      try { history.pushState({ ecran: nom }, ''); } catch (e) { /* file:// */ }
+    }
     // Quitter un écran coupe ce qu'il faisait : rien de pire qu'un métronome
     // qui continue pendant qu'on lit une leçon.
     if (ecranCourant === 'accordeur' && nom !== 'accordeur') arreterAccordeur();
@@ -44,6 +59,7 @@
     if (nom === 'parcours') rendreParcours();
     if (nom === 'accords') rendreAccords();
     if (nom === 'morceaux') rendreMorceaux();
+    if (nom === 'entrainement') rendreEntrainement();
     if (nom === 'oreille') rendreOreilleAccueil();
     if (nom === 'reglages') rendreReglages();
     if (nom === 'gammes') rendreGammes();
@@ -52,14 +68,77 @@
 
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-aller]');
-    if (b) { aller(b.dataset.aller); }
+    if (!b) return;
+    // Les boutons « ‹ Morceaux », « ‹ Accords »… sont des retours : ils
+    // dépilent au lieu d'empiler, sinon le bouton retour y ramènerait.
+    if (b.classList.contains('retour')) {
+      var k = pile.lastIndexOf(b.dataset.aller);
+      if (k !== -1) pile.length = k;
+      aller(b.dataset.aller, { retour: true });
+    } else aller(b.dataset.aller);
+  });
+
+  /* Bouton retour. Dans l'ordre : fermer le plein écran, revenir à l'écran
+   * précédent, sinon à l'accueil. Renvoie false à l'accueil, où il n'y a
+   * plus rien à défaire (l'appelant décide alors de quitter). */
+  function retour() {
+    var pe = document.querySelector('.partition.plein-ecran [aria-label="Quitter le plein écran"]');
+    if (pe) { pe.click(); return true; }
+    if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) {} return true; }
+    if (pile.length) { aller(pile.pop(), { retour: true }); return true; }
+    if (ecranCourant !== 'accueil') { aller('accueil', { retour: true }); return true; }
+    return false;
+  }
+
+  // Sur l'accueil : un premier appui prévient, le second quitte — on ne
+  // ferme pas l'app par mégarde au milieu d'une séance.
+  var quitterArme = 0;
+  function messageBref(txt) {
+    var t = document.createElement('div');
+    t.className = 'toast-retour'; t.textContent = txt;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 2000);
+  }
+  function retourOuQuitter(quitter) {
+    if (retour()) { quitterArme = 0; return; }
+    if (Date.now() - quitterArme < 2000) { quitter(); return; }
+    quitterArme = Date.now();
+    messageBref('Appuie encore sur retour pour quitter');
+  }
+
+  // APK (Capacitor) : bouton retour d'Android et de la télécommande TV. Le
+  // plugin App remplace le comportement par défaut (quitter l'app).
+  (function () {
+    var cap = window.Capacitor;
+    var App = cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins && cap.Plugins.App;
+    if (!App || !App.addListener) return;
+    try {
+      var r = App.addListener('backButton', function () {
+        retourOuQuitter(function () { (App.exitApp || App.minimizeApp).call(App); });
+      });
+      if (r && r.catch) r.catch(function () {});
+    } catch (e) { /* plugin absent : la WebView revient dans l'historique */ }
+  })();
+  // Navigateur (PWA) et WebView sans plugin : le geste retour remonte
+  // l'historique ; on suit avec la même logique. Si l'entrée retrouvée est
+  // celle de l'écran courant, on ne faisait que quitter un calque (le plein
+  // écran pose sa propre entrée, et la retire en se fermant) : rien à faire.
+  window.addEventListener('popstate', function (e) {
+    if (e.state && e.state.ecran === ecranCourant) return;
+    retour();
+  });
+  // Clavier / télécommande dans un navigateur : Échap = retour.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' && e.key !== 'GoBack' && e.key !== 'BrowserBack') return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return;
+    if (retour()) e.preventDefault();
   });
 
   // ------------------------------------------- compteur de temps de pratique
   // Ne tourne que sur les écrans où l'on joue réellement, et s'arrête quand
   // l'app passe en arrière-plan : un compteur qui gonfle tout seul ne veut
   // plus rien dire.
-  var ECRANS_PRATIQUE = ['lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur', 'pupitre'];
+  var ECRANS_PRATIQUE = ['entrainement', 'lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur', 'pupitre'];
   setInterval(function () {
     if (document.hidden) return;
     if (ECRANS_PRATIQUE.indexOf(ecranCourant) === -1) return;
@@ -99,6 +178,15 @@
       carte.appendChild(el('p', 'aide', 'Toutes les leçons sont validées. Reprends les morceaux au métronome, et monte le tempo de cinq en cinq.'));
     }
 
+    if (window.Entrainement) {
+      var jourE = Store.entrainementJour();
+      var totalE = Entrainement.tous().reduce(function (t, e) { return t + Entrainement.cases(e); }, 0);
+      var faitesE = Entrainement.tous().reduce(function (t, e) { return t + (jourE[e.id] || []).length; }, 0);
+      var bE = el('button', 'btn large', '💪 Entraînement du jour : ' + faitesE + ' / ' + totalE);
+      bE.onclick = function () { aller('entrainement'); };
+      carte.appendChild(bE);
+    }
+
     var obj = Store.reglages().objectifMinutes;
     var faites = Store.minutesDuJour();
     var prog = vide($('carteProgression'));
@@ -117,6 +205,95 @@
     // Indexé sur la date : le même conseil toute la journée, un autre demain.
     var jour = Math.floor(Date.now() / 86400000);
     conseil.appendChild(el('p', null, CONSEILS[jour % CONSEILS.length]));
+  }
+
+  // ---------------------------------------------------------- entraînement
+  /* Les devoirs du cours, à refaire chaque jour. Chaque exercice se coche
+   * (une case par variante : en regardant, yeux fermés…) ; les cases
+   * repartent à zéro chaque matin, l'historique reste pour la série. */
+  var ETATS_ENTRAINEMENT = { nouveau: 'NOUVEAU', continuer: 'à continuer', pasvu: 'pas encore vu en cours' };
+
+  function rendreEntrainement() {
+    var h = vide($('pageEntrainement'));
+    var jour = Store.entrainementJour();
+    var tous = Entrainement.tous();
+    var total = tous.reduce(function (t, e) { return t + Entrainement.cases(e); }, 0);
+    var faites = tous.reduce(function (t, e) { return t + (jour[e.id] || []).length; }, 0);
+    var jours = Store.joursEntrainement();
+    var tete = el('div', 'carte');
+    tete.appendChild(el('h2', null, '💪 Entraînement'));
+    tete.appendChild(el('p', 'aide', 'Les exercices du cours, à refaire chaque jour. Coche-les au fur et à mesure : les cases repartent à zéro demain.'));
+    var barre = el('div', 'barre-objectif');
+    var i = el('i'); i.style.width = Math.round(faites / total * 100) + '%';
+    barre.appendChild(i);
+    tete.appendChild(barre);
+    tete.appendChild(el('p', 'aide', 'Aujourd’hui : ' + faites + ' / ' + total + ' · ' + jours.length + ' jour' + (jours.length > 1 ? 's' : '') + ' d’entraînement en tout'));
+    h.appendChild(tete);
+
+    Entrainement.groupes().forEach(function (g) {
+      h.appendChild(el('h3', 'titre-groupe', g.titre));
+      if (g.intro) h.appendChild(el('p', 'aide', g.intro));
+      g.exercices.forEach(function (e) {
+        var c = el('div', 'carte exercice' + ((jour[e.id] || []).length === Entrainement.cases(e) ? ' fait' : ''));
+        var t = el('div', 'exercice-titre');
+        t.appendChild(el('b', null, e.titre));
+        if (e.etat) t.appendChild(el('span', 'etat-' + e.etat, ETATS_ENTRAINEMENT[e.etat]));
+        c.appendChild(t);
+        var ul = el('ul');
+        e.consignes.forEach(function (x) { ul.appendChild(el('li', null, x)); });
+        c.appendChild(ul);
+        if (e.quiz) c.appendChild(quizEntrainement(e.quiz));
+        var coches = el('div', 'exercice-coches');
+        (e.variantes || ['Fait aujourd’hui']).forEach(function (v, k) {
+          var l = el('label', 'ligne-coche');
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = (jour[e.id] || []).indexOf(k) !== -1;
+          cb.onchange = function () { Store.cocherEntrainement(e.id, k, cb.checked); rendreEntrainement(); };
+          l.appendChild(cb);
+          l.appendChild(document.createTextNode(e.variantes ? (k + 1) + '. ' + v : v));
+          coches.appendChild(l);
+        });
+        c.appendChild(coches);
+        if (e.morceau && Morceaux.get(e.morceau)) {
+          var b = el('button', 'btn', '🎼 Tablature : ' + Morceaux.get(e.morceau).titre);
+          b.onclick = function () { ouvrirMorceau(e.morceau); };
+          c.appendChild(b);
+        }
+        h.appendChild(c);
+      });
+    });
+
+    // Notes de cours : ce que le professeur donne la semaine suivante.
+    var notes = el('div', 'carte');
+    notes.appendChild(el('h3', null, '📝 Mes notes de cours'));
+    var ta = document.createElement('textarea');
+    ta.className = 'notes-cours'; ta.rows = 6;
+    ta.placeholder = 'Recopie ici les consignes du prochain cours…';
+    ta.value = Store.notesCours();
+    ta.oninput = function () { Store.notesCours(ta.value); };
+    notes.appendChild(ta);
+    h.appendChild(notes);
+  }
+
+  // Révision « par cœur » : on montre la question, la réponse se dévoile.
+  function quizEntrainement(paires) {
+    var d = el('div', 'quiz');
+    var q = el('b', 'quiz-question'), r = el('span', 'quiz-reponse');
+    var bRep = el('button', 'btn', 'Réponse'), bSuiv = el('button', 'btn', 'Interroge-moi');
+    var k = -1;
+    function suivante() {
+      var n; do { n = Math.floor(Math.random() * paires.length); } while (paires.length > 1 && n === k);
+      k = n; q.textContent = paires[k][0] + ' = ?'; r.textContent = ''; bRep.disabled = false;
+    }
+    bSuiv.onclick = suivante;
+    bRep.onclick = function () { if (k >= 0) { r.textContent = paires[k][1]; bRep.disabled = true; } };
+    bRep.disabled = true;
+    q.textContent = 'Révise par cœur :';
+    d.appendChild(q); d.appendChild(r);
+    var a = el('div', 'actions'); a.appendChild(bSuiv); a.appendChild(bRep);
+    d.appendChild(a);
+    return d;
   }
 
   // -------------------------------------------------------------- parcours
@@ -337,6 +514,21 @@
     actions.appendChild(bJouer); actions.appendChild(bArp); actions.appendChild(bNotes);
     h.appendChild(actions);
 
+    // Le travailler en musique : les exercices d'accords qui l'utilisent.
+    var avec = Morceaux.tous().filter(function (p) {
+      return p.categorie === 'accords' && p.mains.gauche.some(function (g) { return g.id === a.id; });
+    });
+    if (avec.length) {
+      h.appendChild(el('h3', null, 'S’entraîner avec cet accord'));
+      var liste = el('div', 'actions');
+      avec.forEach(function (p) {
+        var b = el('button', 'btn', '🎸 ' + p.titre);
+        b.onclick = function () { ouvrirMorceau(p.id); };
+        liste.appendChild(b);
+      });
+      h.appendChild(liste);
+    }
+
     aller('accord');
     if (Cast.connecte()) Cast.afficherAccord(a.id);
   }
@@ -453,8 +645,11 @@
   function rendreMorceaux() {
     var h = vide($('listeMorceaux'));
     h.appendChild(blocEnchainer());
-    var niveaux = {};
-    Morceaux.tous().forEach(function (p) { (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p); });
+    var niveaux = {}, exercices = [];
+    Morceaux.tous().forEach(function (p) {
+      if (p.categorie === 'accords') exercices.push(p);
+      else if (p.categorie !== 'entrainement') (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
+    });
     function ligne(p, droite) {
       var b = el('button', 'ligne-morceau');
       var t = el('span');
@@ -464,6 +659,14 @@
       b.appendChild(el('span', 'niveau', droite));
       b.onclick = function () { ouvrirMorceau(p.id); };
       return b;
+    }
+    // Les exercices d'accords d'abord : c'est par eux qu'on accompagne une
+    // chanson, bien avant de lire une pièce du répertoire.
+    if (exercices.length) {
+      h.appendChild(el('h3', null, '🎸 Travailler les accords'));
+      h.appendChild(el('p', 'aide', 'Des tablatures faites pour poser les accords et passer de l’un à l’autre en musique : balayé au pouce, puis basse et accord plaqué, puis arpège.'));
+      exercices.sort(function (a, b) { return a.niveau - b.niveau; })
+        .forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
     }
     var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
                          6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)' };
@@ -591,7 +794,9 @@
           }).join(', ') + ' — la note continue de sonner.' });
         }
       }
-      titre.textContent = 'Note ' + (i + 1) + ' sur ' + temps.length + ' : ' + c.noms.join(' + ');
+      var accTitre = ns.length > 2 && ns[0].accord && Accords.get(ns[0].accord);
+      titre.textContent = 'Note ' + (i + 1) + ' sur ' + temps.length + ' : ' +
+        (accTitre ? 'accord ' + accTitre.id + ' (' + accTitre.fr + ')' : c.noms.join(' + '));
       dessin.innerHTML = Illustrations.deuxMains(c);
       vide(corps);
       function colonne(nom, lignes, pastille) {
@@ -1059,7 +1264,39 @@
     var panneauSuite = el('div', 'suite-liste');
     panneauSuite.hidden = true;
     boitePartition.appendChild(panneauSuite);
+    // Les lettres sous la tablature : sans cette ligne, « pm » ou « im » ne
+    // veulent rien dire pour qui débute (et le pupitre plein écran n'a pas
+    // d'autre aide).
+    var legende = el('p', 'legende-doigts');
+    legende.innerHTML = 'Lettres sous la tablature = doigts de la <b>main droite</b> : <b>p</b> pouce · <b>i</b> index · <b>m</b> majeur · <b>a</b> annulaire. ' +
+      'Deux lettres (<b>pm</b>, <b>im</b>…) = deux doigts qui pincent en même temps, de la corde grave à l’aiguë.';
+    boitePartition.appendChild(legende);
     boitePartition.appendChild(zone);
+    // Pincement à deux doigts (en plus des boutons 🔍) : aperçu immédiat
+    // (agrandissement CSS), puis mise en page à la nouvelle échelle au lâcher.
+    // La page elle-même ne zoome pas (touch-action).
+    var pince = null;
+    function ecart(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+    zone.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 2) return;
+      var r = zone.getBoundingClientRect();
+      pince = { d0: ecart(e.touches), z0: echelleActuelle(), r: 1 };
+      zone.style.transformOrigin = ((e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left) + 'px ' +
+                                   ((e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top) + 'px';
+    }, { passive: true });
+    zone.addEventListener('touchmove', function (e) {
+      if (!pince || e.touches.length !== 2) return;
+      e.preventDefault();
+      pince.r = Math.max(0.5, Math.min(3, ecart(e.touches) / pince.d0));
+      zone.style.transform = 'scale(' + pince.r + ')';
+    }, { passive: false });
+    zone.addEventListener('touchend', function (e) {
+      if (!pince || e.touches.length) return;
+      zone.style.transform = ''; zone.style.transformOrigin = '';
+      var z = pince.z0 * pince.r; pince = null;
+      Store.reglage('zoomPartition', Math.max(PAS_ZOOM[0], Math.min(PAS_ZOOM[PAS_ZOOM.length - 1], Math.round(z * 20) / 20)));
+      dessiner();
+    });
 
     /* Fin d'un morceau de la liste : décompte de 5 s puis le suivant. */
     function suite(immediat) {
@@ -1961,5 +2198,5 @@
   else init();
 
   // Exposé pour les tests d'interface (jsdom) : aucun autre usage.
-  window.AppGuitare = { aller: aller, ouvrirLecon: ouvrirLecon, ouvrirAccord: ouvrirAccord, ouvrirMorceau: ouvrirMorceau, demarrerOreille: demarrerOreille, ouvrirEditeur: ouvrirEditeur, pupitre: function () { return pupitreCourant; } };
+  window.AppGuitare = { aller: aller, retour: retour, ouvrirLecon: ouvrirLecon, ouvrirAccord: ouvrirAccord, ouvrirMorceau: ouvrirMorceau, demarrerOreille: demarrerOreille, ouvrirEditeur: ouvrirEditeur, pupitre: function () { return pupitreCourant; } };
 })();

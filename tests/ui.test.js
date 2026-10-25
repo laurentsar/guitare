@@ -32,10 +32,12 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'entrainement.js', 'lecons.js',
  'accordeur.js', 'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
+// Les exercices d'entraînement s'ouvrent depuis leur écran, pas depuis la liste.
+const listables = () => w.Morceaux.tous().filter((p) => p.categorie !== 'entrainement').length;
 // Les aides débutant sont éteintes par défaut (v1.16) ; les blocs ci-dessous
 // les testent, on les allume. Le comportement par défaut a son propre bloc.
 w.Store.reglage('aides', true);
@@ -113,7 +115,7 @@ function verifie(nom, cond, detail) {
   console.log('\n— Morceaux —');
   w.AppGuitare.aller('morceaux');
   verifie('tous les morceaux sont listés',
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === w.Morceaux.tous().length);
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables());
   w.AppGuitare.ouvrirMorceau('ode-joie');
   const notesTab = $('detailMorceau').querySelectorAll('.tab-note');
   verifie('la tablature contient toutes les notes',
@@ -175,7 +177,7 @@ function verifie(nom, cond, detail) {
   verifie('enregistrée puis ouverte dans le lecteur', $('ecran-morceau').classList.contains('actif') && w.Store.tablatures().length === 1);
   w.AppGuitare.aller('morceaux');
   verifie('« Mes tablatures » la liste', /Mes tablatures/.test($('listeMorceaux').textContent) &&
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === w.Morceaux.tous().length + 1);
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + 1);
 
   console.log('\n— Gammes —');
   w.AppGuitare.aller('gammes');
@@ -434,6 +436,105 @@ function verifie(nom, cond, detail) {
     w.Store.reglage('ecranAllume', true); w.EcranAllume.appliquer();
     verifie('APK : plugin natif KeepAwake appelé (veille, puis allumé)', appels.join() === 'veille,allume' && demandes.length === 2);
     delete w.Capacitor;
+  }
+
+  w.AppGuitare.aller('morceaux');
+  {
+    const titres = [...$('listeMorceaux').querySelectorAll('h3')].map((x) => x.textContent);
+    // Après le bloc « Enchaîner / révision du jour », avant les niveaux.
+    const iAcc = titres.findIndex((t) => /Travailler les accords/.test(t)), iNiv = titres.findIndex((t) => /^Niveau/.test(t));
+    verifie('liste : « Travailler les accords » avant les niveaux', iAcc !== -1 && iAcc < iNiv, titres.slice(0, 5).join(' | '));
+  }
+  w.AppGuitare.ouvrirMorceau('acc-em-am');
+  verifie('exercice d’accords : position des mains (Em, Am) et pas à pas par paliers',
+          $('detailMorceau').querySelectorAll('.main-accord').length === 2 && /Palier 1 : balayé au pouce/.test($('detailMorceau').textContent));
+  w.AppGuitare.ouvrirAccord('Am');
+  verifie('fiche d’accord : les exercices qui l’utilisent', /S’entraîner avec cet accord/.test($('detailAccord').textContent) && /Mi mineur ↔ La mineur/.test($('detailAccord').textContent));
+
+  console.log('\n— Entraînement —');
+  w.AppGuitare.aller('entrainement');
+  {
+    const page = $('pageEntrainement');
+    const txt = page.textContent;
+    verifie('écran : les exercices du cours, par thème', /Balayages/.test(txt) && /saute-mouton/.test(txt) && /Pouce buté : 4 fois/.test(txt) && /Ve position : 0 1 0 1/.test(txt) && /Partir de la pince/.test(txt));
+    verifie('états : NOUVEAU, à continuer, pas encore vu en cours', /NOUVEAU/.test(txt) && /à continuer/.test(txt) && /pas encore vu en cours/.test(txt));
+    const total = w.Entrainement.tous().reduce((t, e) => t + w.Entrainement.cases(e), 0);
+    verifie('compteur du jour à zéro', new RegExp('Aujourd’hui : 0 / ' + total).test(txt));
+    const carte = [...page.querySelectorAll('.exercice')].find((c) => /saute-mouton/.test(c.textContent));
+    verifie('saute-mouton : deux variantes (en regardant, yeux fermés)', carte.querySelectorAll('input[type=checkbox]').length === 2 && /yeux fermés/.test(carte.textContent));
+    carte.querySelector('input').click();
+    verifie('case cochée : compteur à 1 et mémorisée pour aujourd’hui',
+            new RegExp('Aujourd’hui : 1 / ' + total).test($('pageEntrainement').textContent) && w.Store.entrainementJour()['saute-mouton'].join() === '0');
+    const quiz = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Les noms par cœur/.test(c.textContent));
+    [...quiz.querySelectorAll('button')].find((b) => /Interroge-moi/.test(b.textContent)).click();
+    [...quiz.querySelectorAll('button')].find((b) => /Réponse/.test(b.textContent)).click();
+    verifie('quiz des noms d’accords : question puis réponse', /(Em|Cmaj7|G|D) = \?/.test(quiz.textContent) && /(Mi mineur|Do majeur 7|Sol majeur|Ré majeur)/.test(quiz.querySelector('.quiz-reponse').textContent));
+    const ta = $('pageEntrainement').querySelector('textarea');
+    ta.value = 'Mardi : retour du pouce'; ta.dispatchEvent(new w.Event('input'));
+    verifie('notes de cours mémorisées', w.Store.notesCours() === 'Mardi : retour du pouce');
+    const b = [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Tablature : Ve position : 0 3 0 3/.test(x.textContent));
+    b.click();
+    verifie('bouton tablature : ouvre l’exercice en Ve position', /Ve position : 0 3 0 3/.test($('detailMorceau').querySelector('h2').textContent));
+    w.Store.cocherEntrainement('saute-mouton', 0, false);
+    w.AppGuitare.aller('accueil');
+    verifie('accueil : rappel « Entraînement du jour »', /Entraînement du jour : 0 \//.test($('carteReprendre').textContent));
+  }
+
+  w.AppGuitare.ouvrirMorceau('carulli-andantino');
+  {
+    const leg = $('detailMorceau').querySelector('.partition .legende-doigts');
+    verifie('légende p i m a au-dessus de la tablature (aussi en plein écran)', leg && /p.*pouce.*i.*index.*m.*majeur.*a.*annulaire/.test(leg.textContent) && /pincent en même temps/.test(leg.textContent));
+    const lettres = [...$('detailMorceau').querySelectorAll('.tab-main')].map((x) => x.textContent);
+    verifie('accord pouce + majeur : une étiquette « pm », plus de lettres superposées',
+            lettres.includes('pm') && lettres.every((l) => /^[pima]+$/.test(l) && new Set(l).size === l.length));
+  }
+
+  console.log('\n— Pincement sur la partition —');
+  w.Store.reglage('vuePartition', 'tablature');
+  w.Store.reglage('zoomPartition', 1);
+  w.AppGuitare.ouvrirMorceau('mary-agneau');
+  {
+    const zone = $('detailMorceau').querySelector('.partition svg.tab').closest('.partition > div:not(.pe-barre)') ||
+                 $('detailMorceau').querySelector('.partition svg.tab').parentNode.parentNode;
+    const toucher = (type, d) => {
+      const ev = new w.Event(type, { bubbles: true, cancelable: true });
+      const t = d == null ? [] : [{ clientX: 100 - d, clientY: 50 }, { clientX: 100 + d, clientY: 50 }];
+      Object.defineProperty(ev, 'touches', { value: t });
+      zone.dispatchEvent(ev);
+    };
+    toucher('touchstart', 40); toucher('touchmove', 60); toucher('touchmove', 80); toucher('touchend', null);
+    verifie('pincement à deux doigts : écarter les doigts zoome (×2 → 200 %), mémorisé',
+            w.Store.reglages().zoomPartition === 2, w.Store.reglages().zoomPartition);
+    w.Store.reglage('zoomPartition', null);
+  }
+
+  console.log('\n— Bouton retour —');
+  {
+    const actif = () => [...w.document.querySelectorAll('.ecran.actif')].map((e) => e.id.replace('ecran-', '')).join();
+    w.AppGuitare.aller('accueil', { retour: true });
+    while (w.AppGuitare.retour()) { /* vide la pile */ }
+    w.AppGuitare.aller('morceaux');
+    w.AppGuitare.ouvrirMorceau('mary-agneau');
+    w.AppGuitare.aller('metronome');
+    verifie('retour : métronome → morceau', w.AppGuitare.retour() && actif() === 'morceau');
+    verifie('retour : morceau → liste des morceaux', w.AppGuitare.retour() && actif() === 'morceaux');
+    verifie('retour : liste → accueil', w.AppGuitare.retour() && actif() === 'accueil');
+    verifie('retour à l’accueil : rien à défaire (l’APK demande alors de rappuyer pour quitter)', w.AppGuitare.retour() === false);
+    w.AppGuitare.ouvrirMorceau('ode-joie');
+    [...$('detailMorceau').querySelectorAll('.partition-barre button')].find((b) => /Plein écran/.test(b.textContent)).click();
+    verifie('plein écran ouvert', !!$('detailMorceau').querySelector('.partition.plein-ecran'));
+    verifie('retour : ferme d’abord le plein écran, reste sur le morceau',
+            w.AppGuitare.retour() && !$('detailMorceau').querySelector('.partition.plein-ecran') && actif() === 'morceau');
+    w.AppGuitare.aller('accords');
+    w.AppGuitare.ouvrirAccord('Am');
+    [...w.document.querySelectorAll('#ecran-accord .retour')][0].click();
+    verifie('bouton « ‹ Accords » : dépile (le retour suivant ne ramène pas sur la fiche Am)',
+            actif() === 'accords' && w.AppGuitare.retour() && actif() !== 'accord');
+    // pupitre → « ‹ Quitter » → morceau : le retour suivant ne ramène pas au pupitre
+    w.AppGuitare.ouvrirMorceau('ode-joie');
+    w.AppGuitare.aller('pupitre');
+    w.AppGuitare.aller('morceau');
+    verifie('pupitre puis retour au morceau : le bouton retour ne renvoie pas au pupitre', w.AppGuitare.retour() && actif() !== 'pupitre');
   }
 
   console.log('\n— Oreille —');

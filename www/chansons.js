@@ -1,4 +1,4 @@
-/* Chansons françaises : grands classiques et hits récents.
+/* Chansons : françaises (grands classiques, hits récents) et internationales.
  *
  * Ces chansons sont SOUS DROITS : ni mélodie, ni riff, ni paroles ici. Ce
  * fichier ne contient que des GRILLES D'ACCORDS (l'enchaînement des accords,
@@ -159,6 +159,86 @@
       sections: [
         { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['Em', 'Am7', 'D', 'G|B7'] },
         { titre: 'Refrain', motif: 'plaque', tours: 3, grille: ['Em|Am7', 'D|G'] }
+      ] },
+
+    // ------------------------------------------- Chansons internationales
+    // Mêmes règles : grille seule, simplifiée, capo pour la tonalité du disque.
+    { id: 'ch-knockin', titre: 'Knockin’ on Heaven’s Door', artiste: 'Bob Dylan', annee: 1973,
+      capo: 0, tempo: 68, groupe: 'international',
+      sections: [
+        { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['G', 'D', 'Am', 'Am', 'G', 'D', 'C', 'C'] },
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['G', 'D', 'Am', 'Am', 'G', 'D', 'C', 'C'] }
+      ] },
+    { id: 'ch-let-it-be', titre: 'Let It Be', artiste: 'The Beatles', annee: 1970,
+      capo: 0, tempo: 72, groupe: 'international',
+      note: 'Le Fa est le Fa barré : s’il résiste encore, joue Fa maj7 (onglet Accords) à la place.',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['C', 'G', 'Am', 'F', 'C', 'G', 'F|C', 'C'] },
+        { titre: 'Refrain', motif: 'plaque', grille: ['Am', 'G', 'F', 'C', 'C', 'G', 'F|C', 'C'] }
+      ] },
+    { id: 'ch-stand-by-me', titre: 'Stand By Me', artiste: 'Ben E. King', annee: 1961,
+      capo: 0, tempo: 100, groupe: 'international',
+      note: 'Fa♯ mineur est barré à la 2e case.',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'balade', tours: 2, grille: ['A', 'A', 'F#m', 'F#m', 'D', 'E', 'A', 'A'] }
+      ] },
+    { id: 'ch-no-woman-no-cry', titre: 'No Woman, No Cry', artiste: 'Bob Marley', annee: 1974,
+      capo: 0, tempo: 76, groupe: 'international',
+      sections: [
+        { titre: 'Grille', motif: 'plaque', tours: 2, grille: ['C', 'G', 'Am', 'F', 'C', 'F', 'C', 'G'] },
+        { titre: 'Grille en arpège', motif: 'arpege', grille: ['C', 'G', 'Am', 'F', 'C', 'F', 'C', 'G'] }
+      ] },
+    { id: 'ch-perfect', titre: 'Perfect', artiste: 'Ed Sheeran', annee: 2017,
+      capo: 1, tempo: 63, groupe: 'international',
+      note: 'Sur le disque, la mesure est à 6/8 (balancée) ; ici à 4 temps pour apprendre les changements.',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['G', 'Em', 'C', 'D'] },
+        { titre: 'Pré-refrain', motif: 'balade', grille: ['Em', 'C', 'G', 'D', 'Em', 'C', 'D', 'D'] }
+      ] },
+    { id: 'ch-someone-like-you', titre: 'Someone Like You', artiste: 'Adele', annee: 2011,
+      capo: 2, tempo: 68, groupe: 'international',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['G', 'D', 'Em', 'C'] },
+        { titre: 'Refrain', motif: 'balade', tours: 2, grille: ['G', 'D', 'Em', 'C'] }
+      ] },
+    { id: 'ch-viva-la-vida', titre: 'Viva la Vida', artiste: 'Coldplay', annee: 2008,
+      capo: 1, tempo: 100, groupe: 'international',
+      note: 'Tempo du disque : environ 138. Monte-le avec l’entraîneur de vitesse.',
+      sections: [
+        { titre: 'Couplet', motif: 'plaque', tours: 2, grille: ['C', 'D', 'G', 'Em'] },
+        { titre: 'Refrain', motif: 'balade', tours: 2, grille: ['C', 'D', 'G', 'Em'] }
+      ] },
+    { id: 'ch-riptide', titre: 'Riptide', artiste: 'Vance Joy', annee: 2013,
+      capo: 1, tempo: 100, groupe: 'international',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'plaque', tours: 4, grille: ['Am', 'G', 'C', 'C'] }
+      ] },
+    { id: 'ch-country-roads', titre: 'Take Me Home, Country Roads', artiste: 'John Denver', annee: 1971,
+      capo: 2, tempo: 80, groupe: 'international',
+      sections: [
+        { titre: 'Couplet', motif: 'balade', grille: ['G', 'Em', 'D', 'C', 'G', 'D', 'C', 'G'] },
+        { titre: 'Refrain', motif: 'plaque', grille: ['G', 'D', 'Em', 'C', 'G', 'D', 'C', 'G'] }
+      ] },
+    { id: 'ch-hallelujah', titre: 'Hallelujah', artiste: 'Leonard Cohen', annee: 1984,
+      capo: 0, tempo: 56, groupe: 'international',
+      note: 'Sur le disque, la mesure est balancée (12/8) ; ici à 4 temps, en arpège.',
+      sections: [
+        { titre: 'Couplet, début', motif: 'arpege', grille: ['C', 'Am', 'C', 'Am', 'F', 'G', 'C', 'G'] },
+        { titre: 'Couplet, fin', motif: 'arpege', grille: ['C', 'F|G', 'Am', 'F', 'G', 'E7', 'Am', 'Am'] },
+        { titre: 'Refrain', motif: 'arpege', grille: ['F', 'F', 'Am', 'Am', 'F', 'F', 'C|G', 'C'] }
+      ] },
+    { id: 'ch-sweet-home-alabama', titre: 'Sweet Home Alabama', artiste: 'Lynyrd Skynyrd', annee: 1974,
+      capo: 0, tempo: 96, groupe: 'international',
+      note: 'Le Do se joue souvent Do add9 sur le disque ; ici le Do simple.',
+      sections: [
+        { titre: 'Grille', motif: 'plaque', tours: 4, grille: ['D', 'C|G'] }
+      ] },
+    { id: 'ch-imagine', titre: 'Imagine', artiste: 'John Lennon', annee: 1971,
+      capo: 0, tempo: 76, groupe: 'international',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', grille: ['C', 'Cmaj7', 'F', 'F', 'C', 'Cmaj7', 'F', 'F'] },
+        { titre: 'Pont', motif: 'arpege', grille: ['Am', 'Dm', 'F', 'G', 'G7', 'G7', 'G7', 'G7'] },
+        { titre: 'Refrain', motif: 'plaque', grille: ['F', 'G', 'C', 'E7', 'F', 'G', 'C', 'C'] }
       ] }
   ];
 })(typeof window !== 'undefined' ? window : globalThis);

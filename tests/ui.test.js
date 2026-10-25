@@ -537,6 +537,9 @@ function verifie(nom, cond, detail) {
     verifie('pupitre puis retour au morceau : le bouton retour ne renvoie pas au pupitre', w.AppGuitare.retour() && actif() !== 'pupitre');
   }
 
+  w.AppGuitare.aller('morceaux');
+  verifie('liste : rubrique « Chansons internationales »', /Chansons internationales/.test($('listeMorceaux').textContent) && /Knockin’ on Heaven’s Door/.test($('listeMorceaux').textContent));
+
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
   w.AppGuitare.demarrerOreille('cordes');

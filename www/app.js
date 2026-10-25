@@ -831,9 +831,10 @@
     bProg.onclick = function () { aller('programme'); };
     h.appendChild(bProg);
     h.appendChild(blocEnchainer());
-    var niveaux = {}, exercices = [];
+    var niveaux = {}, exercices = [], pouce = [];
     Morceaux.tous().forEach(function (p) {
       if (p.categorie === 'accords') exercices.push(p);
+      else if (p.categorie === 'pouce') pouce.push(p);
       else if (p.categorie !== 'entrainement') (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
     });
     function ligne(p, droite) {
@@ -859,6 +860,11 @@
       h.appendChild(el('p', 'aide', 'Des tablatures faites pour poser les accords et passer de l’un à l’autre en musique : balayé au pouce, puis basse et accord plaqué, puis arpège.'));
       exercices.sort(function (a, b) { return a.niveau - b.niveau; })
         .forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
+    }
+    if (pouce.length) {
+      h.appendChild(el('h3', null, '👍 Pouce seul'));
+      h.appendChild(el('p', 'aide', 'Tout se joue avec le pouce de la main droite, dans l’ordre : le rythme sur une corde, les six cordes, la gamme dans les basses, les basses alternées sur des accords, le pom-tcha, des mélodies au pouce, puis des chansons. Les chansons rock (Offspring, Nirvana…) sont aussi tout au pouce.'));
+      pouce.forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
     }
     var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
                          6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)', 9: 'Rock et reggae — Offspring, Nirvana, Cranberries, Police, Marley' };

@@ -725,7 +725,16 @@
       { temps: 2,   duree: 0.5, cordes: [2] },       { temps: 2.5, duree: 0.5, cordes: [3] },
       { temps: 3,   duree: 0.5, cordes: [2] },       { temps: 3.5, duree: 0.5, cordes: [3] }] }
   };
+  // Pouce seul (section « 👍 Pouce seul ») : la main droite n'a que le pouce.
+  MOTIFS['basses-alternees'] = { nom: 'basses alternées au pouce', motif: [
+    { temps: 0, duree: 1, cordes: ['basse'] }, { temps: 1, duree: 1, cordes: ['alt'] },
+    { temps: 2, duree: 1, cordes: ['basse'] }, { temps: 3, duree: 1, cordes: ['alt'] }] };
+  MOTIFS['basse-balaye'] = { nom: 'basse puis balayé (pom-tcha)', motif: [
+    { temps: 0, duree: 1, cordes: ['basse'] }, { temps: 1, duree: 1, cordes: ['tout'] },
+    { temps: 2, duree: 1, cordes: ['alt'] },   { temps: 3, duree: 1, cordes: ['tout'] }] };
   var CONSIGNES_MOTIFS = {
+    'basses-alternees': 'Le pouce seul, une note par temps : la basse de l’accord, puis la basse alternée (une corde plus aiguë), et ainsi de suite. Les autres doigts de la main droite se reposent sur la 1re corde.',
+    'basse-balaye': 'Pom-tcha : le pouce joue la basse au 1er temps, balaie l’accord au 2e, joue la basse alternée au 3e, balaie au 4e. Le balayé est léger, la basse bien appuyée.',
     'balaye': 'Le pouce balaie toutes les cordes de l’accord, de la plus grosse à la plus fine, deux fois par mesure. Toute l’attention va à la main gauche : change d’accord pendant le 4e temps, pas après.',
     'balaye-noires': 'Un coup de pouce par temps. Les accords changent plus souvent : prépare le suivant dès le 3e temps.',
     'basse-plaque': 'Pouce sur la basse au 1er temps, index-majeur-annulaire pincés ensemble au 2e (cordes 3, 2, 1), pouce sur la 4e corde au 3e, i-m-a au 4e.',
@@ -1080,6 +1089,135 @@
       notes: accompagnement(dico, c.sections.map(function (s) {
         return { tours: s.tours || 1, grille: s.grille, motif: MOTIFS_CHANSON[s.motif].pas };
       }))
+    });
+  });
+
+  // --- Pouce seul -------------------------------------------------------------
+  /* Tout se joue avec le pouce de la main droite : c'est le premier doigt
+   * qu'on maîtrise, celui des basses, et il suffit pour accompagner. La section
+   * monte par étapes : le rythme sur une corde, les six cordes, une gamme dans
+   * les basses, les basses alternées sur des accords, le pom-tcha, des
+   * mélodies jouées au pouce (une octave plus bas), puis des chansons. */
+  function auPouce(notes) { notes.forEach(function (n) { n.main = 'p'; }); return notes; }
+
+  // Rondes, blanches, noires, croches sur une même corde à vide.
+  function valeursPouce(cordes) {
+    var notes = [], t = 0;
+    cordes.forEach(function (c) {
+      [4, 2, 1, 0.5].forEach(function (d) {
+        for (var k = 0; k < 4 / d; k++) {
+          notes.push({ corde: c, frette: 0, temps: t, duree: d, main: 'p', midi: Theorie.midiDeCase(c, 0) });
+          t += d;
+        }
+      });
+    });
+    notes.push({ corde: cordes[0], frette: 0, temps: t, duree: 4, main: 'p', midi: Theorie.midiDeCase(cordes[0], 0) });
+    return notes;
+  }
+
+  ajoute({
+    id: 'pouce-rythme', titre: 'Le pouce en rythme', sous_titre: 'Pouce seul · rondes, blanches, noires, croches',
+    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'pouce',
+    description: 'Une corde à vide, quatre façons de compter : une ronde (4 temps), deux blanches, quatre noires, huit croches. Sur le Mi grave, puis le La, puis le Ré. Le pouce reste détendu, le geste part de la base du pouce, pas du poignet.',
+    sections: [{ titre: 'Mi grave (6e)', de: 1, a: 4 }, { titre: 'La (5e)', de: 5, a: 8 }, { titre: 'Ré (4e)', de: 9, a: 13 }],
+    notes: valeursPouce([6, 5, 4])
+  });
+
+  ajoute({
+    id: 'pouce-six-cordes', titre: 'Le pouce sur les six cordes', sous_titre: 'Pouce seul · cordes à vide',
+    niveau: 1, tempo: 66, signature: [4, 4], categorie: 'pouce',
+    description: 'Le pouce descend de la 6e corde à la 1re, puis remonte : deux noires par corde, puis une croche par corde. Sur les cordes aiguës, il garde le même geste vers le bas, en butée sur la corde suivante.',
+    notes: (function () {
+      var n = [], t = 0;
+      [6, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 6].forEach(function (c) {
+        for (var k = 0; k < 2; k++) { n.push({ corde: c, frette: 0, temps: t, duree: 1, main: 'p', midi: Theorie.midiDeCase(c, 0) }); t += 1; }
+      });
+      for (var r = 0; r < 2; r++) [6, 5, 4, 3, 2, 1, 2, 3].forEach(function (c) {
+        n.push({ corde: c, frette: 0, temps: t, duree: 0.5, main: 'p', midi: Theorie.midiDeCase(c, 0) }); t += 0.5;
+      });
+      n.push({ corde: 6, frette: 0, temps: t, duree: 4, main: 'p', midi: Theorie.midiDeCase(6, 0) });
+      return n;
+    })()
+  });
+
+  ajoute({
+    id: 'pouce-gamme-sol', titre: 'Gamme de Sol dans les basses', sous_titre: 'Pouce seul · cordes 6, 5, 4 et 3',
+    niveau: 2, tempo: 60, signature: [4, 4], categorie: 'pouce',
+    description: 'Sol, La, Si, Do, Ré, Mi, Fa♯, Sol : la gamme de Sol majeur en première position, au pouce. Main gauche : un doigt par case (case 2 = majeur, case 3 = annulaire, case 4 = auriculaire). Montée et descente en noires, puis en croches.',
+    notes: (function () {
+      var g = ['sol2', 'la2', 'si2', 'do3', 're3', 'mi3', 'fa#3', 'sol3'];
+      var d = g.slice(0, -1).reverse();
+      var suite = g.concat(d).map(function (x) { return [x, 1]; }).concat([['-', 1]])
+        .concat(g.concat(d).map(function (x) { return [x, 0.5]; })).concat([['-', 0.5], ['sol2', 4]]);
+      return melodie(suite, { main: 'p' });
+    })()
+  });
+
+  [
+    { id: 'pouce-em-am', titre: 'Basses au pouce : Mi mineur et La mineur', niveau: 1, tempo: 66, grille: ['Em', 'Am', 'Em', 'Am'],
+      description: 'Em : basse sur la 6e corde, basse alternée sur la 4e. Am : basse sur la 5e, alternée sur la 4e. Le pouce change de corde, la main gauche glisse d’une corde.' },
+    { id: 'pouce-g-c-d', titre: 'Basses au pouce : Sol, Do, Ré', niveau: 2, tempo: 66, grille: ['G', 'C', 'D', 'D'],
+      description: 'Sol : basse 6e corde. Do : 5e corde. Ré : 4e corde. Le pouce suit la basse de chaque accord : c’est elle qui fait entendre le changement.' },
+    { id: 'pouce-a-d-e', titre: 'Basses au pouce : La, Ré, Mi', niveau: 2, tempo: 72, grille: ['A', 'D', 'E', 'E'],
+      description: 'Les trois accords du rock et du reggae (Three Little Birds, Stir It Up…). La : basse 5e corde. Ré : 4e. Mi : 6e.' },
+    { id: 'pouce-blues', titre: 'Blues en La au pouce', niveau: 2, tempo: 80,
+      grille: ['A7', 'A7', 'A7', 'A7', 'D7', 'D7', 'A7', 'A7', 'E7', 'D7', 'A7', 'E7'],
+      description: 'La grille de blues en 12 mesures, avec les septièmes. Le pom-tcha du pouce suffit à faire tourner le blues.' }
+  ].forEach(function (d) {
+    exerciceAccords({
+      id: d.id, titre: d.titre, niveau: d.niveau, tempo: d.tempo, categorie: 'pouce',
+      sous_titre: 'Pouce seul · ' + d.grille.filter(function (x, i, t) { return t.indexOf(x) === i; }).join(' – '),
+      description: d.description,
+      paliers: [{ motif: 'basses-alternees', grille: d.grille, tours: d.grille.length > 4 ? 1 : 2 },
+                { motif: 'basse-balaye', grille: d.grille, tours: d.grille.length > 4 ? 1 : 2 },
+                { motif: 'balaye-noires', grille: d.grille }]
+    });
+  });
+
+  // Mélodies déjà connues, une octave plus bas : elles tombent sur les cordes
+  // graves, le terrain du pouce.
+  ['hot-cross-buns', 'au-clair', 'mary-agneau', 'ode-joie', 'frere-jacques', 'saints', 'joyeux-anniversaire'].forEach(function (id) {
+    var src = PIECES.filter(function (p) { return p.id === id; })[0];
+    if (!src) return;
+    ajoute({
+      id: 'pouce-' + id, titre: src.titre + ' au pouce', sous_titre: 'Pouce seul · mélodie une octave plus bas',
+      niveau: src.niveau, tempo: src.tempo, signature: src.signature, categorie: 'pouce',
+      description: 'La mélodie de « ' + src.titre + ' », une octave plus bas, entièrement au pouce. Elle passe sur les cordes graves : la main gauche garde un doigt par case, le pouce droit butte sur la corde voisine à chaque note.',
+      notes: src.notes.map(function (n) {
+        var pos = caseEnPremierePosition(n.midi - 12);
+        var x = { corde: pos.corde, frette: pos.frette, temps: n.temps, duree: n.duree, midi: n.midi - 12, main: 'p' };
+        if (pos.frette > 0) x.doigt = Math.min(4, pos.frette);
+        return x;
+      })
+    });
+  });
+
+  // Chansons au pouce : même grille, accompagnement pom-tcha, rien d'autre
+  // que le pouce. (Le motif « rock » des chansons rock est déjà tout au pouce.)
+  var POUCE_CHANSON = { texte: 'Pom-tcha au pouce : la basse au 1er temps, l’accord balayé au 2e, la basse alternée au 3e, balayé au 4e.',
+    pas: MOTIFS['basse-balaye'].motif };
+  ['ch-santiano', 'ch-three-little-birds', 'ch-riptide', 'ch-knockin', 'ch-linger', 'ch-sweet-home-alabama'].forEach(function (cid) {
+    var c = (global.CHANSONS || []).filter(function (x) { return x.id === cid; })[0];
+    if (!c) return;
+    var dico = {}, ordre = [];
+    c.sections.forEach(function (s) { s.grille.forEach(function (g) { String(g).split('|').forEach(function (id) {
+      if (!dico[id]) { dico[id] = accordChanson(id); ordre.push(id); }
+    }); }); });
+    var mesure = 1, sections = [];
+    c.sections.forEach(function (s) {
+      var n = s.grille.length * (s.tours || 1);
+      sections.push({ titre: s.titre, de: mesure, a: mesure + n - 1, texte: s.grille.join(' · ').replace(/\|/g, ' / ') + ' — ' + POUCE_CHANSON.texte });
+      mesure += n;
+    });
+    ajoute({
+      id: 'pouce-' + cid, titre: c.titre + ' au pouce', chanson: true, categorie: 'pouce',
+      sous_titre: c.artiste + ' · pouce seul' + (c.capo ? ' · capo case ' + c.capo : ''),
+      niveau: 2, tempo: Math.min(c.tempo, 90), signature: [4, 4], capo: c.capo || 0,
+      description: 'La grille de « ' + c.titre + ' » accompagnée au pouce seul (pom-tcha). Accompagnement écrit pour cette app : ni mélodie ni paroles, elles sont sous droits. ' +
+        (c.capo ? 'Capodastre case ' + c.capo + '. ' : '') + 'Accords : ' + ordre.join(', ') + '.',
+      sections: sections,
+      mains: { gauche: ordre.map(function (id) { return dico[id]; }), droite: [POUCE_CHANSON.texte] },
+      notes: accompagnement(dico, c.sections.map(function (s) { return { tours: s.tours || 1, grille: s.grille, motif: POUCE_CHANSON.pas }; }))
     });
   });
 

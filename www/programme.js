@@ -61,7 +61,7 @@
 
   // Ordre dans un palier : technique d'abord, puis du plus simple au plus dur.
   function cleTri(p) {
-    var rang = p.categorie === 'entrainement' ? 0 : p.categorie === 'accords' ? 1 : p.chanson ? 3 : 2;
+    var rang = p.categorie === 'entrainement' || (p.categorie === 'pouce' && !p.chanson) ? 0 : p.categorie === 'accords' ? 1 : p.chanson ? 3 : 2;
     var d = p.chanson ? difficulteChanson(p) : (p.niveau || 1) * 10;
     return rang * 1000 + d;
   }
@@ -146,7 +146,7 @@
 
     // Échauffement : un exercice d'accords ou de technique, dû si possible,
     // sinon le moins avancé des paliers ouverts.
-    var technique = function (id) { var c = parId[id].categorie; return c === 'accords' || c === 'entrainement'; };
+    var technique = function (id) { var p = parId[id]; return !p.chanson && ['accords', 'entrainement', 'pouce'].indexOf(p.categorie) !== -1; };
     var ech = dus.filter(technique)[0] ||
       disponibles.filter(technique).filter(function (id) { return !acquis(suivi[id]); })
         .sort(function (a, b) { return ((suivi[a] && suivi[a].b) || 0) - ((suivi[b] && suivi[b].b) || 0); })[0];

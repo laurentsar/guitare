@@ -697,6 +697,32 @@ console.log('\n— Chansons : grilles d’accords (v1.18) —');
   verifie('chaque chanson se dessine en tablature', ch.every((p) => (Tablature.svg(p, Tablature.miseEnPage(p)).match(/tab-note/g) || []).length === p.notes.length));
 }
 
+console.log('\n— Pouce seul —');
+{
+  const pouce = Morceaux.tous().filter((p) => p.categorie === 'pouce');
+  verifie('section pouce : 20 morceaux', pouce.length === 20, pouce.length);
+  verifie('pouce seul : toutes les notes au pouce (p)', pouce.every((p) => p.notes.every((n) => n.main === 'p')),
+          pouce.filter((p) => p.notes.some((n) => n.main !== 'p')).map((p) => p.id).join(','));
+  verifie('pouce : progression rythme → six cordes → gamme → basses → mélodies → chansons',
+          pouce[0].id === 'pouce-rythme' && pouce[1].id === 'pouce-six-cordes' && pouce[2].id === 'pouce-gamme-sol' &&
+          pouce[pouce.length - 1].chanson && pouce.findIndex((p) => p.chanson) > pouce.findIndex((p) => /au pouce$/.test(p.titre) && !p.chanson));
+  const r = Morceaux.get('pouce-rythme');
+  verifie('rythme : ronde, blanches, noires, croches sur la 6e corde', r.notes.slice(0, 15).map((n) => n.duree).join() === '4,2,2,1,1,1,1,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5' && r.notes.slice(0, 15).every((n) => n.corde === 6));
+  const g = Morceaux.get('pouce-gamme-sol');
+  verifie('gamme de Sol : Sol2 → Sol3, Fa♯ à l’auriculaire case 4', g.notes[0].midi === 43 && g.notes[7].midi === 55 && g.notes[6].frette === 4 && g.notes[6].doigt === 4);
+  const ac = Morceaux.get('pouce-au-clair'), src = Morceaux.get('au-clair');
+  verifie('mélodie au pouce : même rythme, une octave plus bas', ac.notes.length === src.notes.length &&
+          ac.notes.every((n, i) => n.midi === src.notes[i].midi - 12 && n.temps === src.notes[i].temps && n.duree === src.notes[i].duree));
+  verifie('mélodie au pouce : bien jouée à cette hauteur', ac.notes.every((n) => Theorie.midiDeCase(n.corde, n.frette) === n.midi));
+  const em = Morceaux.get('pouce-em-am');
+  verifie('basses alternées : Em 6e puis 4e corde, Am 5e puis 4e', em.notes.slice(0, 4).map((n) => n.corde).join() === '6,4,6,4' &&
+          em.notes.filter((n) => n.accord === 'Am').slice(0, 2).map((n) => n.corde).join() === '5,4');
+  verifie('pom-tcha : basse puis balayé de l’accord au 2e temps', em.notes.some((n) => n.temps % 4 === 1 && n.accord === 'Em' && n.corde === 1));
+  const ch = Morceaux.get('pouce-ch-santiano');
+  verifie('chanson au pouce : même grille que l’originale, ni mélodie ni paroles', ch.chanson && /ni mélodie ni paroles/.test(ch.description) &&
+          ch.mains.gauche.map((a) => a.id).join() === Morceaux.get('ch-santiano').mains.gauche.map((a) => a.id).join());
+}
+
 console.log('\n— Programme progressif —');
 {
   const tous = Morceaux.tous();

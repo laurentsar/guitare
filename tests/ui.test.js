@@ -403,9 +403,10 @@ function verifie(nom, cond, detail) {
   w.AppGuitare.aller('morceaux');
   {
     const titres = [...$('listeMorceaux').querySelectorAll('h3')].map((x) => x.textContent);
-    const iP = titres.indexOf('👍 Pouce seul');
-    verifie('Morceaux : section « 👍 Pouce seul » juste après les accords', iP > 0 && /accords/.test(titres[iP - 1]), titres.join(' | '));
-    verifie('section pouce : rythme, gamme, mélodies et chansons listés', ['Le pouce en rythme', 'Gamme de Sol dans les basses', 'Au clair de la lune au pouce', 'Santiano au pouce']
+    const iP = titres.indexOf('👍 Pouce seul — cordes à vide');
+    verifie('Morceaux : section « Pouce seul — cordes à vide » juste après les accords', iP > 0 && /accords/.test(titres[iP - 1]), titres.join(' | '));
+    verifie('puis « Pouce + main gauche » juste après', titres[iP + 1] === '👍✋ Pouce + main gauche');
+    verifie('section pouce : rythme, pom-tcha, contretemps, petit morceau listés', ['Le pouce en rythme', 'Pom-tcha à vide', 'Le contretemps (reggae)', 'Petit morceau à vide']
       .every((t) => $('listeMorceaux').textContent.indexOf(t) !== -1));
     w.AppGuitare.ouvrirMorceau('pouce-g-c-d');
     verifie('fiche : main droite « pom-tcha » au pouce', /pom-tcha/i.test($('detailMorceau').textContent));

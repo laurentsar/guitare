@@ -700,12 +700,17 @@ console.log('\n— Chansons : grilles d’accords (v1.18) —');
 console.log('\n— Pouce seul —');
 {
   const pouce = Morceaux.tous().filter((p) => p.categorie === 'pouce');
-  verifie('section pouce : 20 morceaux', pouce.length === 20, pouce.length);
-  verifie('pouce seul : toutes les notes au pouce (p)', pouce.every((p) => p.notes.every((n) => n.main === 'p')),
-          pouce.filter((p) => p.notes.some((n) => n.main !== 'p')).map((p) => p.id).join(','));
-  verifie('pouce : progression rythme → six cordes → gamme → basses → mélodies → chansons',
-          pouce[0].id === 'pouce-rythme' && pouce[1].id === 'pouce-six-cordes' && pouce[2].id === 'pouce-gamme-sol' &&
-          pouce[pouce.length - 1].chanson && pouce.findIndex((p) => p.chanson) > pouce.findIndex((p) => /au pouce$/.test(p.titre) && !p.chanson));
+  const pouceMain = Morceaux.tous().filter((p) => p.categorie === 'pouce-main');
+  verifie('pouce seul : 14 morceaux, tous sur cordes à vide et au pouce', pouce.length === 14 &&
+          pouce.every((p) => p.notes.every((n) => n.frette === 0 && n.main === 'p' && !n.doigt)),
+          pouce.filter((p) => p.notes.some((n) => n.frette !== 0 || n.main !== 'p')).map((p) => p.id).join(',') || pouce.length);
+  verifie('pouce seul : des mesures entières, finies sur une ronde', pouce.every((p) => Tablature.duree_totale(p) % 4 === 0));
+  verifie('pouce seul : commence par le rythme, finit par un petit morceau', pouce[0].id === 'pouce-rythme' && pouce[pouce.length - 1].id === 'pouce-vide-morceau');
+  verifie('pom-tcha à vide : basse puis les trois aiguës ensemble', (() => { const n = Morceaux.get('pouce-vide-pomtcha').notes;
+    return n[0].corde === 6 && n[0].temps === 0 && n.filter((x) => x.temps === 1).map((x) => x.corde).join() === '3,2,1'; })());
+  verifie('contretemps : rien sur le 2e temps, balayé sur les « et »', (() => { const n = Morceaux.get('pouce-vide-reggae').notes;
+    return !n.some((x) => x.temps === 1) && n.some((x) => x.temps === 1.5 && x.corde === 1); })());
+  verifie('pouce + main gauche : 18 morceaux, à part, toujours au pouce', pouceMain.length === 18 && pouceMain.every((p) => p.notes.every((n) => n.main === 'p')));
   const r = Morceaux.get('pouce-rythme');
   verifie('rythme : ronde, blanches, noires, croches sur la 6e corde', r.notes.slice(0, 15).map((n) => n.duree).join() === '4,2,2,1,1,1,1,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5' && r.notes.slice(0, 15).every((n) => n.corde === 6));
   const g = Morceaux.get('pouce-gamme-sol');

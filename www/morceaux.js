@@ -51,7 +51,8 @@
   // En première position, un doigt par case : la case dit le doigt (1 index
   // … 4 auriculaire ; la 5e case du La aigu se prend aussi à l'auriculaire,
   // la main glisse d'une case). Avec `alterne`, la main droite alterne
-  // index-majeur, comme on l'apprend dès la première mélodie.
+  // index-majeur sur les cordes aiguës, comme on l'apprend dès la première
+  // mélodie ; les notes des cordes 4 à 6 vont au pouce.
   function melodie(suite, opts) {
     opts = opts || {};
     var t = 0, notes = [], k = 0;
@@ -63,7 +64,7 @@
       var n = { corde: pos.corde, frette: pos.frette, temps: t, duree: pas[1], midi: midi };
       if (pos.frette > 0) n.doigt = Math.min(4, pos.frette);
       if (opts.main) n.main = opts.main;
-      else if (opts.alterne) n.main = (k++ % 2) ? 'm' : 'i';
+      else if (opts.alterne) n.main = pos.corde >= 4 ? 'p' : ((k++ % 2) ? 'm' : 'i');   // basses au pouce
       notes.push(n);
       t += pas[1];
     });
@@ -522,6 +523,43 @@
     ])
   });
 
+  ajoute({
+    id: 'lettre-elise',
+    titre: 'Lettre à Élise (thème)',
+    sous_titre: 'Beethoven · domaine public · mélodie seule, une octave plus bas',
+    niveau: 3, tempo: 60, signature: [3, 8],
+    description: 'Le thème le plus célèbre du piano, ramené en première position (une octave plus bas, sans l’accompagnement). À 3/8 : un temps par mesure, en doubles croches. Le Ré♯ se prend à l’auriculaire (2e corde, case 4) ; les arpèges La-Do-Mi et Mi-Sol♯-Si descendent sur les cordes graves.',
+    notes: melodie([
+      ['-', 1], ['mi4', 0.25], ['re#4', 0.25],
+      ['mi4', 0.25], ['re#4', 0.25], ['mi4', 0.25], ['si3', 0.25], ['re4', 0.25], ['do4', 0.25],
+      ['la3', 0.5], ['-', 0.25], ['do3', 0.25], ['mi3', 0.25], ['la3', 0.25],
+      ['si3', 0.5], ['-', 0.25], ['mi3', 0.25], ['sol#3', 0.25], ['si3', 0.25],
+      ['do4', 0.5], ['-', 0.25], ['mi3', 0.25], ['mi4', 0.25], ['re#4', 0.25],
+      ['mi4', 0.25], ['re#4', 0.25], ['mi4', 0.25], ['si3', 0.25], ['re4', 0.25], ['do4', 0.25],
+      ['la3', 0.5], ['-', 0.25], ['do3', 0.25], ['mi3', 0.25], ['la3', 0.25],
+      ['si3', 0.5], ['-', 0.25], ['mi3', 0.25], ['do4', 0.25], ['si3', 0.25],
+      ['la3', 1.5]
+    ], { alterne: true })
+  });
+
+  ajoute({
+    id: 'petite-musique-nuit',
+    titre: 'Petite musique de nuit (thème)',
+    sous_titre: 'Mozart · Eine kleine Nachtmusik · domaine public',
+    niveau: 2, tempo: 84, signature: [4, 4],
+    description: 'L’ouverture la plus connue de Mozart, une octave plus bas, en première position. Sol-Ré-Sol-Ré, puis l’arpège qui monte. Les silences comptent autant que les notes : coupe net.',
+    notes: melodie([
+      ['sol3', 1], ['-', 0.5], ['re3', 0.5], ['sol3', 1], ['-', 0.5], ['re3', 0.5],
+      ['sol3', 0.5], ['re3', 0.5], ['sol3', 0.5], ['si3', 0.5], ['re4', 2],
+      ['do4', 1], ['-', 0.5], ['la3', 0.5], ['do4', 1], ['-', 0.5], ['la3', 0.5],
+      ['do4', 0.5], ['la3', 0.5], ['fa#3', 0.5], ['la3', 0.5], ['re3', 2],
+      ['sol3', 1], ['-', 0.5], ['re3', 0.5], ['sol3', 1], ['-', 0.5], ['re3', 0.5],
+      ['sol3', 0.5], ['re3', 0.5], ['sol3', 0.5], ['si3', 0.5], ['re4', 2],
+      ['do4', 1], ['-', 0.5], ['la3', 0.5], ['do4', 1], ['-', 0.5], ['la3', 0.5],
+      ['do4', 0.5], ['la3', 0.5], ['fa#3', 0.5], ['la3', 0.5], ['sol3', 2]
+    ], { alterne: true })
+  });
+
   // --- Études écrites pour l'app --------------------------------------------
   ajoute({
     id: 'etude-mim',
@@ -704,7 +742,10 @@
 
   function exerciceAccords(def) {
     var ids = [];
-    def.paliers.forEach(function (pl) { pl.grille.forEach(function (id) { if (ids.indexOf(id) === -1) ids.push(id); }); });
+    // 'F|G' : deux accords dans la mesure (voir accompagnement()).
+    def.paliers.forEach(function (pl) { pl.grille.forEach(function (g) {
+      String(g).split('|').forEach(function (id) { if (ids.indexOf(id) === -1) ids.push(id); });
+    }); });
     var accords = {};
     ids.forEach(function (id) { accords[id] = (def.accords && def.accords[id]) || defAccord(id); });
     var mesure = 1, sections = [];
@@ -835,6 +876,33 @@
       { motif: 'balaye', grille: ['Em', 'Em', 'Cmaj7', 'Cmaj7', 'G', 'G', 'D', 'D'] },
       { motif: 'balaye', grille: ['Em', 'Cmaj7', 'G', 'D'], tours: 2 },
       { motif: 'balaye-noires', grille: ['Em', 'Cmaj7', 'G', 'D'], tours: 2 }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-canon-pachelbel', titre: 'Canon de Pachelbel', sous_titre: 'Accords · la grille du Canon (domaine public)', niveau: 4, tempo: 60,
+    description: 'Huit accords qui tournent, la grille la plus reprise de la musique : D A Bm F♯m G D G A. Deux barrés (Si mineur, Fa♯ mineur) au milieu de six accords ouverts.',
+    paliers: [
+      { motif: 'balaye', grille: ['D', 'A', 'Bm', 'F#m', 'G', 'D', 'G', 'A'] },
+      { motif: 'arpege', grille: ['D', 'A', 'Bm', 'F#m', 'G', 'D', 'G', 'A'], tours: 2 }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-rising-sun', titre: 'House of the Rising Sun', sous_titre: 'Accords · chanson traditionnelle américaine', niveau: 2, tempo: 72,
+    description: 'La grille de la chanson traditionnelle (Am C D F, Am C E). Le Fa est remplacé par Fa maj7, sans barré. Sur le disque des Animals, l’arpège est à 6/8 ; ici à 4 temps.',
+    paliers: [
+      { motif: 'balaye', grille: ['Am', 'C', 'D', 'Fmaj7', 'Am', 'C', 'E', 'E'] },
+      { motif: 'arpege', grille: ['Am', 'C', 'D', 'Fmaj7', 'Am', 'C', 'E', 'E', 'Am', 'C', 'D', 'Fmaj7', 'Am', 'E', 'Am', 'E'] }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'acc-la-bamba', titre: 'La Bamba', sous_titre: 'Accords · chanson traditionnelle mexicaine', niveau: 1, tempo: 80,
+    description: 'Trois accords, deux par mesure : Do, puis Fa maj7 et Sol. Le changement Fa maj7 → Sol arrive vite : prépare-le pendant le Fa.',
+    paliers: [
+      { motif: 'balaye', grille: ['C', 'Fmaj7|G', 'C', 'Fmaj7|G'], tours: 2 },
+      { motif: 'basse-plaque', grille: ['C', 'Fmaj7|G', 'C', 'Fmaj7|G'], tours: 2 }
     ]
   });
 
@@ -977,7 +1045,7 @@
     ajoute({
       id: c.id, titre: c.titre,
       sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
-      niveau: c.groupe === 'hit' ? 7 : 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      niveau: c.groupe === 'hit' ? 7 : (c.groupe === 'international' ? 8 : 6), tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
       chanson: true,
       description: 'Grille d’accords de la chanson, accompagnement écrit pour cette app (ni mélodie ni paroles : elles sont sous droits). ' +
         (c.capo ? 'Capodastre case ' + c.capo + ' pour retrouver la tonalité du disque : les accords se jouent comme écrits, le capo fait le reste. ' : '') +

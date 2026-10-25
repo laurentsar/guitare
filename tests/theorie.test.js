@@ -282,15 +282,16 @@ console.log('\n— Doigtés de tous les morceaux —');
 console.log('\n— Travailler les accords —');
 {
   const ex = Morceaux.tous().filter((p) => p.categorie === 'accords');
-  verifie('11 exercices d’accords', ex.length === 11, ex.map((p) => p.id).join(','));
+  verifie('14 exercices d’accords', ex.length === 14, ex.map((p) => p.id).join(','));
   verifie('chaque note d’un exercice appartient à l’accord en cours (même case que la bibliothèque)',
           ex.every((p) => p.notes.every((n) => Accords.get(n.accord).frettes[n.corde - 1] === n.frette)));
   verifie('jamais une corde étouffée jouée', ex.every((p) => p.notes.every((n) => Accords.get(n.accord).frettes[n.corde - 1] >= 0)));
   verifie('doigts de la main gauche = ceux du diagramme de l’accord',
           ex.every((p) => p.notes.every((n) => n.frette === 0 || n.doigt === Accords.get(n.accord).doigts[n.corde - 1])));
-  verifie('un accord par mesure (4/4) : toutes les notes d’une mesure viennent du même accord', ex.every((p) => {
+  // Une mesure porte un accord, ou deux (« F|G », 2 temps chacun).
+  verifie('un accord par demi-mesure : les notes de chaque moitié de mesure viennent du même accord', ex.every((p) => {
     const par = {};
-    p.notes.forEach((n) => { const m = Math.floor(n.temps / 4); (par[m] = par[m] || new Set()).add(n.accord); });
+    p.notes.forEach((n) => { const m = Math.floor(n.temps / 2); (par[m] = par[m] || new Set()).add(n.accord); });
     return Object.values(par).every((x) => x.size === 1);
   }));
   verifie('balayé : toutes les cordes jouables de l’accord, au pouce', (() => {
@@ -336,6 +337,32 @@ console.log('\n— Tablature : main droite lisible —');
   verifie('accord plaqué i-m-a : une seule étiquette « ima »', etiquettes.includes('ima'));
   const b = Morceaux.get('acc-em-am'), sb = Tablature.svg(b, Tablature.miseEnPage(b));
   verifie('accord balayé au pouce : un seul « p »', !(sb.match(/class="tab-main"[^>]*>pp/)) && /class="tab-main"[^>]*>p</.test(sb));
+}
+
+console.log('\n— Nouvelles tablatures (v1.21) —');
+{
+  const nom = (p) => p.notes.map((n) => Theorie.nom(n.midi));
+  const elise = Morceaux.get('lettre-elise');
+  verifie('Lettre à Élise : Mi Ré♯ Mi Ré♯ Mi Si Ré Do La', nom(elise).slice(0, 9).join(' ') === 'Mi4 Ré♯4 Mi4 Ré♯4 Mi4 Si3 Ré4 Do4 La3', nom(elise).slice(0, 9).join(' '));
+  verifie('Lettre à Élise : levée au 3e temps, 9 mesures de 3/8 complètes',
+          elise.notes[0].temps === 1 && Tablature.duree_totale(elise) === 13.5);
+  verifie('Lettre à Élise : Ré♯ à l’auriculaire, 2e corde case 4', elise.notes.filter((n) => n.midi === 63).every((n) => n.corde === 2 && n.frette === 4 && n.doigt === 4));
+  verifie('mélodies : les basses (cordes 4 à 6) au pouce', ['lettre-elise', 'petite-musique-nuit'].every((id) => Morceaux.get(id).notes.every((n) => n.corde < 4 || n.main === 'p')));
+  const nuit = Morceaux.get('petite-musique-nuit');
+  verifie('Petite musique de nuit : Sol Ré Sol Ré Sol Ré Sol Si Ré', nom(nuit).slice(0, 9).join(' ') === 'Sol3 Ré3 Sol3 Ré3 Sol3 Ré3 Sol3 Si3 Ré4', nom(nuit).slice(0, 9).join(' '));
+  verifie('nouvelles mélodies : première position, mesures complètes', ['lettre-elise', 'petite-musique-nuit'].every((id) => {
+    const p = Morceaux.get(id), m = Tablature.noiresParMesure(p);
+    return p.notes.every((n) => n.frette <= 5) && Math.abs(Tablature.duree_totale(p) / m - Math.round(Tablature.duree_totale(p) / m)) < 1e-9;
+  }));
+  const inter = Morceaux.tous().filter((p) => p.chanson && p.niveau === 8);
+  verifie('12 chansons internationales (niveau 8, grilles d’accords seules)', inter.length === 12 && inter.every((p) => /grille d’accords/.test(p.sous_titre)), inter.length);
+  verifie('chansons internationales : chaque note appartient à son accord, doigts des deux mains',
+          inter.every((p) => p.notes.every((n) => n.accord && /^[pima]$/.test(n.main) && (n.frette === 0 || n.doigt >= 1))));
+  verifie('Canon de Pachelbel : D A Bm F♯m G D G A', Morceaux.get('acc-canon-pachelbel').mains.gauche.map((a) => a.id).join(' ') === 'D A Bm F#m G');
+  verifie('La Bamba : deux accords dans la mesure (Fa maj7 | Sol)', (() => {
+    const n = Morceaux.get('acc-la-bamba').notes.filter((x) => x.temps >= 4 && x.temps < 8);
+    return n.some((x) => x.accord === 'Fmaj7' && x.temps < 6) && n.some((x) => x.accord === 'G' && x.temps >= 6);
+  })());
 }
 
 console.log('\n— Tablature —');

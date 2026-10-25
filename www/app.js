@@ -2252,6 +2252,22 @@
     $('aproposVersion').textContent = 'Version ' + (window.APP_VERSION || '?') +
       ' · ' + Lecons.tous().length + ' leçons · ' + Accords.tous().length + ' accords · ' + Morceaux.tous().length + ' morceaux · ' + Gammes.TYPES.length + ' gammes.';
     if (window.AutoBackup && AutoBackup.mount) AutoBackup.mount($('carteBackup'));
+    $('majVersion').textContent = 'v' + (window.APP_VERSION || '?');
+  }
+
+  /* « Vérifier les mises à jour » : update-check.js fait le travail (et
+   * affiche son bandeau) ; ici seulement le compte rendu. */
+  function verifierMaj() {
+    var b = $('btnVerifierMaj'), etat = $('majEtat');
+    var fini = function () { b.disabled = false; b.textContent = 'Vérifier les mises à jour'; };
+    if (typeof window.checkAppUpdate !== 'function') { etat.textContent = '⚠ Module de mise à jour absent'; return; }
+    b.disabled = true; b.textContent = '⏳ Vérification…'; etat.textContent = '';
+    window.checkAppUpdate(true).then(function (res) {
+      fini();
+      if (!res) etat.textContent = '⚠ Impossible de vérifier (pas de réseau ?)';
+      else if (!res.newer) etat.textContent = '✓ Déjà à jour (v' + window.APP_VERSION + ')';
+      else etat.textContent = '🔄 Version v' + res.latest + ' disponible — voir le bandeau en bas';
+    }).catch(function () { fini(); etat.textContent = '⚠ Erreur réseau'; });
   }
 
   /* Lien profond « ?morceau=<id> » (ou « #tab=<json> » pour une tablature
@@ -2357,6 +2373,7 @@
     };
 
     // Réglages
+    $('btnVerifierMaj').onclick = verifierMaj;
     $('regVolume').oninput = function () { Audio5.volume(this.value / 100); Store.reglage('volume', this.value / 100); };
     $('regTimbre').onchange = function () { Store.reglage('timbre', this.value); };
     $('regInstrument').onchange = function () {

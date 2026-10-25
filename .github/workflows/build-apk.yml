@@ -37,3 +37,22 @@ jobs:
         ci/set_version.py
         ci/set_icons.py
     secrets: inherit
+
+  # Nouveautés de la release : les points du message de fusion. Le bandeau
+  # de mise à jour (update-check.js) les affiche avant d'installer.
+  notes:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Nouveautés dans la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(node -p "require('./www/version.json').version")
+          git log -1 --format=%B | grep -E '^\s*[-*] ' | grep -viE 'co-authored|claude-session' | head -8 > notes.md || true
+          [ -s notes.md ] || git log -1 --format=%s > notes.md
+          cat notes.md
+          gh release edit "v$V" --notes-file notes.md

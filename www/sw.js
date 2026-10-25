@@ -2,10 +2,10 @@
  *
  * Tout tient dans ces fichiers (aucune ressource distante, aucun son
  * téléchargé) : on met tout en cache au premier chargement, et on sert depuis
- * le cache en priorité. Le nom du cache porte la version — le changer est ce
- * qui déclenche la mise à jour chez l'utilisateur.
+ * le réseau en priorité, le cache dès qu'il n'y a plus de réseau. Le nom du
+ * cache porte la version : l'ancien est effacé à l'activation.
  */
-const CACHE = 'guitare-v1.23';
+const CACHE = 'guitare-v1.24';
 const FICHIERS = [
   './', './index.html', './styles.css', './app.js',
   './theorie.js', './audio.js', './accords.js', './illustrations.js', './tablature.js', './portee.js', './manche.js', './gammes.js', './vr.js', './repertoire.js', './chansons.js', './morceaux.js', './entrainement.js', './programme.js',
@@ -26,15 +26,20 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const local = new URL(e.request.url).origin === location.origin;
+  // Nos fichiers : réseau d'abord (comme Recettes) — une mise à jour publiée
+  // est visible au prochain chargement, sans attendre un nouveau service
+  // worker ; le cache prend le relais hors ligne. Le reste (SDK Cast…) passe
+  // tel quel, sans cache : un SDK périmé casserait la diffusion.
+  if (!local) return;
   e.respondWith(
-    caches.match(e.request).then((r) => r || fetch(e.request).then((rep) => {
-      // On ne met en cache que nos propres fichiers : le SDK Cast de Google
-      // n'a rien à faire ici, et son cache périmé casserait la diffusion.
-      if (rep.ok && new URL(e.request.url).origin === location.origin) {
+    fetch(e.request).then((rep) => {
+      if (rep.ok && rep.type === 'basic') {
         const copie = rep.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copie));
       }
       return rep;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(e.request).then((r) =>
+      r || (e.request.mode === 'navigate' ? caches.match('./index.html') : Response.error())))
   );
 });

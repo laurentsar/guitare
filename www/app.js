@@ -60,6 +60,7 @@
     if (nom === 'accords') rendreAccords();
     if (nom === 'morceaux') rendreMorceaux();
     if (nom === 'entrainement') rendreEntrainement();
+    if (nom === 'programme') rendreProgramme();
     if (nom === 'oreille') rendreOreilleAccueil();
     if (nom === 'reglages') rendreReglages();
     if (nom === 'gammes') rendreGammes();
@@ -186,6 +187,13 @@
       bE.onclick = function () { aller('entrainement'); };
       carte.appendChild(bE);
     }
+    if (window.Programme) {
+      var sp = programmeDuJour();
+      var bP = el('button', 'btn large', '🪜 Programme du jour : ' + sp.items.filter(faitAujourdhui).length + ' / ' + sp.items.length +
+        ' · palier ' + sp.palier.num);
+      bP.onclick = function () { aller('programme'); };
+      carte.appendChild(bP);
+    }
 
     var obj = Store.reglages().objectifMinutes;
     var faites = Store.minutesDuJour();
@@ -205,6 +213,181 @@
     // Indexé sur la date : le même conseil toute la journée, un autre demain.
     var jour = Math.floor(Date.now() / 86400000);
     conseil.appendChild(el('p', null, CONSEILS[jour % CONSEILS.length]));
+  }
+
+  // ------------------------------------------------------------- programme
+  /* Paliers, répétition espacée et favoris : la logique est dans
+   * programme.js, ici seulement l'écran et les boutons de ressenti. */
+  var RESSENTIS = [['dur', '😣 Dur'], ['moyen', '🙂 Ça va'], ['facile', '😎 Facile']];
+  var RAISONS = { echauffement: '🔥 Échauffement', revision: '🔁 À revoir', nouveau: '✨ Nouveau',
+                  favori: '♥ Nouveau favori', defi: '🎯 Défi ♥ (palier suivant)' };
+
+  function debutJour() { var d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  function faitAujourdhui(it) { var e = Store.suivi()[it.id]; return !!e && e.t >= debutJour(); }
+
+  function etatSuivi(id) {
+    var e = Store.suivi()[id];
+    if (!e) return 'pas commencé';
+    if (e.b >= Programme.MAITRISE) return '★ maîtrisé';
+    var j = Programme.joursAvant(e, Date.now());
+    var txt = e.b >= Programme.ACQUIS ? '● acquis' : '◔ en cours';
+    return txt + ' · ' + (j ? 'à revoir dans ' + j + ' j' : 'à revoir');
+  }
+
+  // Figée pour la journée : la liste ne doit pas changer à chaque note. Un
+  // nouveau ♥ la refait (c'est voulu : il passe devant), en gardant ce qui
+  // est déjà joué aujourd'hui.
+  function programmeDuJour(refaire) {
+    var tous = Morceaux.tous();
+    var aimes = Store.aimes();
+    var calc = Programme.seance(tous, Store.suivi(), aimes, Date.now());
+    var r = Store.seanceProgramme();
+    var valide = r && r.jour === Store.jourCourant() && r.items.every(function (it) { return Morceaux.get(it.id); });
+    if (!refaire && valide && r.aimes === aimes.join(',')) {
+      calc.items = r.items;
+      return calc;
+    }
+    if (!refaire && valide) {
+      var faits = r.items.filter(function (it) {
+        return faitAujourdhui(it) && !calc.items.some(function (x) { return x.id === it.id; });
+      });
+      calc.items = faits.concat(calc.items);
+    }
+    Store.sauverSeanceProgramme({ jour: Store.jourCourant(), items: calc.items, aimes: aimes.join(',') });
+    return calc;
+  }
+
+  function noterRessenti(id, note) {
+    Store.noterSuivi(id, Programme.noter(Store.suivi()[id], note, Date.now()));
+  }
+
+  function boutonsRessenti(id, apres) {
+    return RESSENTIS.map(function (r) {
+      var b = el('button', 'btn', r[1]);
+      b.onclick = function () { noterRessenti(id, r[0]); if (apres) apres(r[0]); };
+      return b;
+    });
+  }
+
+  /* Sous le titre d'un morceau : ♥ et « comment c'était ? ». */
+  function blocRessenti(id) {
+    var d = el('div', 'ressenti');
+    function rendre() {
+      vide(d);
+      var oui = Store.aime(id);
+      var bAime = el('button', 'btn aime' + (oui ? ' actif' : ''), oui ? '♥ J’aime' : '♡ J’aime');
+      bAime.setAttribute('aria-pressed', oui ? 'true' : 'false');
+      bAime.onclick = function () { Store.aimer(id, !Store.aime(id)); rendre(); };
+      d.appendChild(bAime);
+      if (!Morceaux.get(id)) return;
+      d.appendChild(el('span', 'ressenti-etat', 'Après l’avoir joué : '));
+      boutonsRessenti(id, function () { rendre(); }).forEach(function (b) { d.appendChild(b); });
+      d.appendChild(el('small', 'ressenti-etat', etatSuivi(id)));
+    }
+    rendre();
+    return d;
+  }
+
+  function lancerProgramme(items) {
+    var ids = [], pcts = [], etiquettes = [];
+    items.forEach(function (it) {
+      it.passages.forEach(function (pct, k) {
+        ids.push(it.id); pcts.push(pct);
+        etiquettes.push('passage ' + (k + 1) + '/' + it.passages.length + ' à ' + pct + ' %');
+      });
+    });
+    if (ids.length) lancerListe({ nom: 'Programme du jour', morceaux: ids, pcts: pcts, etiquettes: etiquettes, programme: true });
+  }
+
+  function rendreProgramme(refaire) {
+    var h = vide($('pageProgramme'));
+    var sp = programmeDuJour(refaire);
+    var aimes = Store.aimes();
+    var suivi = Store.suivi();
+
+    var tete = el('div', 'carte accent');
+    tete.appendChild(el('h2', null, '🪜 Séance du jour'));
+    tete.appendChild(el('p', 'aide', 'Palier ' + sp.palier.num + ' — ' + sp.palier.nom + ' : ' + sp.palier.but));
+    var restants = sp.items.filter(function (it) { return !faitAujourdhui(it); });
+    sp.items.forEach(function (it) {
+      var p = Morceaux.get(it.id);
+      var li = el('div', 'liste-ligne' + (faitAujourdhui(it) ? ' fait' : ''));
+      var t = el('span');
+      t.appendChild(el('b', null, (faitAujourdhui(it) ? '✓ ' : '') + p.titre));
+      t.appendChild(el('small', null, RAISONS[it.raison] + ' · ' + it.passages.length + ' passage' + (it.passages.length > 1 ? 's' : '') +
+        ' : ' + it.passages.join(' → ') + ' %'));
+      li.appendChild(t);
+      var b = el('button', 'btn', '▶');
+      b.setAttribute('aria-label', 'Ouvrir ' + p.titre);
+      b.onclick = function () { lancerProgramme([it]); };
+      li.appendChild(b);
+      tete.appendChild(li);
+    });
+    if (!sp.items.length) tete.appendChild(el('p', 'aide', 'Rien à revoir aujourd’hui : tout est consolidé. Reviens demain, ou ouvre un morceau du palier ci-dessous.'));
+    var act = el('div', 'actions');
+    if (restants.length) {
+      var bGo = el('button', 'btn primaire', '▶ Lancer la séance (' + restants.length + ' morceau' + (restants.length > 1 ? 'x' : '') + ')');
+      bGo.onclick = function () { lancerProgramme(restants); };
+      act.appendChild(bGo);
+    } else if (sp.items.length) {
+      act.appendChild(el('b', null, '🎉 Séance terminée !'));
+    }
+    var bRe = el('button', 'btn', '🔄 Nouvelle séance');
+    bRe.onclick = function () { rendreProgramme(true); };
+    act.appendChild(bRe);
+    tete.appendChild(act);
+    tete.appendChild(el('p', 'aide', 'Chaque morceau se joue plusieurs fois, du plus lent au tempo normal. À la fin, dis comment c’était : « dur » le ramène demain, « facile » l’espace de plus en plus (1, 2, 4, 8, 16 jours). Tes ♥ passent en premier.'));
+    h.appendChild(tete);
+
+    var palierDe = {};
+    sp.paliers.forEach(function (pal) { pal.ids.forEach(function (id) { palierDe[id] = pal; }); });
+
+    var fav = el('div', 'carte');
+    fav.appendChild(el('h2', null, '♥ Mes favoris'));
+    var favs = aimes.filter(function (id) { return Morceaux.get(id); });
+    if (!favs.length) fav.appendChild(el('p', 'aide', 'Touche « ♡ J’aime » sous le titre d’un morceau : il passera en priorité dans tes séances, et tu verras ici le chemin pour y arriver.'));
+    favs.forEach(function (id) {
+      var pal = palierDe[id];
+      var b = el('button', 'ligne-morceau');
+      var t = el('span');
+      t.appendChild(el('b', null, '♥ ' + Morceaux.get(id).titre));
+      var precedent = sp.paliers[pal.num - 2];
+      t.appendChild(el('small', null, 'Palier ' + pal.num + ' · ' + (pal.ouvert ? etatSuivi(id)
+        : '🔒 encore ' + chemin(sp.paliers, pal.num) + ' morceau(x) à acquérir avant d’y être' + (precedent && !precedent.ouvert ? '' : ' — tu peux déjà l’essayer lentement'))));
+      b.appendChild(t);
+      b.onclick = function () { ouvrirMorceau(id); };
+      fav.appendChild(b);
+    });
+    h.appendChild(fav);
+
+    sp.paliers.forEach(function (pal) {
+      var d = el('details', 'carte palier' + (pal.ouvert ? '' : ' ferme'));
+      d.open = pal.num === sp.palier.num;
+      d.appendChild(el('summary', null, (pal.ouvert ? '' : '🔒 ') + 'Palier ' + pal.num + ' · ' + pal.nom +
+        ' — ' + pal.acquis + ' / ' + pal.ids.length + ' acquis'));
+      d.appendChild(el('p', 'aide', pal.but + (pal.ouvert ? ' Palier suivant : ' + pal.seuil + ' morceaux acquis.' : '')));
+      pal.ids.forEach(function (id) {
+        var p = Morceaux.get(id), e = suivi[id];
+        var b = el('button', 'ligne-morceau');
+        var t = el('span');
+        var marque = !e ? '○ ' : e.b >= Programme.MAITRISE ? '★ ' : e.b >= Programme.ACQUIS ? '● ' : '◔ ';
+        t.appendChild(el('b', null, marque + (aimes.indexOf(id) !== -1 ? '♥ ' : '') + p.titre));
+        t.appendChild(el('small', null, p.sous_titre || ''));
+        b.appendChild(t);
+        b.appendChild(el('span', 'niveau', e ? etatSuivi(id).split(' · ')[0] : 'à découvrir'));
+        b.onclick = function () { ouvrirMorceau(id); };
+        d.appendChild(b);
+      });
+      h.appendChild(d);
+    });
+    h.appendChild(el('p', 'aide', '○ pas commencé · ◔ en cours · ● acquis · ★ maîtrisé. Les paliers fermés restent ouverts à la curiosité : c’est seulement le programme qui attend.'));
+  }
+
+  // Morceaux encore à acquérir dans les paliers qui précèdent `num`.
+  function chemin(pals, num) {
+    var n = 0;
+    for (var k = 0; k < num - 1; k++) n += Math.max(0, pals[k].seuil - pals[k].acquis);
+    return n;
   }
 
   // ---------------------------------------------------------- entraînement
@@ -644,6 +827,9 @@
 
   function rendreMorceaux() {
     var h = vide($('listeMorceaux'));
+    var bProg = el('button', 'btn primaire large', '🪜 Mon programme progressif');
+    bProg.onclick = function () { aller('programme'); };
+    h.appendChild(bProg);
     h.appendChild(blocEnchainer());
     var niveaux = {}, exercices = [];
     Morceaux.tous().forEach(function (p) {
@@ -653,12 +839,18 @@
     function ligne(p, droite) {
       var b = el('button', 'ligne-morceau');
       var t = el('span');
-      t.appendChild(el('b', null, p.titre));
+      t.appendChild(el('b', null, (aimes.indexOf(p.id) !== -1 ? '♥ ' : '') + p.titre));
       t.appendChild(el('small', null, p.sous_titre));
       b.appendChild(t);
       b.appendChild(el('span', 'niveau', droite));
       b.onclick = function () { ouvrirMorceau(p.id); };
       return b;
+    }
+    var aimes = Store.aimes();
+    var favoris = aimes.map(trouverMorceau).filter(Boolean);
+    if (favoris.length) {
+      h.appendChild(el('h3', null, '♥ Mes favoris'));
+      favoris.forEach(function (p) { h.appendChild(ligne(p, etatSuivi(p.id))); });
     }
     // Les exercices d'accords d'abord : c'est par eux qu'on accompagne une
     // chanson, bien avant de lire une pièce du répertoire.
@@ -669,7 +861,7 @@
         .forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
     }
     var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
-                         6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)' };
+                         6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)', 9: 'Rock et reggae — Offspring, Nirvana, Cranberries, Police, Marley' };
     Object.keys(niveaux).sort().forEach(function (n) {
       h.appendChild(el('h3', null, NOMS_NIVEAUX[n] || 'Niveau ' + n));
       niveaux[n].forEach(function (p) { h.appendChild(ligne(p, '♩ = ' + p.tempo)); });
@@ -1052,9 +1244,11 @@
   }
 
   function lancerListe(l) {
-    var ids = (l.morceaux || []).filter(trouverMorceau);
+    // Les tempos par passage (programme) restent alignés : on ne filtre pas.
+    var ids = l.pcts ? l.morceaux : (l.morceaux || []).filter(trouverMorceau);
     if (!ids.length) return;
-    session = { nom: l.nom, ids: ids, i: 0, pct: l.pct || null, boucle: !!l.boucle };
+    session = { nom: l.nom, ids: ids, i: 0, pct: l.pct || null, boucle: !!l.boucle,
+                pcts: l.pcts || null, etiquettes: l.etiquettes || null, programme: !!l.programme };
     // Geste de l'utilisateur : c'est le moment de passer l'APPLI en plein
     // écran (document entier) — la page d'un morceau est reconstruite à
     // chaque titre, un plein écran sur un élément sauterait à chaque fois.
@@ -1094,7 +1288,8 @@
     var etat = {
       // Chansons : le capo qui redonne la tonalité du disque est réglé d'office.
       tempo: p.tempo, capo: p.capo || 0, de: 1, a: nbMesures,
-      boucle: false, entraineur: false, pct: enListe && session.pct ? session.pct : 100,
+      boucle: false, entraineur: false,
+      pct: enListe && session.pcts ? session.pcts[session.i] : enListe && session.pct ? session.pct : 100,
       decompte: r.decompte, clic: r.clicLecture, muet: false, manche: true
     };
 
@@ -1104,6 +1299,7 @@
       bandeau = el('div', 'bandeau-liste');
       var suivantId = session.ids[session.i + 1] || (session.boucle ? session.ids[0] : null);
       bandeau.appendChild(el('span', 'bl-txt', '🎶 ' + session.nom + ' — ' + (session.i + 1) + ' / ' + session.ids.length +
+        (session.etiquettes ? ' · ' + session.etiquettes[session.i] : '') +
         (suivantId ? ' · ensuite : ' + titreDe(suivantId) : ' · dernier morceau')));
       var bPrec = el('button', 'btn', '⏮'), bSuiv = el('button', 'btn', '⏭'), bFin = el('button', 'btn', '⏹');
       bPrec.setAttribute('aria-label', 'Morceau précédent'); bSuiv.setAttribute('aria-label', 'Morceau suivant');
@@ -1116,6 +1312,7 @@
     }
     h.appendChild(el('h2', null, p.titre));
     h.appendChild(el('p', 'aide', p.sous_titre));
+    h.appendChild(blocRessenti(p.id));
     if (p.description) h.appendChild(el('p', null, p.description));
     // Aides débutant (position des mains, pas à pas, « Que font mes mains ? »,
     // lecture de la tablature) : derrière un réglage, éteint par défaut —
@@ -1299,8 +1496,18 @@
     });
 
     /* Fin d'un morceau de la liste : décompte de 5 s puis le suivant. */
-    function suite(immediat) {
+    function suite(immediat, note) {
       if (!session) return;
+      // Programme : à la fin du dernier passage d'un morceau, on demande
+      // comment c'était — c'est ce qui décide quand on le reverra.
+      if (!immediat && !note && session.programme && session.ids[session.i + 1] !== session.ids[session.i]) {
+        var idFini = session.ids[session.i];
+        panneauSuite.hidden = false;
+        vide(panneauSuite);
+        panneauSuite.appendChild(el('b', null, 'Comment s’est passé « ' + titreDe(idFini) + ' » ?'));
+        boutonsRessenti(idFini, function () { suite(false, true); }).forEach(function (b) { panneauSuite.appendChild(b); });
+        return;
+      }
       var n = session.i + 1;
       if (n >= session.ids.length) {
         if (!session.boucle) {

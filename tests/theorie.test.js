@@ -55,10 +55,10 @@ ctx.AudioContext = function () {
   this.resume = () => {};
 };
 
-['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js']
+['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
-const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes } = ctx;
+const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes, Programme } = ctx;
 
 let ok = 0, ko = 0;
 function verifie(nom, cond, detail) {
@@ -140,6 +140,9 @@ Morceaux.tous().forEach(p => {
   // cases ; les autres morceaux écrits pour l'app, en première position.
   if (p.position) verifie(p.id + ' : cordes à vide ou cases ' + p.position + ' à ' + (p.position + 3),
           p.notes.every(n => n.frette === 0 || (n.frette >= p.position && n.frette <= p.position + 3)));
+  // Chansons : chaque note suit la forme de son accord (vérifié plus bas) ;
+  // les power chords du rock montent jusqu'à la case 6.
+  else if (p.chanson) verifie(p.id + ' : formes d’accords, rien au-delà de la case 7', p.notes.every(n => n.frette <= 7));
   else if (!p.source) verifie(p.id + ' : rien au-delà de la 5e case (première position)',
           p.notes.every(n => n.frette >= 0 && n.frette <= 5),
           p.notes.filter(n => n.frette > 5).map(n => n.frette).join(','));
@@ -363,6 +366,24 @@ console.log('\n— Nouvelles tablatures (v1.21) —');
     const n = Morceaux.get('acc-la-bamba').notes.filter((x) => x.temps >= 4 && x.temps < 8);
     return n.some((x) => x.accord === 'Fmaj7' && x.temps < 6) && n.some((x) => x.accord === 'G' && x.temps >= 6);
   })());
+}
+
+console.log('\n— Rock et reggae —');
+{
+  const rk = Morceaux.tous().filter((p) => p.chanson && p.niveau === 9);
+  const par = (a) => rk.filter((p) => new RegExp(a).test(p.sous_titre)).length;
+  verifie('12 chansons rock et reggae : Offspring 2, Nirvana 3, Cranberries 2, Police 2, Marley 3',
+          rk.length === 12 && par('Offspring') === 2 && par('Nirvana') === 3 && par('Cranberries') === 2 && par('Police') === 2 && par('Marley') === 3, rk.length);
+  const ts = Morceaux.get('ch-teen-spirit');
+  verifie('Teen Spirit : F5 Bb5 Ab5 Db5, deux par mesure, power chords sur 3 cordes',
+          ts.notes.filter((n) => n.temps === 0).length === 3 && ['F5', 'Bb5', 'Ab5', 'Db5'].every((id) => ts.mains.gauche.some((a) => a.id === id)) &&
+          ts.notes.some((n) => n.accord === 'Bb5' && n.temps === 2));
+  verifie('motif rock : le pouce balaie en croches, toujours vers le bas', Morceaux.get('ch-self-esteem').notes.every((n) => n.main === 'p') &&
+          new Set(Morceaux.get('ch-self-esteem').notes.map((n) => n.temps)).size === Tablature.duree_totale(Morceaux.get('ch-self-esteem')) * 2);
+  verifie('power chord : la basse est la fondamentale, une case plus haut que l’index… (F5 : index case 1, 6e corde)',
+          (() => { const f = ts.mains.gauche.find((a) => a.id === 'F5'); return f.basse === 6 && f.frettes[5] === 1 && f.doigts[5] === 1; })());
+  verifie('capo : Kids Aren’t Alright case 1, Every Breath case 1, Is This Love case 2',
+          Morceaux.get('ch-kids-arent-alright').capo === 1 && Morceaux.get('ch-every-breath').capo === 1 && Morceaux.get('ch-is-this-love').capo === 2);
 }
 
 console.log('\n— Tablature —');
@@ -637,9 +658,9 @@ console.log('\n— Chansons : grilles d’accords (v1.18) —');
   verifie('deux groupes : classiques (6) et hits récents (7)', ch.some((p) => p.niveau === 6) && ch.some((p) => p.niveau === 7));
   // Chaque accord joué doit sonner EXACTEMENT les notes de son nom.
   const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-  const INTERVALLES = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], m7b5: [0, 3, 6, 10] };
+  const INTERVALLES = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], m7b5: [0, 3, 6, 10], '5': [0, 7] };
   function attendu(id) {
-    const m = /^([A-G])(#|b)?(m7b5|maj7|m7|m|7)?$/.exec(id);
+    const m = /^([A-G])(#|b)?(m7b5|maj7|m7|m|7|5)?$/.exec(id);
     if (!m) return null;
     const r = (PC[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + 12) % 12;
     return { racine: r, notes: new Set(INTERVALLES[m[3] || ''].map((i) => (r + i) % 12)) };
@@ -668,6 +689,63 @@ console.log('\n— Chansons : grilles d’accords (v1.18) —');
   verifie('capo noté sur le morceau (Mistral gagnant : case 3)', Morceaux.get('ch-mistral-gagnant').capo === 3 && /capo case 3/.test(Morceaux.get('ch-mistral-gagnant').sous_titre));
   verifie('ni paroles ni mélodie : la description le dit', ch.every((p) => /ni mélodie ni paroles/.test(p.description)));
   verifie('chaque chanson se dessine en tablature', ch.every((p) => (Tablature.svg(p, Tablature.miseEnPage(p)).match(/tab-note/g) || []).length === p.notes.length));
+}
+
+console.log('\n— Programme progressif —');
+{
+  const tous = Morceaux.tous();
+  const pals = Programme.paliers(tous);
+  const ranges = pals.reduce((t, p) => t.concat(p.ids), []);
+  verifie('chaque morceau est dans exactement un palier', ranges.length === tous.length && new Set(ranges).size === tous.length);
+  verifie('7 paliers, aucun vide', pals.length === 7 && pals.every((p) => p.ids.length > 0));
+  verifie('palier 1 : pas de chanson ni de barré', pals[0].ids.every((id) => !Morceaux.get(id).chanson));
+  const barre = (id) => (Morceaux.get(id).mains || { gauche: [] }).gauche.some((a) => a.barre);
+  verifie('les chansons avec barré sont au palier 5', tous.filter((p) => p.chanson && barre(p.id)).every((p) => Programme.palierDe(p) === 4));
+  verifie('les trois accords de Santiano : palier 2', Programme.palierDe(Morceaux.get('ch-santiano')) === 1);
+  verifie('les études (niveau 5) au dernier palier', tous.filter((p) => p.niveau === 5 && !p.categorie).every((p) => Programme.palierDe(p) === 6));
+  verifie('dans un palier, la technique avant la musique', Morceaux.get(pals[0].ids[0]).categorie === 'entrainement');
+
+  const T = Date.UTC(2026, 9, 1, 12);
+  const J = 86400000;
+  let e = Programme.noter(null, 'moyen', T);
+  verifie('« ça va » sur un nouveau : boîte 1, revu le lendemain', e.b === 1 && !Programme.aRevoir(e, T + 0.5 * J) && Programme.aRevoir(e, T + J));
+  e = Programme.noter(e, 'facile', T);
+  verifie('« facile » : +2 boîtes, revu dans 4 jours', e.b === 3 && Programme.acquis(e) && Programme.joursAvant(e, T) === 4);
+  e = Programme.noter(Programme.noter(e, 'facile', T), 'facile', T);
+  verifie('boîte plafonnée à 5 (16 jours)', e.b === 5 && Programme.joursAvant(e, T) === 16);
+  verifie('« dur » : retour en boîte 1', Programme.noter(e, 'dur', T).b === 1);
+  verifie('passages : du lent au tempo normal', Programme.passages(null).join() === '60,80,100' && Programme.passages({ b: 4 }).join() === '100');
+
+  const vierge = Programme.seance(tous, {}, [], T);
+  verifie('séance vierge : palier 1, échauffement + 2 nouveautés', vierge.palier.num === 1 && vierge.items.length === 3 &&
+          vierge.items[0].raison === 'echauffement' && vierge.items.slice(1).every((x) => x.raison === 'nouveau'));
+  verifie('séance vierge : rien hors du palier 1', vierge.items.every((x) => pals[0].ids.includes(x.id)));
+
+  // 4 morceaux acquis au palier 1 → le palier 2 s'ouvre.
+  const suivi = {};
+  pals[0].ids.slice(0, 4).forEach((id) => { suivi[id] = { b: 3, t: T, n: 2 }; });
+  const s2 = Programme.seance(tous, suivi, [], T + J);
+  verifie('4 acquis au palier 1 → palier 2 ouvert', s2.palier.num === 2 && s2.paliers[1].ouvert && !s2.paliers[2].ouvert);
+
+  // Un favori passe devant les autres nouveautés.
+  const fav = pals[1].ids.filter((id) => Morceaux.get(id).chanson).slice(-1)[0];
+  const s3 = Programme.seance(tous, suivi, [fav], T + J);
+  verifie('♥ : le favori est la première nouveauté', s3.items.some((x) => x.id === fav && x.raison === 'favori'));
+
+  // Révisions dues : favori d'abord.
+  const dus = {};
+  pals[0].ids.slice(4, 8).forEach((id, k) => { dus[id] = { b: 1, t: T - (k + 2) * J, n: 1 }; });
+  const aimeDu = pals[0].ids[6];
+  const s4 = Programme.seance(tous, dus, [aimeDu], T);
+  const revs = s4.items.filter((x) => x.raison === 'revision' || x.raison === 'echauffement');
+  verifie('révisions dues proposées, au plus 5 morceaux', revs.length >= 3 && s4.items.length <= 5);
+  verifie('révisions : le favori avant les autres', s4.items.filter((x) => x.raison === 'revision')[0].id === aimeDu ||
+          s4.items[0].id === aimeDu);
+  verifie('beaucoup en cours → une seule nouveauté au plus', s4.items.filter((x) => x.raison === 'nouveau' || x.raison === 'favori').length <= 1);
+
+  // Un favori du palier suivant : proposé en défi, lentement.
+  const defi = Programme.seance(tous, {}, ['ch-linger'], T).items.find((x) => x.raison === 'defi');
+  verifie('favori du palier suivant : défi à 50 → 70 %', defi && defi.id === 'ch-linger' && defi.passages.join() === '50,60,70');
 }
 
 console.log(`\n=== ${ok} réussis, ${ko} échoués ===`);

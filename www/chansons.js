@@ -239,6 +239,90 @@
         { titre: 'Couplet', motif: 'arpege', grille: ['C', 'Cmaj7', 'F', 'F', 'C', 'Cmaj7', 'F', 'F'] },
         { titre: 'Pont', motif: 'arpege', grille: ['Am', 'Dm', 'F', 'G', 'G7', 'G7', 'G7', 'G7'] },
         { titre: 'Refrain', motif: 'plaque', grille: ['F', 'G', 'C', 'E7', 'F', 'G', 'C', 'C'] }
+      ] },
+
+    // ------------------------------------------------- Rock et reggae
+    // Progressions vérifiées sur Hooktheory (analyses en degrés, oct. 2026),
+    // puis jouées en accords de guitare. Power chords (A5, F5…) pour le rock :
+    // motif « rock », le pouce balaie l'accord en croches.
+    { id: 'ch-self-esteem', titre: 'Self Esteem', artiste: 'The Offspring', annee: 1994,
+      capo: 0, tempo: 104, groupe: 'rock',
+      note: 'Tout le morceau tourne sur La – Fa – Do – Sol en power chords ; le pont passe en Ré.',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'rock', tours: 4, grille: ['A5', 'F5', 'C5', 'G5'] },
+        { titre: 'Pont', motif: 'rock', tours: 2, grille: ['D5', 'Bb5', 'F5', 'C5'] }
+      ] },
+    { id: 'ch-kids-arent-alright', titre: 'The Kids Aren’t Alright', artiste: 'The Offspring', annee: 1998,
+      capo: 1, tempo: 100, groupe: 'rock',
+      note: 'Même grille que Self Esteem, un demi-ton plus haut (capo case 1).',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'rock', tours: 4, grille: ['A5', 'F5', 'C5', 'G5'] }
+      ] },
+    { id: 'ch-teen-spirit', titre: 'Smells Like Teen Spirit', artiste: 'Nirvana', annee: 1991,
+      capo: 0, tempo: 116, groupe: 'rock',
+      note: 'Quatre power chords, deux par mesure, qui ne changent jamais (Fa, Si♭, La♭, Ré♭). La main gauche glisse le long du manche sans changer de forme.',
+      sections: [
+        { titre: 'Grille', motif: 'rock', tours: 4, grille: ['F5|Bb5', 'Ab5|Db5'] }
+      ] },
+    { id: 'ch-come-as-you-are', titre: 'Come As You Are', artiste: 'Nirvana', annee: 1992,
+      capo: 0, tempo: 110, groupe: 'rock',
+      note: 'Sur le disque, la guitare est accordée un ton plus bas : ici en accordage normal, les accords se jouent comme écrits (Mi m – Ré, puis La m – Do).',
+      sections: [
+        { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['Em', 'D', 'Em', 'D'] },
+        { titre: 'Pré-refrain', motif: 'balade', grille: ['Em', 'G', 'Em', 'G'] },
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['Am', 'C', 'Am', 'C'] }
+      ] },
+    { id: 'ch-polly', titre: 'Polly', artiste: 'Nirvana', annee: 1991,
+      capo: 0, tempo: 120, groupe: 'rock',
+      note: 'Sur le disque, accordage un ton plus bas. Le refrain passe par Si♭ (barré) ; les accords sus et add9 du disque sont joués simples.',
+      sections: [
+        { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['Em', 'G', 'D', 'C'] },
+        { titre: 'Refrain', motif: 'plaque', grille: ['D', 'C', 'G', 'Bb', 'Am', 'Am'] }
+      ] },
+    { id: 'ch-linger', titre: 'Linger', artiste: 'The Cranberries', annee: 1993,
+      capo: 0, tempo: 95, groupe: 'rock',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['D', 'A', 'G', 'G'] },
+        { titre: 'Refrain', motif: 'balade', tours: 2, grille: ['D', 'A', 'G', 'G'] }
+      ] },
+    { id: 'ch-dreams', titre: 'Dreams', artiste: 'The Cranberries', annee: 1992,
+      capo: 0, tempo: 110, groupe: 'rock',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'balade', tours: 4, grille: ['E', 'A', 'B7', 'B7'] },
+        { titre: 'Fin', motif: 'plaque', tours: 2, grille: ['G', 'C'] }
+      ] },
+    { id: 'ch-every-breath', titre: 'Every Breath You Take', artiste: 'The Police', annee: 1983,
+      capo: 1, tempo: 100, groupe: 'rock',
+      note: 'Le couplet seulement (Sol – Mi m – Do – Ré), en arpège comme sur le disque ; les accords add9 du disque sont joués simples.',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['G', 'G', 'Em', 'Em', 'C', 'D', 'G', 'G'] }
+      ] },
+    { id: 'ch-message-in-a-bottle', titre: 'Message in a Bottle', artiste: 'The Police', annee: 1979,
+      capo: 0, tempo: 110, groupe: 'rock',
+      note: 'Sur le disque, le riff du couplet est fait d’accords « sus2 » très écartés ; ici des power chords sur les mêmes notes de basse (Do♯, La, Si, Fa♯).',
+      sections: [
+        { titre: 'Couplet', motif: 'rock', tours: 2, grille: ['C#5', 'A5', 'B5', 'F#5'] },
+        { titre: 'Pré-refrain', motif: 'plaque', grille: ['A', 'D', 'E', 'E'] },
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['C#m', 'A'] }
+      ] },
+    { id: 'ch-redemption-song', titre: 'Redemption Song', artiste: 'Bob Marley', annee: 1980,
+      capo: 0, tempo: 70, groupe: 'rock',
+      sections: [
+        { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['G', 'Em', 'C', 'Am'] },
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['D', 'G', 'C', 'C'] }
+      ] },
+    { id: 'ch-three-little-birds', titre: 'Three Little Birds', artiste: 'Bob Marley', annee: 1977,
+      capo: 0, tempo: 74, groupe: 'rock',
+      sections: [
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['A', 'A', 'D', 'A'] },
+        { titre: 'Couplet', motif: 'plaque', tours: 2, grille: ['A', 'E', 'A', 'D'] }
+      ] },
+    { id: 'ch-is-this-love', titre: 'Is This Love', artiste: 'Bob Marley', annee: 1978,
+      capo: 2, tempo: 100, groupe: 'rock',
+      note: 'Capo case 2 : les accords Fa♯ m – Ré – La du disque se jouent Mi m – Do – Sol. Le pont demande Si m (barré).',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'plaque', tours: 2, grille: ['Em', 'C', 'G', 'G'] },
+        { titre: 'Pont', motif: 'plaque', tours: 2, grille: ['Bm', 'Am'] }
       ] }
   ];
 })(typeof window !== 'undefined' ? window : globalThis);

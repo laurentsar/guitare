@@ -32,7 +32,7 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'entrainement.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'entrainement.js', 'programme.js', 'lecons.js',
  'accordeur.js', 'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
@@ -397,6 +397,61 @@ function verifie(nom, cond, detail) {
     verifie('fin de liste : « terminée » affiché', /Liste « Répét » terminée/.test($('detailMorceau').textContent));
     w.AppGuitare.ouvrirMorceau(ids[0]);
     verifie('ouvrir un morceau hors liste : plus de bandeau', !$('detailMorceau').querySelector('.bandeau-liste'));
+  }
+
+  console.log('\n— Programme progressif et ♥ (v1.22) —');
+  {
+    ['suivi', 'seance', 'aimes'].forEach((k) => w.localStorage.removeItem('guitare:' + k));
+    w.AppGuitare.aller('accueil');
+    verifie('accueil : bouton « Programme du jour »', /Programme du jour : 0 \/ \d · palier 1/.test($('carteReprendre').textContent));
+    w.AppGuitare.aller('programme');
+    const pg = $('pageProgramme');
+    verifie('programme : séance du jour au palier 1', /Séance du jour/.test(pg.textContent) && /Palier 1 — Premiers pas/.test(pg.textContent));
+    verifie('programme : échauffement puis morceaux nouveaux, 3 passages 60 → 80 → 100 %',
+            /Échauffement/.test(pg.textContent) && /Nouveau/.test(pg.textContent) && /60 → 80 → 100 %/.test(pg.textContent));
+    verifie('programme : 7 paliers, seul le premier ouvert', pg.querySelectorAll('details.palier').length === 7 &&
+            pg.querySelectorAll('details.palier.ferme').length === 6);
+
+    // ♥ depuis la fiche d'un morceau.
+    w.AppGuitare.ouvrirMorceau('ch-linger');
+    const bAime = $('detailMorceau').querySelector('.ressenti .aime');
+    verifie('fiche morceau : bouton « ♡ J’aime »', !!bAime && /♡ J’aime/.test(bAime.textContent));
+    bAime.click();
+    verifie('♥ enregistré et bouton allumé', w.Store.aime('ch-linger') && /♥ J’aime/.test($('detailMorceau').querySelector('.ressenti .aime').textContent));
+    w.AppGuitare.aller('morceaux');
+    verifie('liste Morceaux : rubrique « ♥ Mes favoris »', /♥ Mes favoris/.test($('listeMorceaux').textContent) && /♥ Linger/.test($('listeMorceaux').textContent));
+    w.AppGuitare.aller('programme');
+    verifie('programme : le favori du palier 2 proposé en défi lent', /Défi ♥/.test(pg.textContent) && /50 → 60 → 70 %/.test(pg.textContent));
+    verifie('programme : chemin vers le favori affiché', /♥ Linger/.test(pg.textContent) && /encore 4 morceau\(x\) à acquérir/.test(pg.textContent));
+
+    // Ressenti → boîte de Leitner.
+    w.AppGuitare.ouvrirMorceau('chromatique');
+    [...$('detailMorceau').querySelectorAll('.ressenti .btn')].find((b) => /Facile/.test(b.textContent)).click();
+    verifie('« Facile » : boîte 2, revu dans 2 jours', w.Store.suivi().chromatique.b === 2 && /à revoir dans 2 j/.test($('detailMorceau').querySelector('.ressenti').textContent));
+    [...$('detailMorceau').querySelectorAll('.ressenti .btn')].find((b) => /Dur/.test(b.textContent)).click();
+    verifie('« Dur » : retour en boîte 1, revu demain', w.Store.suivi().chromatique.b === 1);
+
+    // Séance enchaînée : passages au tempo croissant, ressenti à la fin du morceau.
+    let rappel = null;
+    w.Tablature.jouer = (n, o) => { rappel = o; };
+    w.AppGuitare.aller('programme');
+    const item = w.Store.seanceProgramme().items.find((it) => !w.Store.suivi()[it.id]);
+    [...pg.querySelectorAll('.liste-ligne')].find((x) => x.textContent.indexOf(w.Morceaux.get(item.id).titre) !== -1).querySelector('.btn').click();
+    let d = $('detailMorceau');
+    verifie('séance : passage 1/3 à 60 %, tempo réduit', /passage 1\/3 à 60 %/.test(d.textContent) &&
+            d.textContent.indexOf('♩ = ' + Math.max(20, Math.round(w.Morceaux.get(item.id).tempo * 0.6))) !== -1);
+    d.querySelector('[aria-label="Morceau suivant"]').click();
+    verifie('séance : ⏭ → passage 2/3 à 80 %', /passage 2\/3 à 80 %/.test($('detailMorceau').textContent));
+    $('detailMorceau').querySelector('[aria-label="Morceau suivant"]').click();
+    await attendre(450);
+    if (rappel && rappel.surFin) rappel.surFin();
+    d = $('detailMorceau');
+    verifie('séance : à la fin du dernier passage, « Comment s’est passé » ?', /Comment s’est passé/.test(d.textContent), d.querySelector('.suite-liste') && d.querySelector('.suite-liste').textContent);
+    const bOk = [...d.querySelectorAll('.suite-liste .btn')].find((b) => /Ça va/.test(b.textContent));
+    if (bOk) bOk.click();
+    verifie('séance : « Ça va » noté, morceau marqué fait', w.Store.suivi()[item.id] && w.Store.suivi()[item.id].b === 1 &&
+            /terminée/.test($('detailMorceau').textContent));
+    w.AppGuitare.ouvrirMorceau('chromatique');
   }
 
   console.log('\n— Chansons (v1.18) —');

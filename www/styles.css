@@ -554,3 +554,14 @@ html.tv .pe-barre b { font-size: 22px; }
 /* Bouton retour : « appuie encore pour quitter ». */
 .toast-retour { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); z-index: 1000;
   background: rgba(15, 18, 26, .95); color: var(--texte); border: 1px solid var(--trait); border-radius: 20px; padding: 10px 18px; font-size: 14px; }
+
+/* Programme progressif et ♥ */
+.ressenti { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 10px; }
+.ressenti .btn { min-height: 36px; padding: 6px 10px; }
+.ressenti-etat { color: var(--texte-2); font-size: 13px; }
+.btn.aime.actif { color: #ff6b81; border-color: #ff6b81; }
+.liste-ligne.fait b { color: var(--texte-2); }
+details.palier summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+details.palier.ferme summary { color: var(--texte-2); }
+details.palier .ligne-morceau { margin-top: 6px; }
+#pageProgramme .liste-ligne small { white-space: normal; }

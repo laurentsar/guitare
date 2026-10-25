@@ -35,8 +35,8 @@
     decompte: true,        // une mesure de clics avant de jouer un morceau
     clicLecture: false,    // métronome pendant la lecture
     ecranAllume: true,     // l'écran ne s'éteint pas pendant qu'on joue (ecran.js)
-    zoomPartition: 1,      // zoom de la tablature / portée (0,6 à 3), mémorisé pour tous les morceaux
-    aides: false           // aides débutant sur la fiche morceau (mains, pas à pas, lecture)
+    aides: false,          // aides débutant sur la fiche morceau (mains, pas à pas, lecture)
+    zoomPartition: null    // échelle de la partition ; null = ajustée à la largeur
   };
 
   function reglages() {

@@ -319,6 +319,26 @@ function verifie(nom, cond, detail) {
             boite.classList.contains('plein-ecran') && !!boite.querySelector('.pe-barre') && /♩ \d+/.test(boite.querySelector('.pe-barre').textContent));
     [...boite.querySelectorAll('.pe-barre button')].find((b) => b.getAttribute('aria-label') === 'Quitter le plein écran').click();
     verifie('plein écran : ✕ referme', !boite.classList.contains('plein-ecran'));
+    // Zoom (v1.19) : échelle fixe du dessin, mise en page à cette échelle.
+    verifie('télé : 2 mesures par ligne au plus quand c’est ajusté', w.Tablature.miseEnPage(z, 3000, 2).mesuresParLigne === 2);
+    const bZ = (lbl) => [...d.querySelectorAll('.partition-barre button')].find((b) => b.getAttribute('aria-label') === lbl);
+    verifie('zoom : boutons 🔍− / Ajusté / 🔍+ près du plein écran', !!bZ('Zoomer') && !!bZ('Dézoomer') && bZ('Ajuster à la largeur').textContent === 'Ajusté');
+    bZ('Zoomer').click();
+    const z1 = w.Store.reglages().zoomPartition;
+    const svgZ = d.querySelector('.partition svg.tab, .partition svg.portee');
+    verifie('zoom + : échelle mémorisée, largeur du dessin = viewBox × échelle',
+            z1 > 1 && svgZ.style.width === Math.round(+svgZ.getAttribute('viewBox').split(' ')[2] * z1) + 'px' && bZ('Ajuster à la largeur').textContent === Math.round(z1 * 100) + ' %');
+    bZ('Dézoomer').click(); bZ('Dézoomer').click();
+    verifie('zoom − : échelle plus petite', w.Store.reglages().zoomPartition < z1);
+    bZ('Ajuster à la largeur').click();
+    verifie('« Ajusté » rend la largeur à la page', w.Store.reglages().zoomPartition === null && !d.querySelector('.partition svg.tab').style.width);
+    bPE.click();
+    verifie('plein écran : le focus passe sur ▶ (plus caché sous le calque)', w.document.activeElement && w.document.activeElement.getAttribute('aria-label') === 'Jouer');
+    verifie('plein écran : la barre a aussi le zoom', !!boite.querySelector('.pe-barre .zoom-groupe'));
+    verifie('plein écran : flèches limitées au calque',
+            w.DpadNav && [...boite.querySelectorAll('button')].length > 0 && w.document.querySelector('.plein-ecran') === boite);
+    w.dispatchEvent(new w.PopStateEvent('popstate', { state: null }));
+    verifie('plein écran : la touche Retour (popstate) referme au lieu de quitter', !boite.classList.contains('plein-ecran'));
     w.AppGuitare.aller('reglages');
     verifie('réglage « Aides débutant » affiché sur Non', $('regAides').value === 'non');
     $('regAides').value = 'oui'; $('regAides').dispatchEvent(new w.Event('change'));
@@ -469,29 +489,23 @@ function verifie(nom, cond, detail) {
             lettres.includes('pm') && lettres.every((l) => /^[pima]+$/.test(l) && new Set(l).size === l.length));
   }
 
-  console.log('\n— Zoom de la tablature —');
+  console.log('\n— Pincement sur la partition —');
   w.Store.reglage('vuePartition', 'tablature');
   w.Store.reglage('zoomPartition', 1);
   w.AppGuitare.ouvrirMorceau('mary-agneau');
   {
-    const d = $('detailMorceau'), ctl = d.querySelector('.partition .zoom-ctl');
-    const nLignes = () => d.querySelectorAll('.tab-ligne').length;
-    const bouton = (re) => [...ctl.querySelectorAll('button')].find((b) => re.test(b.getAttribute('aria-label') || b.textContent));
-    verifie('commandes de zoom dans la partition (donc aussi en plein écran), 100 %', ctl && /100 %/.test(ctl.textContent));
-    const avant = nLignes();
-    bouton(/Zoom avant/).click(); bouton(/Zoom avant/).click();
-    verifie('zoom avant : 150 %, mémorisé, et moins de mesures par ligne (plus de lignes)',
-            /150 %/.test(ctl.textContent) && w.Store.reglages().zoomPartition === 1.5 && nLignes() > avant, avant + ' → ' + nLignes());
-    const svg = d.querySelector('svg.tab');
-    verifie('zoom avant : dessin agrandi à l’échelle (largeur en pixels posée)', /px$/.test(svg.style.width));
-    w.AppGuitare.ouvrirMorceau('ode-joie');
-    verifie('le zoom est conservé d’un morceau à l’autre', /150 %/.test($('detailMorceau').querySelector('.zoom-ctl').textContent));
-    const ctl2 = $('detailMorceau').querySelector('.zoom-ctl');
-    [...ctl2.querySelectorAll('button')].find((b) => /%/.test(b.textContent)).click();
-    verifie('toucher le pourcentage : retour à 100 %, largeur libre', w.Store.reglages().zoomPartition === 1 && !$('detailMorceau').querySelector('svg.tab').style.width);
-    for (let k = 0; k < 12; k++) [...$('detailMorceau').querySelectorAll('.zoom-ctl button')].find((b) => b.getAttribute('aria-label') === 'Zoom arrière').click();
-    verifie('zoom arrière borné à 60 %', w.Store.reglages().zoomPartition === 0.6);
-    w.Store.reglage('zoomPartition', 1);
+    const zone = $('detailMorceau').querySelector('.partition svg.tab').closest('.partition > div:not(.pe-barre)') ||
+                 $('detailMorceau').querySelector('.partition svg.tab').parentNode.parentNode;
+    const toucher = (type, d) => {
+      const ev = new w.Event(type, { bubbles: true, cancelable: true });
+      const t = d == null ? [] : [{ clientX: 100 - d, clientY: 50 }, { clientX: 100 + d, clientY: 50 }];
+      Object.defineProperty(ev, 'touches', { value: t });
+      zone.dispatchEvent(ev);
+    };
+    toucher('touchstart', 40); toucher('touchmove', 60); toucher('touchmove', 80); toucher('touchend', null);
+    verifie('pincement à deux doigts : écarter les doigts zoome (×2 → 200 %), mémorisé',
+            w.Store.reglages().zoomPartition === 2, w.Store.reglages().zoomPartition);
+    w.Store.reglage('zoomPartition', null);
   }
 
   console.log('\n— Bouton retour —');
@@ -507,7 +521,7 @@ function verifie(nom, cond, detail) {
     verifie('retour : liste → accueil', w.AppGuitare.retour() && actif() === 'accueil');
     verifie('retour à l’accueil : rien à défaire (l’APK demande alors de rappuyer pour quitter)', w.AppGuitare.retour() === false);
     w.AppGuitare.ouvrirMorceau('ode-joie');
-    $('detailMorceau').querySelector('.partition-barre button').click();
+    [...$('detailMorceau').querySelectorAll('.partition-barre button')].find((b) => /Plein écran/.test(b.textContent)).click();
     verifie('plein écran ouvert', !!$('detailMorceau').querySelector('.partition.plein-ecran'));
     verifie('retour : ferme d’abord le plein écran, reste sur le morceau',
             w.AppGuitare.retour() && !$('detailMorceau').querySelector('.partition.plein-ecran') && actif() === 'morceau');

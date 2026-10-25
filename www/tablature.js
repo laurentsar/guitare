@@ -22,7 +22,9 @@
   /* Mise en page selon la densité : un morceau en doubles croches a besoin
    * de plus de place par temps, sinon les chiffres se chevauchent ; et si
    * deux mesures ne tiennent plus en largeur, on passe à une par ligne. */
-  function miseEnPage(piece, largeur) {
+  // `max` (facultatif) borne le nombre de mesures par ligne : 2 sur une télé
+  // vue de loin, jusqu'à 8 quand on dézoome.
+  function miseEnPage(piece, largeur, max) {
     // Le plus petit écart FRÉQUENT entre deux attaques : quelques petites
     // notes d'ornement ne doivent pas étirer toute la partition.
     var temps = piece.notes.map(function (n) { return n.temps; }).sort(function (a, b) { return a - b; });
@@ -42,7 +44,7 @@
     var dispo = largeur || 760;
     var mesure = noiresParMesure(piece) * px;
     var n = Math.floor((dispo / 0.8 - 36) / mesure);
-    return { pxParTemps: px, mesuresParLigne: Math.max(1, Math.min(largeur ? 4 : 2, n)) };
+    return { pxParTemps: px, mesuresParLigne: Math.max(1, Math.min(max || (largeur ? 4 : 2), n)) };
   }
 
   function duree_totale(piece) {

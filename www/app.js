@@ -120,8 +120,13 @@
     } catch (e) { /* plugin absent : la WebView revient dans l'historique */ }
   })();
   // Navigateur (PWA) et WebView sans plugin : le geste retour remonte
-  // l'historique ; on suit avec la même logique.
-  window.addEventListener('popstate', function () { retour(); });
+  // l'historique ; on suit avec la même logique. Si l'entrée retrouvée est
+  // celle de l'écran courant, on ne faisait que quitter un calque (le plein
+  // écran pose sa propre entrée, et la retire en se fermant) : rien à faire.
+  window.addEventListener('popstate', function (e) {
+    if (e.state && e.state.ecran === ecranCourant) return;
+    retour();
+  });
   // Clavier / télécommande dans un navigateur : Échap = retour.
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape' && e.key !== 'GoBack' && e.key !== 'BrowserBack') return;
@@ -1151,46 +1156,60 @@
      * morceau serait pénible. */
     var barreVue = el('div', 'filtres');
     zone = el('div');
-    /* Zoom de la partition (boutons − / + ou pincement à deux doigts).
-     * On ne grossit pas une image : on remet en page. L'échelle visée est
-     * « zoom × échelle à 100 % », et chaque ligne prend autant de mesures
-     * qu'il en tient à cette échelle ; à une seule mesure par ligne, la ligne
-     * dépasse et défile de côté. Le niveau est mémorisé pour tous les
-     * morceaux. */
-    var ZOOMS = [0.6, 0.75, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
-    function zoom() { return Store.reglages().zoomPartition || 1; }
-    function reglerZoom(z) {
-      z = Math.max(ZOOMS[0], Math.min(ZOOMS[ZOOMS.length - 1], Math.round(z * 20) / 20));
+
+    /* Zoom. null = ajusté à la largeur ; sur une télé, 2 mesures par ligne au
+     * plus : l'écran fait 960 px CSS, 4 mesures y donnaient des chiffres de
+     * 13 px lus à trois mètres. Sinon une échelle fixe du dessin, et la mise
+     * en page met autant de mesures qu'il en tient à cette échelle. */
+    var PAS_ZOOM = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2, 2.3, 2.6, 3, 3.5, 4];
+    var zoomLabels = [];
+    function zoomRegle() { return Store.reglages().zoomPartition; }
+    function largeurSvg(s) { return +((s.getAttribute('viewBox') || '').split(' ')[2]) || 0; }
+    function mettreEnPage() {
+      var z = zoomRegle(), l = largeurDispo();
+      if (z) return Tablature.miseEnPage(p, l * 0.8 / z, 8);
+      return Tablature.miseEnPage(p, l, document.documentElement.classList.contains('tv') ? 2 : 4);
+    }
+    function appliquerZoom() {
+      var z = zoomRegle();
+      Array.prototype.forEach.call(zone.querySelectorAll('svg.tab, svg.portee'), function (s) {
+        var w = z && largeurSvg(s);
+        s.style.width = w ? Math.round(w * z) + 'px' : '';
+        s.style.maxWidth = w ? '100%' : '';
+      });
+      var t = z ? Math.round(z * 100) + ' %' : 'Ajusté';
+      zoomLabels.forEach(function (x) { x.textContent = t; });
+    }
+    function echelleActuelle() {
+      var z = zoomRegle();
+      if (z) return z;
+      var s = zone.querySelector('svg.tab, svg.portee');
+      var w = s && largeurSvg(s), r = s && s.getBoundingClientRect().width;
+      return w && r ? r / w : 1;
+    }
+    function zoomer(sens) {
+      var c = echelleActuelle();
+      var z = sens > 0 ? (PAS_ZOOM.filter(function (x) { return x > c * 1.04; })[0] || PAS_ZOOM[PAS_ZOOM.length - 1])
+                       : (PAS_ZOOM.filter(function (x) { return x < c / 1.04; }).pop() || PAS_ZOOM[0]);
       Store.reglage('zoomPartition', z);
       dessiner();
     }
-    function pageZoomee(dispo) {
-      var p1 = Tablature.miseEnPage(p, dispo), z = zoom();
-      var mesure = parMesure * p1.pxParTemps;
-      var base = 36 + p1.mesuresParLigne * mesure;            // une ligne à 100 %
-      if (z === 1) return { page: p1, echelle: 0 };          // à 100 % : la ligne remplit la largeur
-      var echelle = (dispo / base) * z;                       // px par unité du dessin
-      var n = Math.max(1, Math.min(8, Math.floor((dispo / echelle - 36) / mesure)));
-      return { page: { pxParTemps: p1.pxParTemps, mesuresParLigne: n }, echelle: echelle };
+    function groupeZoom() {
+      var g = el('span', 'zoom-groupe');
+      var m = el('button', 'btn', '🔍−'), t = el('button', 'btn zoom-val', 'Ajusté'), pl = el('button', 'btn', '🔍+');
+      m.setAttribute('aria-label', 'Dézoomer'); pl.setAttribute('aria-label', 'Zoomer');
+      t.setAttribute('aria-label', 'Ajuster à la largeur');
+      m.onclick = function () { zoomer(-1); };
+      pl.onclick = function () { zoomer(1); };
+      t.onclick = function () { Store.reglage('zoomPartition', null); dessiner(); };
+      zoomLabels.push(t);
+      g.appendChild(m); g.appendChild(t); g.appendChild(pl);
+      return g;
     }
-    function appliquerEchelle(echelle) {
-      var defile = false;
-      Array.prototype.forEach.call(zone.querySelectorAll('svg.tab, svg.portee'), function (svg) {
-        if (!echelle) { svg.style.width = ''; svg.style.maxWidth = ''; return; }
-        var w = parseFloat((svg.getAttribute('viewBox') || '0 0 0 0').split(' ')[2]) || 0;
-        var px = Math.round(w * echelle);
-        svg.style.width = px + 'px'; svg.style.maxWidth = 'none';
-        if (px > largeurDispo() + 2) defile = true;
-      });
-      zone.classList.toggle('zoom-defile', defile);
-      if (zoomTexte) zoomTexte.textContent = Math.round(zoom() * 100) + ' %';
-    }
-    var zoomTexte = null;
 
     function dessiner() {
       var vue = Store.reglages().vuePartition;
-      var zp = pageZoomee(largeurDispo());
-      page = zp.page;
+      page = mettreEnPage();
       if (vue === 'deux') {
         // Entrelacées ligne par ligne (portée puis sa tablature, comme Guitar
         // Pro) : avant, toute la portée passait avant toute la tablature, qui
@@ -1209,10 +1228,10 @@
       } else {
         zone.innerHTML = vue === 'portee' ? Portee.svg(p, page) : Tablature.svg(p, page);
       }
-      appliquerEchelle(zp.echelle);
       Array.prototype.forEach.call(barreVue.children, function (b) {
         b.classList.toggle('actif', b.dataset.vue === vue);
       });
+      appliquerZoom();
       marquerSection();
     }
     [['portee', 'Portée'], ['tablature', 'Tablature'], ['deux', 'Les deux']].forEach(function (v) {
@@ -1239,7 +1258,7 @@
     var peQuitter = el('button', 'btn', '✕');
     peJouer.setAttribute('aria-label', 'Jouer'); peStop.setAttribute('aria-label', 'Arrêter');
     peQuitter.setAttribute('aria-label', 'Quitter le plein écran');
-    [peTitre, peJouer, peStop, peMoins, peTempo, pePlus, peQuitter].forEach(function (x) { peBarre.appendChild(x); });
+    [peTitre, peJouer, peStop, peMoins, peTempo, pePlus, groupeZoom(), peQuitter].forEach(function (x) { peBarre.appendChild(x); });
     boitePartition.appendChild(peBarre);
     if (bandeau) boitePartition.appendChild(bandeau);
     var panneauSuite = el('div', 'suite-liste');
@@ -1252,26 +1271,16 @@
     legende.innerHTML = 'Lettres sous la tablature = doigts de la <b>main droite</b> : <b>p</b> pouce · <b>i</b> index · <b>m</b> majeur · <b>a</b> annulaire. ' +
       'Deux lettres (<b>pm</b>, <b>im</b>…) = deux doigts qui pincent en même temps, de la corde grave à l’aiguë.';
     boitePartition.appendChild(legende);
-    var zoomCtl = el('div', 'zoom-ctl');
-    var zMoins = el('button', 'btn', '−'), zPlus = el('button', 'btn', '+');
-    zoomTexte = el('button', 'btn zoom-valeur', '100 %');
-    zMoins.setAttribute('aria-label', 'Zoom arrière'); zPlus.setAttribute('aria-label', 'Zoom avant');
-    zoomTexte.title = 'Revenir à 100 %';
-    zMoins.onclick = function () { var z = zoom(); reglerZoom(ZOOMS.filter(function (x) { return x < z - 0.01; }).pop() || ZOOMS[0]); };
-    zPlus.onclick = function () { var z = zoom(); reglerZoom(ZOOMS.filter(function (x) { return x > z + 0.01; })[0] || ZOOMS[ZOOMS.length - 1]); };
-    zoomTexte.onclick = function () { reglerZoom(1); };
-    zoomCtl.appendChild(el('span', 'zoom-icone', '🔍'));
-    zoomCtl.appendChild(zMoins); zoomCtl.appendChild(zoomTexte); zoomCtl.appendChild(zPlus);
-    boitePartition.appendChild(zoomCtl);
     boitePartition.appendChild(zone);
-    // Pincement à deux doigts : aperçu immédiat (agrandissement CSS), puis
-    // remise en page au lâcher. La page elle-même ne zoome pas (touch-action).
+    // Pincement à deux doigts (en plus des boutons 🔍) : aperçu immédiat
+    // (agrandissement CSS), puis mise en page à la nouvelle échelle au lâcher.
+    // La page elle-même ne zoome pas (touch-action).
     var pince = null;
     function ecart(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
     zone.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 2) return;
       var r = zone.getBoundingClientRect();
-      pince = { d0: ecart(e.touches), z0: zoom(), r: 1 };
+      pince = { d0: ecart(e.touches), z0: echelleActuelle(), r: 1 };
       zone.style.transformOrigin = ((e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left) + 'px ' +
                                    ((e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top) + 'px';
     }, { passive: true });
@@ -1285,7 +1294,8 @@
       if (!pince || e.touches.length) return;
       zone.style.transform = ''; zone.style.transformOrigin = '';
       var z = pince.z0 * pince.r; pince = null;
-      reglerZoom(z);
+      Store.reglage('zoomPartition', Math.max(PAS_ZOOM[0], Math.min(PAS_ZOOM[PAS_ZOOM.length - 1], Math.round(z * 20) / 20)));
+      dessiner();
     });
 
     /* Fin d'un morceau de la liste : décompte de 5 s puis le suivant. */
@@ -1327,6 +1337,7 @@
     h.appendChild(boitePartition);
     var bPleinEcran = el('button', 'btn', '⛶ Plein écran');
     var barrePE = el('div', 'partition-barre');
+    barrePE.appendChild(groupeZoom());
     barrePE.appendChild(bPleinEcran);
     h.insertBefore(barrePE, boitePartition);
 
@@ -1343,20 +1354,56 @@
       if (req && !(document.fullscreenElement || document.webkitFullscreenElement)) {
         try { var pr = req.call(de); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {}
       }
+      // Touche Retour (télécommande, geste Android) : elle referme le plein
+      // écran au lieu de quitter l'appli. Une seule entrée d'historique, même
+      // quand une liste reconstruit la fiche à chaque morceau.
+      if (!(history.state && history.state.pleinEcran)) {
+        try { history.pushState({ pleinEcran: true }, ''); } catch (e) {}
+      }
       dessiner();
       boitePartition.scrollTop = 0;
+      // Le focus restait sur « Plein écran », caché sous le calque.
+      peJouer.focus();
     }
-    function fermerPleinEcran() {
+    function fermerPleinEcran(depuisHistorique) {
       if (!pleinEcranOuvert()) return;
+      if (depuisHistorique !== true && history.state && history.state.pleinEcran) {
+        try { history.back(); } catch (e) {}
+      }
       boitePartition.classList.remove('plein-ecran');
       document.documentElement.classList.remove('plein-ecran-ouvert');
       var fs = document.fullscreenElement || document.webkitFullscreenElement;
       var exit = document.exitFullscreen || document.webkitExitFullscreen;
       if (fs && exit) { try { var pr = exit.call(document); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }
       dessiner();
+      if (bPleinEcran.isConnected) bPleinEcran.focus();
     }
     bPleinEcran.onclick = ouvrirPleinEcran;
-    peQuitter.onclick = fermerPleinEcran;
+    peQuitter.onclick = function () { fermerPleinEcran(); };
+    window.addEventListener('popstate', function () {
+      if (pleinEcranOuvert() && boitePartition.isConnected) fermerPleinEcran(true);
+    });
+    /* Télécommande en plein écran : dpad-nav.js déplace le focus entre les
+     * boutons de la barre ; quand il n'y a rien plus haut/plus bas, haut/bas
+     * font défiler la partition. Touches média : lecture et zoom. */
+    document.addEventListener('keydown', function (e) {
+      if (!pleinEcranOuvert() || !boitePartition.isConnected || e.defaultPrevented) return;
+      var k = e.key;
+      if (k === 'ArrowDown' || k === 'ArrowUp' || k === 'PageDown' || k === 'PageUp') {
+        var d = (/Down/.test(k) ? 1 : -1) * Math.round(boitePartition.clientHeight * 0.6);
+        if (boitePartition.scrollBy) boitePartition.scrollBy({ top: d, behavior: 'smooth' });
+        else boitePartition.scrollTop += d;
+      } else if (k === 'MediaPlayPause' || k === 'MediaPlay') {
+        if (Tablature.enLecture()) bStop.onclick(); else bJouer.onclick();
+      } else if (k === 'MediaStop' || k === 'MediaPause') {
+        bStop.onclick();
+      } else if (k === 'MediaFastForward' || k === '+') {
+        zoomer(1);
+      } else if (k === 'MediaRewind' || k === '-') {
+        zoomer(-1);
+      } else return;
+      e.preventDefault();
+    });
     // Sortie par le geste « retour » du système ou la touche Échap.
     document.addEventListener('fullscreenchange', function () {
       if (!document.fullscreenElement && pleinEcranOuvert() && boitePartition.isConnected) fermerPleinEcran();
@@ -1378,7 +1425,7 @@
       var ligne = n && n.closest('.systeme, .tab-ligne, .portee-ligne-bloc');
       if (!ligne) return;
       var r = ligne.getBoundingClientRect();
-      if (r.top < 70 || r.bottom > window.innerHeight - 20) {
+      if (r.top < peBarre.offsetHeight + 6 || r.bottom > window.innerHeight - 20) {
         boitePartition.scrollTop += r.top - window.innerHeight * 0.3;
       }
     }

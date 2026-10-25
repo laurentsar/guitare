@@ -8,7 +8,7 @@
 const CACHE = 'guitare-v1.22';
 const FICHIERS = [
   './', './index.html', './styles.css', './app.js',
-  './theorie.js', './audio.js', './accords.js', './illustrations.js', './tablature.js', './portee.js', './manche.js', './gammes.js', './vr.js', './repertoire.js', './chansons.js', './morceaux.js', './entrainement.js',
+  './theorie.js', './audio.js', './accords.js', './illustrations.js', './tablature.js', './portee.js', './manche.js', './gammes.js', './vr.js', './repertoire.js', './chansons.js', './morceaux.js', './entrainement.js', './programme.js',
   './lecons.js', './accordeur.js', './oreille.js', './store.js', './ecran.js', './dpad-nav.js',
   './tv.js', './cast.js', './autobackup.js', './update-check.js', './apk-update.js',
   './manifest.webmanifest', './version.json', './recepteur.html'

@@ -155,6 +155,27 @@
   function revision() { return lire('revision', null); }
   function sauverRevision(r) { ecrire('revision', r); }
 
+  /* Morceaux aimés (♥) : une liste d'identifiants, dans l'ordre où on les a aimés. */
+  function aimes() { return lire('aimes', []); }
+  function aime(id) { return aimes().indexOf(id) !== -1; }
+  function aimer(id, oui) {
+    var l = aimes().filter(function (x) { return x !== id; });
+    if (oui) l.push(id);
+    return ecrire('aimes', l);
+  }
+
+  /* Programme progressif (programme.js) : la boîte de chaque morceau,
+   * { id: {b, t, n, note} }, et la séance du jour, figée comme la révision. */
+  function suivi() { return lire('suivi', {}); }
+  function noterSuivi(id, entree) {
+    var s = suivi();
+    s[id] = entree;
+    ecrire('suivi', s);
+    return entree;
+  }
+  function seanceProgramme() { return lire('seance', null); }
+  function sauverSeanceProgramme(r) { ecrire('seance', r); }
+
   function etapesFaites(id) { return (lire('etapes', {})[id] || []).slice(); }
   function marquerEtape(id, k, fait) {
     var t = lire('etapes', {});
@@ -181,6 +202,9 @@
   function notesCours(txt) { return txt == null ? lire('notesCours', '') : ecrire('notesCours', txt); }
 
   global.Store = {
+    aimes: aimes, aime: aime, aimer: aimer,
+    suivi: suivi, noterSuivi: noterSuivi,
+    seanceProgramme: seanceProgramme, sauverSeanceProgramme: sauverSeanceProgramme,
     entrainementJour: entrainementJour, cocherEntrainement: cocherEntrainement,
     joursEntrainement: joursEntrainement, notesCours: notesCours,
     etapesFaites: etapesFaites, marquerEtape: marquerEtape,

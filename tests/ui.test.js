@@ -643,6 +643,42 @@ function verifie(nom, cond, detail) {
             html.indexOf('<script src="apk-update.js">') < html.indexOf('<script src="update-check.js">'));
   }
 
+  console.log('\n— Mise à jour comme Recettes (v1.24) —');
+  {
+    let reponse = { tag_name: 'v9.9', body: '- Nouvelles chansons\n- Programme amélioré', html_url: 'https://x/rel',
+                    assets: [{ name: 'guitare-9.9.apk', browser_download_url: 'https://x/guitare-9.9.apk' }] };
+    const appels = [];
+    w.fetch = (url) => { appels.push(url); return Promise.resolve({ ok: true, json: () => Promise.resolve(reponse) }); };
+    w.localStorage.setItem('updPoll:laurentsar/guitare', String(Date.now()));   // pas de vérif auto au chargement
+    w.UPDATE_REPO = 'laurentsar/guitare';
+    charge('update-check.js');
+    verifie('checkAppUpdate exposé pour le bouton des réglages', typeof w.checkAppUpdate === 'function');
+    w.AppGuitare.aller('reglages');
+    verifie('réglages : version installée affichée', $('majVersion').textContent === 'v1.0');
+    $('btnVerifierMaj').click();
+    await attendre(30);
+    const ban = w.document.getElementById('update-banner');
+    verifie('nouvelle release : bandeau avec version et nouveautés', !!ban && /Version 9\.9 prête/.test(ban.textContent) &&
+            ban.querySelectorAll('.ub-notes li').length === 2 && /Nouvelles chansons/.test(ban.textContent));
+    verifie('navigateur : « Mettre à jour » (recharge) plutôt qu’un APK', /Mettre à jour en v9\.9/.test(ban.querySelector('.ub-act').textContent));
+    verifie('réglages : compte rendu « disponible »', /v9\.9 disponible/.test($('majEtat').textContent));
+    verifie('API GitHub interrogée sur le bon dépôt', /api\.github\.com\/repos\/laurentsar\/guitare\/releases\/latest/.test(appels[0]));
+    ban.querySelector('.ub-skip').click();
+    verifie('« Plus tard » : bandeau fermé, version mémorisée', !w.document.getElementById('update-banner') &&
+            w.localStorage.getItem('updDismiss:laurentsar/guitare') === '9.9');
+    reponse = { tag_name: 'v1.0', assets: [] };
+    $('btnVerifierMaj').click();
+    await attendre(30);
+    verifie('à jour : « Déjà à jour »', /Déjà à jour/.test($('majEtat').textContent));
+    // API indisponible (quota) : repli sur le flux Atom.
+    w.fetch = (url) => /api\.github/.test(url) ? Promise.resolve({ ok: false })
+      : Promise.resolve({ ok: true, text: () => Promise.resolve('<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Ma Guitare v9.8</title><link rel="alternate" href="https://github.com/laurentsar/guitare/releases/tag/v9.8"/><content>Corrections</content></entry></feed>') });
+    const r = await w.checkAppUpdate(true);
+    verifie('repli Atom quand l’API refuse', r && r.latest === '9.8' && r.newer);
+    const b2 = w.document.getElementById('update-banner');
+    if (b2) b2.remove();
+  }
+
   console.log('\n— Erreurs JS pendant le test —');
   verifie('aucune erreur', erreurs.length === 0, erreurs.join(' | '));
 

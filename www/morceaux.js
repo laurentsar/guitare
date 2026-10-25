@@ -990,7 +990,23 @@
     { id: 'Bb',    fr: 'Si♭ majeur (barré)',      frettes: [1, 3, 3, 3, 1, -1], doigts: [1, 3, 3, 3, 1, 0], barre: { frette: 1, de: 1, a: 5 } },
     { id: 'Fm',    fr: 'Fa mineur (barré)',       frettes: [1, 1, 1, 3, 3, 1],  doigts: [1, 1, 1, 4, 3, 1], barre: { frette: 1, de: 1, a: 6 } },
     { id: 'Gm',    fr: 'Sol mineur (barré)',      frettes: [3, 3, 3, 5, 5, 3],  doigts: [1, 1, 1, 4, 3, 1], barre: { frette: 3, de: 1, a: 6 } },
-    { id: 'Bm7b5', fr: 'Si mineur 7 quinte diminuée', frettes: [1, 0, 2, 0, 2, -1], doigts: [1, 0, 3, 0, 2, 0] }
+    { id: 'Bm7b5', fr: 'Si mineur 7 quinte diminuée', frettes: [1, 0, 2, 0, 2, -1], doigts: [1, 0, 3, 0, 2, 0] },
+    { id: 'C#m',   fr: 'Do♯ mineur (barré)',      frettes: [4, 5, 6, 6, 4, -1], doigts: [1, 2, 4, 3, 1, 0], barre: { frette: 4, de: 1, a: 5 } },
+    /* Power chords (rock) : fondamentale + quinte (+ octave), sur 3 cordes
+     * graves ; ni majeur ni mineur. L'index sur la fondamentale, annulaire et
+     * auriculaire deux cases plus haut. Les autres cordes ne sonnent pas. */
+    { id: 'E5',  fr: 'Mi 5 (power chord)',  frettes: [-1, -1, -1, 2, 2, 0], doigts: [0, 0, 0, 2, 1, 0] },
+    { id: 'A5',  fr: 'La 5 (power chord)',  frettes: [-1, -1, 2, 2, 0, -1], doigts: [0, 0, 2, 1, 0, 0] },
+    { id: 'D5',  fr: 'Ré 5 (power chord)',  frettes: [-1, 3, 2, 0, -1, -1], doigts: [0, 3, 1, 0, 0, 0] },
+    { id: 'F5',  fr: 'Fa 5 (power chord)',  frettes: [-1, -1, -1, 3, 3, 1], doigts: [0, 0, 0, 4, 3, 1] },
+    { id: 'F#5', fr: 'Fa♯ 5 (power chord)', frettes: [-1, -1, -1, 4, 4, 2], doigts: [0, 0, 0, 4, 3, 1] },
+    { id: 'G5',  fr: 'Sol 5 (power chord)', frettes: [-1, -1, -1, 5, 5, 3], doigts: [0, 0, 0, 4, 3, 1] },
+    { id: 'Ab5', fr: 'La♭ 5 (power chord)', frettes: [-1, -1, -1, 6, 6, 4], doigts: [0, 0, 0, 4, 3, 1] },
+    { id: 'Bb5', fr: 'Si♭ 5 (power chord)', frettes: [-1, -1, 3, 3, 1, -1], doigts: [0, 0, 4, 3, 1, 0] },
+    { id: 'B5',  fr: 'Si 5 (power chord)',  frettes: [-1, -1, 4, 4, 2, -1], doigts: [0, 0, 4, 3, 1, 0] },
+    { id: 'C5',  fr: 'Do 5 (power chord)',  frettes: [-1, -1, 5, 5, 3, -1], doigts: [0, 0, 4, 3, 1, 0] },
+    { id: 'C#5', fr: 'Do♯ 5 (power chord)', frettes: [-1, -1, 6, 6, 4, -1], doigts: [0, 0, 4, 3, 1, 0] },
+    { id: 'Db5', fr: 'Ré♭ 5 (power chord)', frettes: [-1, -1, 6, 6, 4, -1], doigts: [0, 0, 4, 3, 1, 0] }
   ];
   function accordChanson(id) {
     var src = (global.Accords && Accords.get(id)) || ACCORDS_SUP.filter(function (a) { return a.id === id; })[0];
@@ -1022,7 +1038,11 @@
             { temps: 3, duree: 0.5, cordes: [2] }, { temps: 3.5, duree: 0.5, cordes: [3] }] },
     plaque: { texte: 'Basse et accord plaqué : pouce sur la basse au 1er temps, i-m-a pincés ensemble au 2e, basse alternée au 3e, i-m-a au 4e.',
       pas: [{ temps: 0, duree: 1, cordes: ['basse'] }, { temps: 1, duree: 1, cordes: [3, 2, 1] },
-            { temps: 2, duree: 1, cordes: ['alt'] }, { temps: 3, duree: 1, cordes: [3, 2, 1] }] }
+            { temps: 2, duree: 1, cordes: ['alt'] }, { temps: 3, duree: 1, cordes: [3, 2, 1] }] },
+    // Rock : le pouce balaie l'accord (power chord : ses seules cordes) en
+    // croches, toujours vers le bas — « l'aller du pouce ».
+    rock: { texte: 'Rock : le pouce balaie l’accord en croches, huit coups par mesure, toujours vers le bas, d’un geste sec de l’avant-bras.',
+      pas: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5].map(function (t) { return { temps: t, duree: 0.5, cordes: ['tout'] }; }) }
   };
   (global.CHANSONS || []).forEach(function (c) {
     var dico = {}, ordre = [];
@@ -1045,7 +1065,7 @@
     ajoute({
       id: c.id, titre: c.titre,
       sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
-      niveau: c.groupe === 'hit' ? 7 : (c.groupe === 'international' ? 8 : 6), tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      niveau: { hit: 7, international: 8, rock: 9 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
       chanson: true,
       description: 'Grille d’accords de la chanson, accompagnement écrit pour cette app (ni mélodie ni paroles : elles sont sous droits). ' +
         (c.capo ? 'Capodastre case ' + c.capo + ' pour retrouver la tonalité du disque : les accords se jouent comme écrits, le capo fait le reste. ' : '') +

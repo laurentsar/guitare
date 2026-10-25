@@ -140,6 +140,9 @@ Morceaux.tous().forEach(p => {
   // cases ; les autres morceaux écrits pour l'app, en première position.
   if (p.position) verifie(p.id + ' : cordes à vide ou cases ' + p.position + ' à ' + (p.position + 3),
           p.notes.every(n => n.frette === 0 || (n.frette >= p.position && n.frette <= p.position + 3)));
+  // Chansons : chaque note suit la forme de son accord (vérifié plus bas) ;
+  // les power chords du rock montent jusqu'à la case 6.
+  else if (p.chanson) verifie(p.id + ' : formes d’accords, rien au-delà de la case 7', p.notes.every(n => n.frette <= 7));
   else if (!p.source) verifie(p.id + ' : rien au-delà de la 5e case (première position)',
           p.notes.every(n => n.frette >= 0 && n.frette <= 5),
           p.notes.filter(n => n.frette > 5).map(n => n.frette).join(','));
@@ -363,6 +366,24 @@ console.log('\n— Nouvelles tablatures (v1.21) —');
     const n = Morceaux.get('acc-la-bamba').notes.filter((x) => x.temps >= 4 && x.temps < 8);
     return n.some((x) => x.accord === 'Fmaj7' && x.temps < 6) && n.some((x) => x.accord === 'G' && x.temps >= 6);
   })());
+}
+
+console.log('\n— Rock et reggae —');
+{
+  const rk = Morceaux.tous().filter((p) => p.chanson && p.niveau === 9);
+  const par = (a) => rk.filter((p) => new RegExp(a).test(p.sous_titre)).length;
+  verifie('12 chansons rock et reggae : Offspring 2, Nirvana 3, Cranberries 2, Police 2, Marley 3',
+          rk.length === 12 && par('Offspring') === 2 && par('Nirvana') === 3 && par('Cranberries') === 2 && par('Police') === 2 && par('Marley') === 3, rk.length);
+  const ts = Morceaux.get('ch-teen-spirit');
+  verifie('Teen Spirit : F5 Bb5 Ab5 Db5, deux par mesure, power chords sur 3 cordes',
+          ts.notes.filter((n) => n.temps === 0).length === 3 && ['F5', 'Bb5', 'Ab5', 'Db5'].every((id) => ts.mains.gauche.some((a) => a.id === id)) &&
+          ts.notes.some((n) => n.accord === 'Bb5' && n.temps === 2));
+  verifie('motif rock : le pouce balaie en croches, toujours vers le bas', Morceaux.get('ch-self-esteem').notes.every((n) => n.main === 'p') &&
+          new Set(Morceaux.get('ch-self-esteem').notes.map((n) => n.temps)).size === Tablature.duree_totale(Morceaux.get('ch-self-esteem')) * 2);
+  verifie('power chord : la basse est la fondamentale, une case plus haut que l’index… (F5 : index case 1, 6e corde)',
+          (() => { const f = ts.mains.gauche.find((a) => a.id === 'F5'); return f.basse === 6 && f.frettes[5] === 1 && f.doigts[5] === 1; })());
+  verifie('capo : Kids Aren’t Alright case 1, Every Breath case 1, Is This Love case 2',
+          Morceaux.get('ch-kids-arent-alright').capo === 1 && Morceaux.get('ch-every-breath').capo === 1 && Morceaux.get('ch-is-this-love').capo === 2);
 }
 
 console.log('\n— Tablature —');
@@ -637,9 +658,9 @@ console.log('\n— Chansons : grilles d’accords (v1.18) —');
   verifie('deux groupes : classiques (6) et hits récents (7)', ch.some((p) => p.niveau === 6) && ch.some((p) => p.niveau === 7));
   // Chaque accord joué doit sonner EXACTEMENT les notes de son nom.
   const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-  const INTERVALLES = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], m7b5: [0, 3, 6, 10] };
+  const INTERVALLES = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], m7b5: [0, 3, 6, 10], '5': [0, 7] };
   function attendu(id) {
-    const m = /^([A-G])(#|b)?(m7b5|maj7|m7|m|7)?$/.exec(id);
+    const m = /^([A-G])(#|b)?(m7b5|maj7|m7|m|7|5)?$/.exec(id);
     if (!m) return null;
     const r = (PC[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + 12) % 12;
     return { racine: r, notes: new Set(INTERVALLES[m[3] || ''].map((i) => (r + i) % 12)) };

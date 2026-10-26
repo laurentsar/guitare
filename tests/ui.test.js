@@ -474,6 +474,11 @@ function verifie(nom, cond, detail) {
           /Mistral gagnant/.test($('listeMorceaux').textContent) && /Popcorn salé/.test($('listeMorceaux').textContent));
   w.AppGuitare.ouvrirMorceau('ch-mistral-gagnant');
   verifie('chanson : noms des accords au-dessus de la tablature', [...$('detailMorceau').querySelectorAll('.tab-accord')].slice(0, 4).map((t) => t.textContent).join(' ') === 'Am Dm G C');
+  {
+    const css = fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8');
+    verifie('plein écran : le bandeau d’enchaînement colle sous la barre, sans trou (v1.26)', /\.partition\.plein-ecran \.bandeau-liste \{ position: sticky; top: 0;/.test(css));
+    verifie('téléphone en paysage : mise en page resserrée', /@media \(orientation: landscape\) and \(max-height: 520px\)/.test(css));
+  }
   verifie('panneau « suivant » caché hors enchaînement (cadre vide v1.17)', fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8').includes('.suite-liste[hidden]'));
   verifie('chanson : capodastre réglé d’office sur la case du disque (3)', /Capodastre\s*−\s*case 3/.test($('detailMorceau').textContent));
 

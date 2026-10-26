@@ -543,7 +543,9 @@ html.tv .pe-barre b { font-size: 22px; }
   border-radius: 12px; background: #2b2110; border: 1px solid var(--bois); font-size: 16px;
 }
 .suite-liste b { flex: 1 1 100%; }
-.partition.plein-ecran .bandeau-liste { position: sticky; top: 64px; z-index: 2; }
+/* Collé en haut de la zone qui défile : le padding du plein écran laisse
+ * déjà la place de la barre fixe (un top: 64px la doublait, v1.26). */
+.partition.plein-ecran .bandeau-liste { position: sticky; top: 0; z-index: 2; }
 /* display:flex ci-dessus l'emportait sur l'attribut hidden : cadre vide affiché (v1.17). */
 .suite-liste[hidden], .bandeau-liste[hidden] { display: none; }
 .tab-accord { fill: var(--bois); font-size: 11px; font-weight: 700; }
@@ -565,3 +567,20 @@ details.palier summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 details.palier.ferme summary { color: var(--texte-2); }
 details.palier .ligne-morceau { margin-top: 6px; }
 #pageProgramme .liste-ligne small { white-space: normal; }
+
+/* Téléphone en paysage : peu de hauteur, tout se resserre pour laisser la
+ * tablature à l'écran — barre plus basse, bandeau d'enchaînement sur une
+ * ligne, légende des doigts en petit. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .partition.plein-ecran { padding-top: 50px; padding-bottom: 40px; }
+  .partition.plein-ecran .pe-barre { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: 4px; gap: 6px;
+    padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .pe-barre .btn { min-height: 38px; padding-top: 4px; padding-bottom: 4px; }
+  .pe-barre .zoom-val { min-width: 64px; }
+  .partition.plein-ecran .bandeau-liste { padding: 3px 8px; margin: 2px 0 4px; gap: 6px; border-radius: 10px; }
+  .partition.plein-ecran .bandeau-liste .bl-txt { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .partition.plein-ecran .bandeau-liste .btn { min-height: 32px; min-width: 40px; padding: 2px 8px; }
+  .partition.plein-ecran .legende-doigts { font-size: 11px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .partition.plein-ecran .suite-liste { padding: 8px 10px; margin: 4px 0; font-size: 14px; }
+  .partition.plein-ecran .systeme { margin-bottom: 10px; }
+}

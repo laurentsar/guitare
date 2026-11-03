@@ -1409,6 +1409,12 @@
     var zoomLabels = [];
     function zoomRegle() { return Store.reglages().zoomPartition; }
     function largeurSvg(s) { return +((s.getAttribute('viewBox') || '').split(' ')[2]) || 0; }
+    /* Vue choisie, ou par défaut selon l'écran : sur un téléphone en
+     * portrait, la portée doublerait la longueur d'une tablature déjà faite
+     * d'une mesure par ligne — tablature seule ; ailleurs, les deux. */
+    function vueActive() {
+      return Store.reglages().vuePartition || (Math.min(window.innerWidth || 1024, window.innerHeight || 1024) < 600 ? 'tablature' : 'deux');
+    }
     function mettreEnPage() {
       var z = zoomRegle(), l = largeurDispo();
       if (z) return Tablature.miseEnPage(p, l * 0.8 / z, 8);
@@ -1452,7 +1458,7 @@
     }
 
     function dessiner() {
-      var vue = Store.reglages().vuePartition;
+      var vue = vueActive();
       page = mettreEnPage();
       if (vue === 'deux') {
         // Entrelacées ligne par ligne (portée puis sa tablature, comme Guitar
@@ -1475,6 +1481,7 @@
       Array.prototype.forEach.call(barreVue.children, function (b) {
         b.classList.toggle('actif', b.dataset.vue === vue);
       });
+      ligneSuivie = null;
       appliquerZoom();
       marquerSection();
     }
@@ -1491,6 +1498,33 @@
      * en paysage), avec une barre Jouer / Arrêter / tempo / Quitter, et elle
      * défile seule pour suivre la note jouée. API Fullscreen quand elle
      * existe (masque aussi la barre d'état), sinon simple calque fixe. */
+    /* Repères d'une longue tablature : un bouton par section (ou toutes les
+     * 8 mesures), qui amène la ligne à l'écran — sur un téléphone, on ne
+     * fait pas défiler 30 lignes à la main pour retrouver le refrain. */
+    var reperes = el('div', 'reperes');
+    var listeReperes = (p.sections && p.sections.length > 1) ? p.sections.map(function (s) { return { titre: s.titre, de: s.de }; }) : [];
+    if (!listeReperes.length && nbMesures >= 12) {
+      for (var mr = 1; mr <= nbMesures; mr += 8) listeReperes.push({ titre: 'Mes. ' + mr, de: mr });
+    }
+    if (listeReperes.length) {
+      reperes.appendChild(el('span', 'reperes-titre', 'Aller à :'));
+      listeReperes.forEach(function (r) {
+        var b = el('button', 'btn', r.titre);
+        b.onclick = function () { allerMesure(r.de); };
+        reperes.appendChild(b);
+      });
+    } else reperes.hidden = true;
+    function ligneDeMesure(m) {
+      var lignes = zone.children;
+      return lignes[Math.min(lignes.length - 1, Math.floor((m - 1) / page.mesuresParLigne))];
+    }
+    function amener(ligne, haut) {
+      if (!ligne) return;
+      var r = ligne.getBoundingClientRect();
+      if (pleinEcranOuvert()) boitePartition.scrollTop += r.top - (haut != null ? haut : peBarre.offsetHeight + 8);
+      else if (window.scrollBy) window.scrollBy(0, r.top - (haut != null ? haut : 12));
+    }
+    function allerMesure(m) { amener(ligneDeMesure(m)); }
     var boitePartition = el('div', 'partition');
     var peBarre = el('div', 'pe-barre');
     var peTitre = el('span', 'pe-titre', p.titre);
@@ -1515,6 +1549,7 @@
     legende.innerHTML = 'Lettres sous la tablature = doigts de la <b>main droite</b> : <b>p</b> pouce · <b>i</b> index · <b>m</b> majeur · <b>a</b> annulaire. ' +
       'Deux lettres (<b>pm</b>, <b>im</b>…) = deux doigts qui pincent en même temps, de la corde grave à l’aiguë.';
     boitePartition.appendChild(legende);
+    boitePartition.appendChild(reperes);
     boitePartition.appendChild(zone);
     // Pincement à deux doigts (en plus des boutons 🔍) : aperçu immédiat
     // (agrandissement CSS), puis mise en page à la nouvelle échelle au lâcher.
@@ -1672,16 +1707,24 @@
         if (Math.abs(l - dernierL) > 20) { dernierL = l; dessiner(); }
       }, 200);
     });
-    /* Suit la note jouée : la ligne en cours reste visible (plein écran). */
+    /* Suit la note jouée : la ligne en cours reste à l'écran, en plein écran
+     * comme sur la page (téléphone : les deux mains sont sur la guitare). */
+    var ligneSuivie = null;
     function suivreLigne() {
-      if (!pleinEcranOuvert()) return;
       var n = zone.querySelector('.en-cours');
       var ligne = n && n.closest('.systeme, .tab-ligne, .portee-ligne-bloc');
-      if (!ligne) return;
-      var r = ligne.getBoundingClientRect();
-      if (r.top < peBarre.offsetHeight + 6 || r.bottom > window.innerHeight - 20) {
-        boitePartition.scrollTop += r.top - window.innerHeight * 0.3;
+      if (!ligne || ligne === ligneSuivie) return;
+      // Sur la page : seulement si la partition est à l'écran — on ne
+      // vient pas arracher l'élève à la lecture de la description.
+      if (!pleinEcranOuvert()) {
+        var z = zone.getBoundingClientRect();
+        if (z.bottom < 0 || z.top > window.innerHeight) return;
       }
+      ligneSuivie = ligne;
+      var r = ligne.getBoundingClientRect();
+      var haut = pleinEcranOuvert() ? peBarre.offsetHeight + 6 : 0;
+      var bas = window.innerHeight - (pleinEcranOuvert() ? 20 : 90);   // la barre d'onglets en bas
+      if (r.top < haut || r.bottom > bas) amener(ligne, haut + Math.round(window.innerHeight * 0.15));
     }
 
     // Manche virtuel : la note jouée s'allume là où poser le doigt.

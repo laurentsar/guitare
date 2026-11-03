@@ -1075,7 +1075,8 @@
     ajoute({
       id: c.id, titre: c.titre,
       sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
-      niveau: { hit: 7, international: 8, rock: 9 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      niveau: { hit: 7, international: 8, rock: 9, tiktok: 10 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      categorie: c.groupe === 'tiktok' ? 'tiktok' : undefined,
       chanson: true,
       description: 'Grille d’accords de la chanson, accompagnement écrit pour cette app (ni mélodie ni paroles : elles sont sous droits). ' +
         (c.capo ? 'Capodastre case ' + c.capo + ' pour retrouver la tonalité du disque : les accords se jouent comme écrits, le capo fait le reste. ' : '') +
@@ -1235,6 +1236,48 @@
     notes: aVide([[5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1],
                   [4, 1], [4, 1], [4, 1], [4, 1],
                   [5, 1], [5, 1], [4, 1], [5, 1], [5, 4]])
+  });
+
+  /* Bella Ciao (chant traditionnel italien, domaine public), relevé d'une
+   * vidéo de @wiragustiii : toute la mélodie sur la 1re corde (Mi aigu),
+   * cases 0 à 13, avec un glissé 8 → 12. Hauteurs vérifiées sur le son (corde
+   * à vide = Mi4, 330 Hz), rythme mesuré : ♩ ≈ 120, croche = 0,25 s.
+   * [case, durée en noires] ; 9 mesures, la dernière note tenue. */
+  var BELLA_CIAO = [
+    [0, .5], [5, .5], [7, .5], [8, .5], [5, 2],
+    [0, .5], [5, .5], [7, .5], [8, .5], [5, 2],
+    [0, .5], [5, .5], [7, .5], [8, 1], [7, .5], [5, .5], [8, 1], [7, .5], [5, .5], [8, .5], [12, .5],
+    [12, 1], [12, .5], [12, .5], [10, .5], [12, .5], [13, .5], [13, 2],
+    [13, .5], [12, .5], [10, .5], [13, .5], [12, 2],
+    [12, .5], [10, .5], [8, .5], [7, 1], [12, 1], [8, 1], [7, .5], [5, 1], [0, 1.5], [5, 4.5]
+  ];
+  var GLISSE = 19;    // le Do (case 8) qui glisse jusqu'au Mi (case 12)
+  var SECTIONS_BELLA = [{ titre: 'Una mattina (×2)', de: 1, a: 2 }, { titre: 'O bella ciao', de: 3, a: 4 },
+                        { titre: 'Mi son alzato', de: 5, a: 6 }, { titre: 'L’invasor, et fin', de: 7, a: 9 }];
+  ajoute({
+    id: 'tiktok-bella-ciao', titre: 'Bella Ciao sur une corde', sous_titre: 'TikTok · @wiragustiii · chant traditionnel italien · 1re corde',
+    niveau: 3, tempo: 120, signature: [4, 4], categorie: 'tiktok', sections: SECTIONS_BELLA,
+    description: 'Relevé d’une vidéo TikTok (@wiragustiii) : toute la mélodie de Bella Ciao (chant traditionnel, domaine public) sur la seule 1re corde, le Mi aigu. La main gauche monte le long du manche : en Ve position (case 5 = index, 7 = annulaire, 8 = auriculaire), puis en Xe (case 10 = index, 12 = annulaire, 13 = auriculaire). « 8/12 » : l’annulaire glisse de la case 8 à la 12 sans quitter la corde. Main droite : index et majeur en alternance.',
+    notes: (function () {
+      var t = 0, k = 0;
+      return BELLA_CIAO.map(function (x, i) {
+        var f = x[0];
+        var n = { corde: 1, frette: f, temps: t, duree: x[1], midi: 64 + f, main: (k++ % 2) ? 'm' : 'i' };
+        if (f) n.doigt = i === GLISSE ? 3 : { 5: 1, 7: 3, 8: 4, 10: 1, 12: 3, 13: 4 }[f];
+        if (i === GLISSE) n.glisse = 12;
+        t += x[1];
+        return n;
+      });
+    })()
+  });
+  // La même, une octave plus bas : tout tient en première position.
+  ajoute({
+    id: 'tiktok-bella-ciao-facile', titre: 'Bella Ciao — version facile', sous_titre: 'TikTok · même mélodie en première position',
+    niveau: 2, tempo: 100, signature: [4, 4], categorie: 'tiktok', sections: SECTIONS_BELLA,
+    description: 'La mélodie de la vidéo, une octave plus bas : elle tient en première position, sans déplacer la main (cordes 4 à 1, cases 0 à 3, un doigt par case). Une fois sûre, passe à la version sur une corde.',
+    notes: melodie(BELLA_CIAO.map(function (x) {
+      return [{ 0: 'mi3', 5: 'la3', 7: 'si3', 8: 'do4', 10: 're4', 12: 'mi4', 13: 'fa4' }[x[0]], x[1]];
+    }), { alterne: true })
   });
 
   /* Le pouce avec la main gauche : l'étape suivante, une fois le pouce sûr

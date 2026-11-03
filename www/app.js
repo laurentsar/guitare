@@ -875,8 +875,13 @@
     }
     if (tiktok.length) {
       h.appendChild(el('h3', null, '📱 TikTok'));
-      h.appendChild(el('p', 'aide', 'Des morceaux relevés dans des vidéos TikTok, note par note, avec la tablature et la lecture de l’app.'));
-      tiktok.forEach(function (p) { h.appendChild(ligne(p, '♩ = ' + p.tempo)); });
+      h.appendChild(el('p', 'aide', 'Des morceaux relevés dans des vidéos TikTok, note par note. Quand la vidéo montrait le riff d’une chanson sous droits, l’app donne la grille d’accords de la chanson (ni mélodie ni paroles).'));
+      tiktok.filter(function (p) { return !p.chanson; }).forEach(function (p) { h.appendChild(ligne(p, '♩ = ' + p.tempo)); });
+      var grillesTT = tiktok.filter(function (p) { return p.chanson; });
+      if (grillesTT.length) {
+        h.appendChild(el('p', 'aide', 'Vu sur TikTok — grilles d’accords :'));
+        grillesTT.forEach(function (p) { h.appendChild(ligne(p, 'grille')); });
+      }
     }
     var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
                          6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)', 9: 'Rock et reggae — Offspring, Nirvana, Cranberries, Police, Marley' };
@@ -1912,7 +1917,7 @@
     function rendreManche(t) {
       var pts = t == null ? [] : pointsManche(p.notes.filter(function (n) { return n.temps === t; }));
       var maxCase = p.notes.reduce(function (m, n) { return Math.max(m, n.frette); }, 0);
-      manche.innerHTML = Manche.svg({ cases: Math.max(5, Math.min(12, maxCase + 1)), points: pts });
+      manche.innerHTML = Manche.svg({ cases: Math.max(5, Math.min(19, maxCase + 1)), points: pts });
     }
     function bouton(txt, fn, cle) {
       var b = el('button', 'btn', txt);

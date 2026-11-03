@@ -405,6 +405,50 @@
       note: 'Capo case 3 : Si♭ – Fa – Mi♭ se jouent Sol – Ré – Do. Le refrain seulement.',
       sections: [
         { titre: 'Refrain', motif: 'plaque', tours: 4, grille: ['G', 'D', 'C', 'G|D'] }
+      ] },
+    /* Vu sur TikTok : chansons dont les vidéos montraient le riff. Le riff
+     * est la mélodie de la chanson, sous droits : ici la grille seulement,
+     * rangée dans la section 📱 TikTok. Grilles d'après Hooktheory. */
+    { id: 'ch-smoke-on-the-water', titre: 'Smoke on the Water', artiste: 'Deep Purple', annee: 1972,
+      capo: 0, tempo: 112, groupe: 'tiktok',
+      note: 'En Sol mineur, tout en power chords. Les accords de l’intro (Sol, Si♭, Do) sont ceux sur lesquels tourne le riff célèbre.',
+      sections: [
+        { titre: 'Intro', motif: 'rock', tours: 2, grille: ['G5', 'Bb5', 'C5', 'G5'] },
+        { titre: 'Couplet', motif: 'rock', tours: 2, grille: ['G5', 'F5', 'G5', 'G5'] },
+        { titre: 'Refrain', motif: 'rock', tours: 2, grille: ['C5', 'Ab5', 'G5', 'G5|Bb5'] }
+      ] },
+    { id: 'ch-feel-good-inc', titre: 'Feel Good Inc', artiste: 'Gorillaz', annee: 2005,
+      capo: 6, tempo: 138, groupe: 'tiktok',
+      note: 'Capo case 6 : Ré♯ m – La♯7 – Sol♯ m7 se jouent La m – Mi7 – Ré m (le m7 joué simple).',
+      sections: [
+        { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['Am', 'E7', 'Dm', 'Am'] },
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['Am', 'G', 'Dm', 'E7'] }
+      ] },
+    { id: 'ch-do-i-wanna-know', titre: 'Do I Wanna Know?', artiste: 'Arctic Monkeys', annee: 2013,
+      capo: 3, tempo: 85, groupe: 'tiktok',
+      note: 'Capo case 3 : Sol m – Mi♭ – Do m – Ré se jouent Mi m – Do – La m – Si7.',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'plaque', tours: 2, grille: ['Em', 'C', 'Am', 'B7'] },
+        { titre: 'Pré-refrain', motif: 'balade', grille: ['C', 'Am', 'Em', 'Em'] }
+      ] },
+    { id: 'ch-dance-monkey', titre: 'Dance Monkey', artiste: 'Tones and I', annee: 2019,
+      capo: 2, tempo: 98, groupe: 'tiktok',
+      note: 'Capo case 2 : Fa♯ m – Ré – Mi – Do♯ m se jouent Mi m – Do – Ré – Si m (barré).',
+      sections: [
+        { titre: 'Couplet', motif: 'plaque', tours: 2, grille: ['Bm', 'Em', 'C', 'D'] },
+        { titre: 'Refrain', motif: 'balade', tours: 2, grille: ['Em', 'C', 'D', 'Bm'] }
+      ] },
+    { id: 'ch-where-is-my-mind', titre: 'Where Is My Mind?', artiste: 'Pixies', annee: 1988,
+      capo: 4, tempo: 81, groupe: 'tiktok',
+      note: 'Capo case 4 : Mi – Do♯ m – Sol♯ – La se jouent Do – La m – Mi – Fa (barré). La même grille du début à la fin.',
+      sections: [
+        { titre: 'Couplet et refrain', motif: 'balade', tours: 4, grille: ['C', 'Am', 'E', 'F'] }
+      ] },
+    { id: 'ch-hit-the-road-jack', titre: 'Hit the Road Jack', artiste: 'Ray Charles', annee: 1961,
+      capo: 4, tempo: 87, groupe: 'tiktok',
+      note: 'Capo case 4 : Sol♯ m – Fa♯ – Mi – Ré♯ se jouent Mi m – Ré – Do – Si7 : quatre accords qui descendent, en boucle.',
+      sections: [
+        { titre: 'Grille', motif: 'plaque', tours: 4, grille: ['Em', 'D', 'C', 'B7'] }
       ] }
   ];
 })(typeof window !== 'undefined' ? window : globalThis);

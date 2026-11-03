@@ -399,6 +399,21 @@ function verifie(nom, cond, detail) {
     verifie('ouvrir un morceau hors liste : plus de bandeau', !$('detailMorceau').querySelector('.bandeau-liste'));
   }
 
+  console.log('\n— Rubriques dépliantes (v1.29) —');
+  {
+    w.AppGuitare.aller('morceaux');
+    const rub = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')];
+    verifie('Morceaux : chaque rubrique est un menu dépliant', rub.length >= 10 && $('listeMorceaux').querySelectorAll('h3').length === rub.length, rub.length);
+    verifie('rubriques fermées par défaut', rub.every((d) => !d.open));
+    verifie('nombre de morceaux affiché dans le titre', rub.some((d) => /🎸 Travailler les accords/.test(d.textContent) && +d.querySelector('.rubrique-nb').textContent > 5));
+    const acc = rub.find((d) => /Travailler les accords/.test(d.querySelector('summary').textContent));
+    acc.open = true; acc.dispatchEvent(new w.Event('toggle'));
+    w.AppGuitare.ouvrirMorceau('acc-em-am'); w.AppGuitare.aller('morceaux');
+    const ouvertes = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].filter((d) => d.open).map((d) => d.querySelector('h3').textContent);
+    verifie('une rubrique ouverte le reste en revenant d’un morceau', ouvertes.length === 1 && /Travailler les accords/.test(ouvertes[0]), ouvertes.join(','));
+    verifie('le bouton « Mon programme » reste visible hors des rubriques', /Mon programme progressif/.test($('listeMorceaux').firstChild.textContent));
+  }
+
   console.log('\n— Pouce seul (v1.25) —');
   w.AppGuitare.aller('morceaux');
   {

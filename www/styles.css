@@ -584,3 +584,15 @@ details.palier .ligne-morceau { margin-top: 6px; }
   .partition.plein-ecran .suite-liste { padding: 8px 10px; margin: 4px 0; font-size: 14px; }
   .partition.plein-ecran .systeme { margin-bottom: 10px; }
 }
+
+/* Liste des morceaux : rubriques dépliantes, fermées par défaut. */
+details.rubrique-morceaux { padding: 0 14px; margin-top: 10px; }
+details.rubrique-morceaux > summary { display: flex; align-items: center; gap: 8px; padding: 12px 0; list-style: none; color: var(--texte); }
+details.rubrique-morceaux > summary::-webkit-details-marker { display: none; }
+details.rubrique-morceaux > summary::before { content: '▸'; color: var(--accent); transition: transform .15s; }
+details.rubrique-morceaux[open] > summary::before { transform: rotate(90deg); }
+details.rubrique-morceaux > summary h3 { flex: 1; margin: 0; font-size: 16px; }
+details.rubrique-morceaux .rubrique-nb { font-size: 12px; color: var(--texte-2); background: var(--fond-2); border-radius: 999px; padding: 2px 8px; }
+details.rubrique-morceaux .rubrique-nb:empty { display: none; }
+details.rubrique-morceaux[open] { padding-bottom: 12px; }
+details.rubrique-morceaux .enchainer { margin: 0; border: 0; padding: 0; background: none; }

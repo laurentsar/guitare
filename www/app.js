@@ -825,12 +825,31 @@
   // la différence, seule la liste les range à part.
   function trouverMorceau(id) { return Morceaux.get(id) || Store.tablature(id); }
 
+  /* Rubriques de la liste : des menus dépliants, fermés par défaut. Ceux
+   * qu'on ouvre le restent jusqu'à la fermeture de l'app (on revient d'un
+   * morceau sur la liste telle qu'on l'a laissée). */
+  var rubriquesOuvertes = {};
   function rendreMorceaux() {
     var h = vide($('listeMorceaux'));
+    var cible = h;
+    function rubrique(titre) {
+      var d = el('details', 'rubrique-morceaux');
+      d.open = !!rubriquesOuvertes[titre];
+      var s = el('summary');
+      s.appendChild(el('h3', null, titre));
+      s.appendChild(el('span', 'rubrique-nb'));
+      d.appendChild(s);
+      d.addEventListener('toggle', function () { rubriquesOuvertes[titre] = d.open; });
+      h.appendChild(d);
+      return d;
+    }
     var bProg = el('button', 'btn primaire large', '🪜 Mon programme progressif');
     bProg.onclick = function () { aller('programme'); };
     h.appendChild(bProg);
-    h.appendChild(blocEnchainer());
+    var bloc = blocEnchainer();
+    var tEnch = bloc.querySelector('h3');
+    rubrique(tEnch.textContent).appendChild(bloc);
+    tEnch.remove();
     var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [];
     Morceaux.tous().forEach(function (p) {
       if (p.categorie === 'accords') exercices.push(p);
@@ -852,53 +871,58 @@
     var aimes = Store.aimes();
     var favoris = aimes.map(trouverMorceau).filter(Boolean);
     if (favoris.length) {
-      h.appendChild(el('h3', null, '♥ Mes favoris'));
-      favoris.forEach(function (p) { h.appendChild(ligne(p, etatSuivi(p.id))); });
+      cible = rubrique('♥ Mes favoris');
+      favoris.forEach(function (p) { cible.appendChild(ligne(p, etatSuivi(p.id))); });
     }
     // Les exercices d'accords d'abord : c'est par eux qu'on accompagne une
     // chanson, bien avant de lire une pièce du répertoire.
     if (exercices.length) {
-      h.appendChild(el('h3', null, '🎸 Travailler les accords'));
-      h.appendChild(el('p', 'aide', 'Des tablatures faites pour poser les accords et passer de l’un à l’autre en musique : balayé au pouce, puis basse et accord plaqué, puis arpège.'));
+      cible = rubrique('🎸 Travailler les accords');
+      cible.appendChild(el('p', 'aide', 'Des tablatures faites pour poser les accords et passer de l’un à l’autre en musique : balayé au pouce, puis basse et accord plaqué, puis arpège.'));
       exercices.sort(function (a, b) { return a.niveau - b.niveau; })
-        .forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
+        .forEach(function (p) { cible.appendChild(ligne(p, 'niv. ' + p.niveau)); });
     }
     if (pouce.length) {
-      h.appendChild(el('h3', null, '👍 Pouce seul — cordes à vide'));
-      h.appendChild(el('p', 'aide', 'Uniquement le pouce de la main droite, uniquement des cordes à vide : la main gauche ne touche rien. Dans l’ordre : le rythme, les basses, les sauts de cordes, le balayé, le pom-tcha, le contretemps, le rock, et un petit morceau pour finir.'));
-      pouce.forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
+      cible = rubrique('👍 Pouce seul — cordes à vide');
+      cible.appendChild(el('p', 'aide', 'Uniquement le pouce de la main droite, uniquement des cordes à vide : la main gauche ne touche rien. Dans l’ordre : le rythme, les basses, les sauts de cordes, le balayé, le pom-tcha, le contretemps, le rock, et un petit morceau pour finir.'));
+      pouce.forEach(function (p) { cible.appendChild(ligne(p, 'niv. ' + p.niveau)); });
     }
     if (pouceMain.length) {
-      h.appendChild(el('h3', null, '👍✋ Pouce + main gauche'));
-      h.appendChild(el('p', 'aide', 'L’étape suivante : toujours le pouce seul à droite, mais la main gauche appuie des cases — gamme dans les basses, basses sur des accords, mélodies au pouce, chansons en pom-tcha.'));
-      pouceMain.forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
+      cible = rubrique('👍✋ Pouce + main gauche');
+      cible.appendChild(el('p', 'aide', 'L’étape suivante : toujours le pouce seul à droite, mais la main gauche appuie des cases — gamme dans les basses, basses sur des accords, mélodies au pouce, chansons en pom-tcha.'));
+      pouceMain.forEach(function (p) { cible.appendChild(ligne(p, 'niv. ' + p.niveau)); });
     }
     if (tiktok.length) {
-      h.appendChild(el('h3', null, '📱 TikTok'));
-      h.appendChild(el('p', 'aide', 'Des morceaux relevés dans des vidéos TikTok, note par note. Quand la vidéo montrait le riff d’une chanson sous droits, l’app donne la grille d’accords de la chanson (ni mélodie ni paroles).'));
-      tiktok.filter(function (p) { return !p.chanson; }).forEach(function (p) { h.appendChild(ligne(p, '♩ = ' + p.tempo)); });
+      cible = rubrique('📱 TikTok');
+      cible.appendChild(el('p', 'aide', 'Des morceaux relevés dans des vidéos TikTok, note par note. Quand la vidéo montrait le riff d’une chanson sous droits, l’app donne la grille d’accords de la chanson (ni mélodie ni paroles).'));
+      tiktok.filter(function (p) { return !p.chanson; }).forEach(function (p) { cible.appendChild(ligne(p, '♩ = ' + p.tempo)); });
       var grillesTT = tiktok.filter(function (p) { return p.chanson; });
       if (grillesTT.length) {
-        h.appendChild(el('p', 'aide', 'Vu sur TikTok — grilles d’accords :'));
-        grillesTT.forEach(function (p) { h.appendChild(ligne(p, 'grille')); });
+        cible.appendChild(el('p', 'aide', 'Vu sur TikTok — grilles d’accords :'));
+        grillesTT.forEach(function (p) { cible.appendChild(ligne(p, 'grille')); });
       }
     }
-    var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
+    var NOMS_NIVEAUX = { 1: 'Niveau 1 — grand débutant', 2: 'Niveau 2 — premières mélodies', 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
                          6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)', 9: 'Rock et reggae — Offspring, Nirvana, Cranberries, Police, Marley' };
     Object.keys(niveaux).sort().forEach(function (n) {
-      h.appendChild(el('h3', null, NOMS_NIVEAUX[n] || 'Niveau ' + n));
-      niveaux[n].forEach(function (p) { h.appendChild(ligne(p, '♩ = ' + p.tempo)); });
+      cible = rubrique(NOMS_NIVEAUX[n] || 'Niveau ' + n);
+      niveaux[n].forEach(function (p) { cible.appendChild(ligne(p, '♩ = ' + p.tempo)); });
     });
 
-    h.appendChild(el('h3', null, 'Mes tablatures'));
-    h.appendChild(el('p', 'aide', 'Niveaux 3 à 5 : pièces du Mutopia Project (partitions libres, domaine public ou Creative Commons). Le placement sur le manche est calculé par l’app : si une position te semble inconfortable, le doigté d’une édition papier peut différer.'));
+    cible = rubrique('Mes tablatures');
+    cible.appendChild(el('p', 'aide', 'Niveaux 3 à 5 : pièces du Mutopia Project (partitions libres, domaine public ou Creative Commons). Le placement sur le manche est calculé par l’app : si une position te semble inconfortable, le doigté d’une édition papier peut différer.'));
 
     var perso = Store.tablatures();
-    if (!perso.length) h.appendChild(el('p', 'aide', 'Écris ta propre tablature, ou colles-en une trouvée sur internet : elle se jouera ici comme les autres, avec boucle, ralenti et manche.'));
-    perso.forEach(function (p) { h.appendChild(ligne(p, p.notes.length + ' notes')); });
+    if (!perso.length) cible.appendChild(el('p', 'aide', 'Écris ta propre tablature, ou colles-en une trouvée sur internet : elle se jouera ici comme les autres, avec boucle, ralenti et manche.'));
+    perso.forEach(function (p) { cible.appendChild(ligne(p, p.notes.length + ' notes')); });
     var bNouv = el('button', 'btn primaire large', '✏️ Nouvelle tablature');
     bNouv.onclick = function () { ouvrirEditeur(null); };
-    h.appendChild(bNouv);
+    cible.appendChild(bNouv);
+    // Nombre de morceaux dans chaque rubrique, à droite du titre.
+    Array.prototype.forEach.call(h.querySelectorAll('.rubrique-morceaux'), function (d) {
+      var n = d.querySelectorAll('.ligne-morceau').length;
+      if (n) d.querySelector('.rubrique-nb').textContent = n;
+    });
   }
 
   /* Le lecteur, façon logiciel de tablature : tempo, boucle sur une section,
@@ -1385,6 +1409,12 @@
     var zoomLabels = [];
     function zoomRegle() { return Store.reglages().zoomPartition; }
     function largeurSvg(s) { return +((s.getAttribute('viewBox') || '').split(' ')[2]) || 0; }
+    /* Vue choisie, ou par défaut selon l'écran : sur un téléphone en
+     * portrait, la portée doublerait la longueur d'une tablature déjà faite
+     * d'une mesure par ligne — tablature seule ; ailleurs, les deux. */
+    function vueActive() {
+      return Store.reglages().vuePartition || (Math.min(window.innerWidth || 1024, window.innerHeight || 1024) < 600 ? 'tablature' : 'deux');
+    }
     function mettreEnPage() {
       var z = zoomRegle(), l = largeurDispo();
       if (z) return Tablature.miseEnPage(p, l * 0.8 / z, 8);
@@ -1428,7 +1458,7 @@
     }
 
     function dessiner() {
-      var vue = Store.reglages().vuePartition;
+      var vue = vueActive();
       page = mettreEnPage();
       if (vue === 'deux') {
         // Entrelacées ligne par ligne (portée puis sa tablature, comme Guitar
@@ -1451,6 +1481,7 @@
       Array.prototype.forEach.call(barreVue.children, function (b) {
         b.classList.toggle('actif', b.dataset.vue === vue);
       });
+      ligneSuivie = null;
       appliquerZoom();
       marquerSection();
     }
@@ -1467,6 +1498,33 @@
      * en paysage), avec une barre Jouer / Arrêter / tempo / Quitter, et elle
      * défile seule pour suivre la note jouée. API Fullscreen quand elle
      * existe (masque aussi la barre d'état), sinon simple calque fixe. */
+    /* Repères d'une longue tablature : un bouton par section (ou toutes les
+     * 8 mesures), qui amène la ligne à l'écran — sur un téléphone, on ne
+     * fait pas défiler 30 lignes à la main pour retrouver le refrain. */
+    var reperes = el('div', 'reperes');
+    var listeReperes = (p.sections && p.sections.length > 1) ? p.sections.map(function (s) { return { titre: s.titre, de: s.de }; }) : [];
+    if (!listeReperes.length && nbMesures >= 12) {
+      for (var mr = 1; mr <= nbMesures; mr += 8) listeReperes.push({ titre: 'Mes. ' + mr, de: mr });
+    }
+    if (listeReperes.length) {
+      reperes.appendChild(el('span', 'reperes-titre', 'Aller à :'));
+      listeReperes.forEach(function (r) {
+        var b = el('button', 'btn', r.titre);
+        b.onclick = function () { allerMesure(r.de); };
+        reperes.appendChild(b);
+      });
+    } else reperes.hidden = true;
+    function ligneDeMesure(m) {
+      var lignes = zone.children;
+      return lignes[Math.min(lignes.length - 1, Math.floor((m - 1) / page.mesuresParLigne))];
+    }
+    function amener(ligne, haut) {
+      if (!ligne) return;
+      var r = ligne.getBoundingClientRect();
+      if (pleinEcranOuvert()) boitePartition.scrollTop += r.top - (haut != null ? haut : peBarre.offsetHeight + 8);
+      else if (window.scrollBy) window.scrollBy(0, r.top - (haut != null ? haut : 12));
+    }
+    function allerMesure(m) { amener(ligneDeMesure(m)); }
     var boitePartition = el('div', 'partition');
     var peBarre = el('div', 'pe-barre');
     var peTitre = el('span', 'pe-titre', p.titre);
@@ -1491,6 +1549,7 @@
     legende.innerHTML = 'Lettres sous la tablature = doigts de la <b>main droite</b> : <b>p</b> pouce · <b>i</b> index · <b>m</b> majeur · <b>a</b> annulaire. ' +
       'Deux lettres (<b>pm</b>, <b>im</b>…) = deux doigts qui pincent en même temps, de la corde grave à l’aiguë.';
     boitePartition.appendChild(legende);
+    boitePartition.appendChild(reperes);
     boitePartition.appendChild(zone);
     // Pincement à deux doigts (en plus des boutons 🔍) : aperçu immédiat
     // (agrandissement CSS), puis mise en page à la nouvelle échelle au lâcher.
@@ -1648,16 +1707,24 @@
         if (Math.abs(l - dernierL) > 20) { dernierL = l; dessiner(); }
       }, 200);
     });
-    /* Suit la note jouée : la ligne en cours reste visible (plein écran). */
+    /* Suit la note jouée : la ligne en cours reste à l'écran, en plein écran
+     * comme sur la page (téléphone : les deux mains sont sur la guitare). */
+    var ligneSuivie = null;
     function suivreLigne() {
-      if (!pleinEcranOuvert()) return;
       var n = zone.querySelector('.en-cours');
       var ligne = n && n.closest('.systeme, .tab-ligne, .portee-ligne-bloc');
-      if (!ligne) return;
-      var r = ligne.getBoundingClientRect();
-      if (r.top < peBarre.offsetHeight + 6 || r.bottom > window.innerHeight - 20) {
-        boitePartition.scrollTop += r.top - window.innerHeight * 0.3;
+      if (!ligne || ligne === ligneSuivie) return;
+      // Sur la page : seulement si la partition est à l'écran — on ne
+      // vient pas arracher l'élève à la lecture de la description.
+      if (!pleinEcranOuvert()) {
+        var z = zone.getBoundingClientRect();
+        if (z.bottom < 0 || z.top > window.innerHeight) return;
       }
+      ligneSuivie = ligne;
+      var r = ligne.getBoundingClientRect();
+      var haut = pleinEcranOuvert() ? peBarre.offsetHeight + 6 : 0;
+      var bas = window.innerHeight - (pleinEcranOuvert() ? 20 : 90);   // la barre d'onglets en bas
+      if (r.top < haut || r.bottom > bas) amener(ligne, haut + Math.round(window.innerHeight * 0.15));
     }
 
     // Manche virtuel : la note jouée s'allume là où poser le doigt.

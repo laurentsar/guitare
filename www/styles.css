@@ -584,3 +584,28 @@ details.palier .ligne-morceau { margin-top: 6px; }
   .partition.plein-ecran .suite-liste { padding: 8px 10px; margin: 4px 0; font-size: 14px; }
   .partition.plein-ecran .systeme { margin-bottom: 10px; }
 }
+
+/* Liste des morceaux : rubriques dépliantes, fermées par défaut. */
+details.rubrique-morceaux { padding: 0 14px; margin-top: 10px; }
+details.rubrique-morceaux > summary { display: flex; align-items: center; gap: 8px; padding: 12px 0; list-style: none; color: var(--texte); }
+details.rubrique-morceaux > summary::-webkit-details-marker { display: none; }
+details.rubrique-morceaux > summary::before { content: '▸'; color: var(--accent); transition: transform .15s; }
+details.rubrique-morceaux[open] > summary::before { transform: rotate(90deg); }
+details.rubrique-morceaux > summary h3 { flex: 1; margin: 0; font-size: 16px; }
+details.rubrique-morceaux .rubrique-nb { font-size: 12px; color: var(--texte-2); background: var(--fond-2); border-radius: 999px; padding: 2px 8px; }
+details.rubrique-morceaux .rubrique-nb:empty { display: none; }
+details.rubrique-morceaux[open] { padding-bottom: 12px; }
+details.rubrique-morceaux .enchainer { margin: 0; border: 0; padding: 0; background: none; }
+
+/* Longues tablatures sur téléphone : numéro de mesure en début de ligne et
+ * boutons « Aller à » (sections, ou toutes les 8 mesures). */
+.tab-num { fill: var(--texte-2); font-size: 10px; font-weight: 700; }
+.reperes { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding: 4px 0 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.reperes::-webkit-scrollbar { display: none; }
+.reperes[hidden] { display: none; }
+.reperes-titre { flex: none; align-self: center; font-size: 12px; color: var(--texte-2); }
+.reperes .btn { flex: none; min-height: 34px; padding: 4px 10px; font-size: 13px; white-space: nowrap; }
+@media (orientation: landscape) and (max-height: 520px) {
+  .partition.plein-ecran .reperes { padding: 0 0 4px; }
+  .partition.plein-ecran .reperes .btn { min-height: 28px; padding: 2px 8px; }
+}

@@ -90,6 +90,9 @@
       p.push('<line x1="' + margeG + '" y1="' + y + '" x2="' + (L - margeD) + '" y2="' + y + '" class="tab-corde"/>');
     }
     p.push('<text x="4" y="' + (margeH + 2.5 * interligne + 4) + '" class="tab-clef">TAB</text>');
+    // Numéro de la première mesure de la ligne : sur un téléphone, une
+    // longue tablature fait des dizaines de lignes, il faut savoir où l'on est.
+    p.push('<text x="4" y="' + (margeH - 5) + '" class="tab-num">' + (Math.round(ligne.debut / parMesure) + 1) + '</text>');
 
     // Barres de mesure.
     for (var t = ligne.debut; t <= ligne.fin; t += parMesure) {

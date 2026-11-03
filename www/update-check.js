@@ -1,7 +1,7 @@
 /*
  * update-check.js — vérification et installation des mises à jour (même
  * principe que Recettes) : dernière release via l'API GitHub (repli sur le
- * flux Atom /releases.atom, sans quota), bandeau avec les nouveautés, puis
+ * version.json de GitHub Pages, sans quota), bandeau avec les nouveautés, puis
  * « Installer » qui télécharge l'APK et ouvre l'installeur Android (plugin
  * natif UpdatePlugin, via apk-update.js).
  * Dans le navigateur (PWA), « Mettre à jour » recharge simplement la page :
@@ -46,20 +46,6 @@
     return !!(cap && cap.isNativePlatform && cap.isNativePlatform());
   }
 
-  // Extrait « 1.23 » du lien de release (…/releases/tag/v1.23) ou du titre
-  // (« Ma Guitare v1.23 » : le titre Atom est le nom de la release, pas le tag).
-  function versionOf(entry) {
-    var linkEl = entry.querySelector('link[rel="alternate"]') || entry.querySelector('link');
-    var href = linkEl ? (linkEl.getAttribute('href') || '') : '';
-    var titleEl = entry.querySelector('title');
-    var sources = [href.split('/tag/')[1] || '', titleEl ? titleEl.textContent : ''];
-    for (var i = 0; i < sources.length; i++) {
-      var m = String(sources[i]).match(/v?(\d+(?:\.\d+)+)/);
-      if (m) return m[1];
-    }
-    return null;
-  }
-
   // Dernière release via l'API GitHub : tag exact + vrai lien de l'APK.
   // Cache-buster (_) : un service worker ne doit pas servir une réponse périmée.
   function fromApi() {
@@ -75,20 +61,17 @@
         return { latest: m[1], apkUrl: apk ? apk.browser_download_url : '', notes: d.body || '', pageUrl: d.html_url || '' };
       });
   }
-  // Repli : flux Atom des releases (pas de quota d'API).
-  function fromAtom() {
-    return fetch('https://github.com/' + REPO + '/releases.atom?_=' + Date.now(), {
-      headers: { Accept: 'application/atom+xml, text/xml, */*' }
-    })
-      .then(function (r) { return r.ok ? r.text() : null; })
-      .then(function (xml) {
-        if (!xml) return null;
-        var doc = new DOMParser().parseFromString(xml, 'text/xml');
-        var entry = doc.querySelector('entry');
-        var latest = entry && versionOf(entry);
-        if (!latest) return null;
-        var contentEl = entry.querySelector('content');
-        return { latest: latest, apkUrl: '', notes: contentEl ? (contentEl.textContent || '').trim() : '', pageUrl: '' };
+  /* Repli quand l'API refuse (quota de 60 requêtes / heure par adresse) :
+   * le version.json publié sur GitHub Pages en même temps que la release.
+   * (Le flux /releases.atom de github.com, essayé d'abord, est bloqué par
+   * le navigateur : pas d'en-tête CORS. GitHub Pages en envoie un.) */
+  function fromPages() {
+    var r = REPO.split('/');
+    return fetch('https://' + r[0] + '.github.io/' + r[1] + '/version.json?_=' + Date.now())
+      .then(function (x) { return x.ok ? x.json() : null; })
+      .then(function (d) {
+        var m = d && String(d.version || '').match(/(\d+(?:\.\d+)+)/);
+        return m ? { latest: m[1], apkUrl: '', notes: '', pageUrl: '' } : null;
       });
   }
 
@@ -96,7 +79,7 @@
      Résout { latest, newer } ou null si la vérification a échoué. */
   function check(force) {
     return fromApi().catch(function () { return null; })
-      .then(function (rel) { return rel || fromAtom(); })
+      .then(function (rel) { return rel || fromPages(); })
       .then(function (rel) {
         if (!rel) return null;
         var latest = rel.latest;

@@ -399,6 +399,45 @@ function verifie(nom, cond, detail) {
     verifie('ouvrir un morceau hors liste : plus de bandeau', !$('detailMorceau').querySelector('.bandeau-liste'));
   }
 
+  console.log('\n— Longues tablatures sur téléphone (v1.29) —');
+  {
+    w.AppGuitare.ouvrirMorceau('ch-knockin');
+    const d = $('detailMorceau');
+    const nums = [...d.querySelectorAll('.tab-num')].map((t) => +t.textContent);
+    verifie('numéro de mesure en début de chaque ligne', nums.length > 4 && nums[0] === 1 && nums.every((n, i) => i === 0 || n > nums[i - 1]), nums.slice(0, 6).join(','));
+    const rep = [...d.querySelectorAll('.reperes .btn')].map((b) => b.textContent);
+    verifie('« Aller à » : un bouton par section de la chanson', rep.length === w.Morceaux.get('ch-knockin').sections.length, rep.join(' | '));
+    w.AppGuitare.ouvrirMorceau('carulli-valse-1');
+    const rep2 = [...$('detailMorceau').querySelectorAll('.reperes .btn')].map((b) => b.textContent);
+    verifie('pièce sans sections : un repère toutes les 8 mesures', rep2[0] === 'Mes. 1' && (rep2.length < 2 || rep2[1] === 'Mes. 9'), rep2.join(' | '));
+    const vue = w.Store.reglages().vuePartition;
+    w.Store.reglage('vuePartition', null);
+    const lw = w.innerWidth;
+    Object.defineProperty(w, 'innerWidth', { value: 390, configurable: true });
+    w.AppGuitare.ouvrirMorceau('ode-joie');
+    verifie('téléphone, vue jamais choisie : tablature seule', $('detailMorceau').querySelectorAll('.portee-note').length === 0 &&
+            $('detailMorceau').querySelectorAll('.tab-note').length > 0);
+    Object.defineProperty(w, 'innerWidth', { value: lw, configurable: true });
+    w.AppGuitare.ouvrirMorceau('ode-joie');
+    verifie('grand écran : portée et tablature', $('detailMorceau').querySelectorAll('.portee-note').length > 0);
+    w.Store.reglage('vuePartition', vue);
+  }
+
+  console.log('\n— Rubriques dépliantes (v1.29) —');
+  {
+    w.AppGuitare.aller('morceaux');
+    const rub = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')];
+    verifie('Morceaux : chaque rubrique est un menu dépliant', rub.length >= 10 && $('listeMorceaux').querySelectorAll('h3').length === rub.length, rub.length);
+    verifie('rubriques fermées par défaut', rub.every((d) => !d.open));
+    verifie('nombre de morceaux affiché dans le titre', rub.some((d) => /🎸 Travailler les accords/.test(d.textContent) && +d.querySelector('.rubrique-nb').textContent > 5));
+    const acc = rub.find((d) => /Travailler les accords/.test(d.querySelector('summary').textContent));
+    acc.open = true; acc.dispatchEvent(new w.Event('toggle'));
+    w.AppGuitare.ouvrirMorceau('acc-em-am'); w.AppGuitare.aller('morceaux');
+    const ouvertes = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].filter((d) => d.open).map((d) => d.querySelector('h3').textContent);
+    verifie('une rubrique ouverte le reste en revenant d’un morceau', ouvertes.length === 1 && /Travailler les accords/.test(ouvertes[0]), ouvertes.join(','));
+    verifie('le bouton « Mon programme » reste visible hors des rubriques', /Mon programme progressif/.test($('listeMorceaux').firstChild.textContent));
+  }
+
   console.log('\n— Pouce seul (v1.25) —');
   w.AppGuitare.aller('morceaux');
   {
@@ -691,11 +730,15 @@ function verifie(nom, cond, detail) {
     $('btnVerifierMaj').click();
     await attendre(30);
     verifie('à jour : « Déjà à jour »', /Déjà à jour/.test($('majEtat').textContent));
-    // API indisponible (quota) : repli sur le flux Atom.
+    // API indisponible (quota) : repli sur le version.json de GitHub Pages
+    // (le flux Atom de github.com est bloqué par CORS dans un navigateur).
+    let urlRepli = '';
     w.fetch = (url) => /api\.github/.test(url) ? Promise.resolve({ ok: false })
-      : Promise.resolve({ ok: true, text: () => Promise.resolve('<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Ma Guitare v9.8</title><link rel="alternate" href="https://github.com/laurentsar/guitare/releases/tag/v9.8"/><content>Corrections</content></entry></feed>') });
+      : (urlRepli = url, Promise.resolve({ ok: true, json: () => Promise.resolve({ version: '9.8' }) }));
     const r = await w.checkAppUpdate(true);
-    verifie('repli Atom quand l’API refuse', r && r.latest === '9.8' && r.newer);
+    verifie('repli sur GitHub Pages quand l’API refuse', r && r.latest === '9.8' && r.newer && /^https:\/\/laurentsar\.github\.io\/guitare\/version\.json/.test(urlRepli), urlRepli);
+    const bApk = w.document.getElementById('update-banner');
+    verifie('repli : bandeau proposé quand même', !!bApk);
     const b2 = w.document.getElementById('update-banner');
     if (b2) b2.remove();
   }

@@ -1075,7 +1075,8 @@
     ajoute({
       id: c.id, titre: c.titre,
       sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
-      niveau: { hit: 7, international: 8, rock: 9 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      niveau: { hit: 7, international: 8, rock: 9, tiktok: 10 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      categorie: c.groupe === 'tiktok' ? 'tiktok' : undefined,
       chanson: true,
       description: 'Grille d’accords de la chanson, accompagnement écrit pour cette app (ni mélodie ni paroles : elles sont sous droits). ' +
         (c.capo ? 'Capodastre case ' + c.capo + ' pour retrouver la tonalité du disque : les accords se jouent comme écrits, le capo fait le reste. ' : '') +

@@ -143,6 +143,8 @@ Morceaux.tous().forEach(p => {
   // Chansons : chaque note suit la forme de son accord (vérifié plus bas) ;
   // les power chords du rock montent jusqu'à la case 6.
   else if (p.chanson) verifie(p.id + ' : formes d’accords, rien au-delà de la case 7', p.notes.every(n => n.frette <= 7));
+  // TikTok : relevé tel quel de la vidéo, qui peut monter le long du manche.
+  else if (p.categorie === 'tiktok') verifie(p.id + ' : relevé de la vidéo, rien au-delà de la case 15', p.notes.every(n => n.frette >= 0 && n.frette <= 15));
   else if (!p.source) verifie(p.id + ' : rien au-delà de la 5e case (première position)',
           p.notes.every(n => n.frette >= 0 && n.frette <= 5),
           p.notes.filter(n => n.frette > 5).map(n => n.frette).join(','));
@@ -735,6 +737,17 @@ console.log('\n— TikTok —');
           t.notes.every((n) => n.frette === 0 && n.main === 'p' && (n.corde === 5 || n.corde === 4)));
   verifie('TikTok La–Ré : 5 4 5 4 | 5 4 5 4 | 4 4 4 4 | 5 5 4 5 | 5', t.notes.map((n) => n.corde).join('') === '54545454444455455');
   verifie('TikTok La–Ré : quatre mesures de noires et une ronde (♩ = 130)', t.tempo === 130 && Tablature.duree_totale(t) === 20 && t.notes[16].duree === 4);
+}
+
+{
+  const b = Morceaux.get('tiktok-bella-ciao'), f = Morceaux.get('tiktok-bella-ciao-facile');
+  verifie('Bella Ciao : tout sur la 1re corde, cases de la vidéo', b.notes.every((n) => n.corde === 1) &&
+          b.notes.map((n) => n.frette).join(' ') === '0 5 7 8 5 0 5 7 8 5 0 5 7 8 7 5 8 7 5 8 12 12 12 12 10 12 13 13 13 12 10 13 12 12 10 8 7 12 8 7 5 0 5');
+  verifie('Bella Ciao : 9 mesures à ♩ = 120, la dernière note tenue', b.tempo === 120 && Tablature.duree_totale(b) === 36);
+  verifie('Bella Ciao : Ve puis Xe position, un doigt par case', b.notes.every((n) => !n.frette || n.doigt === ({ 5: 1, 7: 3, 8: n.glisse ? 3 : 4, 10: 1, 12: 3, 13: 4 })[n.frette]));
+  verifie('Bella Ciao : glissé de la case 8 à la 12', b.notes.some((n) => n.frette === 8 && n.glisse === 12));
+  verifie('Bella Ciao facile : même rythme, une octave plus bas, première position', f.notes.length === b.notes.length &&
+          f.notes.every((n, i) => n.midi === b.notes[i].midi - 12 && n.temps === b.notes[i].temps && n.frette <= 3));
 }
 
 console.log('\n— Programme progressif —');

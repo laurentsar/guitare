@@ -1912,7 +1912,7 @@
     function rendreManche(t) {
       var pts = t == null ? [] : pointsManche(p.notes.filter(function (n) { return n.temps === t; }));
       var maxCase = p.notes.reduce(function (m, n) { return Math.max(m, n.frette); }, 0);
-      manche.innerHTML = Manche.svg({ cases: Math.max(5, Math.min(12, maxCase + 1)), points: pts });
+      manche.innerHTML = Manche.svg({ cases: Math.max(5, Math.min(19, maxCase + 1)), points: pts });
     }
     function bouton(txt, fn, cle) {
       var b = el('button', 'btn', txt);

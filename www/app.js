@@ -831,11 +831,12 @@
     bProg.onclick = function () { aller('programme'); };
     h.appendChild(bProg);
     h.appendChild(blocEnchainer());
-    var niveaux = {}, exercices = [], pouce = [], pouceMain = [];
+    var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [];
     Morceaux.tous().forEach(function (p) {
       if (p.categorie === 'accords') exercices.push(p);
       else if (p.categorie === 'pouce') pouce.push(p);
       else if (p.categorie === 'pouce-main') pouceMain.push(p);
+      else if (p.categorie === 'tiktok') tiktok.push(p);
       else if (p.categorie !== 'entrainement') (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
     });
     function ligne(p, droite) {
@@ -871,6 +872,11 @@
       h.appendChild(el('h3', null, '👍✋ Pouce + main gauche'));
       h.appendChild(el('p', 'aide', 'L’étape suivante : toujours le pouce seul à droite, mais la main gauche appuie des cases — gamme dans les basses, basses sur des accords, mélodies au pouce, chansons en pom-tcha.'));
       pouceMain.forEach(function (p) { h.appendChild(ligne(p, 'niv. ' + p.niveau)); });
+    }
+    if (tiktok.length) {
+      h.appendChild(el('h3', null, '📱 TikTok'));
+      h.appendChild(el('p', 'aide', 'Des morceaux relevés dans des vidéos TikTok, note par note, avec la tablature et la lecture de l’app.'));
+      tiktok.forEach(function (p) { h.appendChild(ligne(p, '♩ = ' + p.tempo)); });
     }
     var NOMS_NIVEAUX = { 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
                          6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)', 9: 'Rock et reggae — Offspring, Nirvana, Cranberries, Police, Marley' };

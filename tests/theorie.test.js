@@ -728,6 +728,15 @@ console.log('\n— Pouce seul —');
           ch.mains.gauche.map((a) => a.id).join() === Morceaux.get('ch-santiano').mains.gauche.map((a) => a.id).join());
 }
 
+console.log('\n— TikTok —');
+{
+  const t = Morceaux.get('tiktok-la-re');
+  verifie('TikTok La–Ré : 17 notes, cordes 5 et 4 à vide, au pouce', t && t.categorie === 'tiktok' && t.notes.length === 17 &&
+          t.notes.every((n) => n.frette === 0 && n.main === 'p' && (n.corde === 5 || n.corde === 4)));
+  verifie('TikTok La–Ré : 5 4 5 4 | 5 4 5 4 | 4 4 4 4 | 5 5 4 5 | 5', t.notes.map((n) => n.corde).join('') === '54545454444455455');
+  verifie('TikTok La–Ré : quatre mesures de noires et une ronde (♩ = 130)', t.tempo === 130 && Tablature.duree_totale(t) === 20 && t.notes[16].duree === 4);
+}
+
 console.log('\n— Programme progressif —');
 {
   const tous = Morceaux.tous();

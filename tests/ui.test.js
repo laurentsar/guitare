@@ -408,6 +408,7 @@ function verifie(nom, cond, detail) {
     verifie('puis « Pouce + main gauche » juste après', titres[iP + 1] === '👍✋ Pouce + main gauche');
     verifie('section pouce : rythme, pom-tcha, contretemps, petit morceau listés', ['Le pouce en rythme', 'Pom-tcha à vide', 'Le contretemps (reggae)', 'Petit morceau à vide']
       .every((t) => $('listeMorceaux').textContent.indexOf(t) !== -1));
+    verifie('Morceaux : section « 📱 TikTok » avec le riff La – Ré', titres.indexOf('📱 TikTok') > iP && /Le riff La – Ré/.test($('listeMorceaux').textContent));
     w.AppGuitare.ouvrirMorceau('pouce-g-c-d');
     verifie('fiche : main droite « pom-tcha » au pouce', /pom-tcha/i.test($('detailMorceau').textContent));
   }

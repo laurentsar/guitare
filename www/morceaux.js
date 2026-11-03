@@ -1222,6 +1222,21 @@
     });
   });
 
+  /* TikTok : morceaux relevés dans des vidéos courtes. Celui-ci vient d'une
+   * vidéo de @maesstttro : les numéros de cordes s'affichent à l'écran au fur
+   * et à mesure (5 = La, 4 = Ré), joués au pouce sur les cordes à vide, à
+   * intervalles réguliers (~0,46 s, soit ♩ ≈ 130). 17 notes : quatre mesures
+   * de noires et une ronde pour finir. */
+  ajoute({
+    id: 'tiktok-la-re', titre: 'Le riff La – Ré', sous_titre: 'TikTok · @maesstttro · pouce seul, cordes 5 et 4 à vide',
+    niveau: 1, tempo: 130, signature: [4, 4], categorie: 'tiktok',
+    description: 'Relevé d’une vidéo TikTok (@maesstttro) : seulement deux cordes à vide, La (5e) et Ré (4e), toutes au pouce. La – Ré quatre fois, Ré quatre fois, puis La La Ré La… et La qu’on laisse sonner. Une note par temps, bien régulier : à la vidéo, ♩ ≈ 130 — commence plus lentement (−10) et remonte.',
+    sections: [{ titre: 'La – Ré (×4)', de: 1, a: 2 }, { titre: 'Ré (×4)', de: 3, a: 3 }, { titre: 'Fin : La La Ré La… La', de: 4, a: 5 }],
+    notes: aVide([[5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1],
+                  [4, 1], [4, 1], [4, 1], [4, 1],
+                  [5, 1], [5, 1], [4, 1], [5, 1], [5, 4]])
+  });
+
   /* Le pouce avec la main gauche : l'étape suivante, une fois le pouce sûr
    * de lui sur les cordes à vide (rubrique à part dans la liste). */
   ajoute({

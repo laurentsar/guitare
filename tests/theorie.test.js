@@ -783,6 +783,23 @@ console.log('\n— TikTok —');
   verifie('arpège La m7 – Fa : 8 mesures, la 4e note tenue', Tablature.duree_totale(am) === 32 && am.notes[3].duree === 2.5);
 }
 
+{
+  // Audit : jamais le même doigt sur deux cases différentes au même instant.
+  const conflits = Morceaux.tous().filter((p) => {
+    const parT = {};
+    p.notes.forEach((n) => { (parT[n.temps] = parT[n.temps] || []).push(n); });
+    return Object.keys(parT).some((t) => {
+      const m = {};
+      return parT[t].some((n) => { if (!(n.frette > 0 && n.doigt)) return false; const x = m[n.doigt] !== undefined && m[n.doigt] !== n.frette; m[n.doigt] = n.frette; return x; });
+    });
+  }).map((p) => p.id);
+  verifie('aucun doigt sur deux cases à la fois, dans aucun morceau', conflits.length === 0, conflits.join(','));
+  verifie('aucune corde ne joue deux cases au même instant', Morceaux.tous().every((p) => {
+    const k = {};
+    return p.notes.every((n) => { const c = n.temps + '/' + n.corde; const ok = k[c] === undefined || k[c] === n.frette; k[c] = n.frette; return ok; });
+  }));
+}
+
 console.log('\n— Programme progressif —');
 {
   const tous = Morceaux.tous();

@@ -155,8 +155,22 @@
         else if (lo < pos) pos = lo;
         else if (hi > pos + 3) pos = Math.max(lo, hi - 3);
         if (lo < pos) pos = lo;
-        var dernier = 0;
-        fr.slice().sort(function (a, b) { return a.frette - b.frette || b.corde - a.corde; }).forEach(function (n) {
+        var dernier = 0, tries = fr.slice().sort(function (a, b) { return a.frette - b.frette || b.corde - a.corde; });
+        var libres = tries.filter(function (n) { return !n.doigt; });
+        var deborde = false;
+        tries.forEach(function (n) {
+          var base = Math.min(4, n.frette - pos + 1);
+          if (Math.max(base, dernier + 1) > 4) deborde = true;
+          dernier = n.doigt || Math.max(base, dernier + 1);
+        });
+        dernier = 0;
+        if (deborde && libres.length === tries.length && tries.length <= 4) {
+          // Plus de doigt libre en suivant les cases : quatre notes (ou
+          // moins), un doigt chacune, dans l'ordre des cases — sinon le même
+          // doigt se retrouvait sur deux cases différentes.
+          var decal = Math.max(0, Math.min(Math.min(4, tries[0].frette - pos + 1) - 1, 4 - tries.length));
+          tries.forEach(function (n, k) { n.doigt = k + 1 + decal; });
+        } else tries.forEach(function (n) {
           var base = Math.min(4, n.frette - pos + 1);
           var d = Math.max(base, dernier + 1);
           if (d > 4) d = base;                    // plus de doigt libre : petit barré

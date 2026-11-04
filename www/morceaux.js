@@ -1280,6 +1280,57 @@
     }), { alterne: true })
   });
 
+  /* Arpèges vus sur TikTok : des accords égrenés, pas une mélodie.
+   * `arpegeTT` lit, par mesure, l'accord et sa suite de [corde, case, doigt
+   * gauche, doigt droit, durée]. */
+  function arpegeTT(mesures) {
+    var notes = [], t = 0;
+    mesures.forEach(function (m) {
+      m.notes.forEach(function (x) {
+        var n = { corde: x[0], frette: x[1], temps: t, duree: x[4], main: x[3], accord: m.accord, midi: Theorie.midiDeCase(x[0], x[1]) };
+        if (x[1]) n.doigt = x[2];
+        notes.push(n);
+        t += x[4];
+      });
+    });
+    return notes;
+  }
+  function fois2(n, l) { var r = []; for (var k = 0; k < n; k++) r = r.concat(l); return r; }
+
+  /* @aka_11.03 : La – Do♯m – Fa♯m – Ré (I – iii – vi – IV) sur les trois
+   * cordes aiguës, avec les formes courtes montrées dans la vidéo ; deux
+   * mesures par accord, croches i-m-a-m. */
+  var FORMES_LA = {
+    'A':   [[3, 2, 2], [2, 2, 3], [1, 0, 0]],
+    'C#m': [[3, 1, 1], [2, 2, 2], [1, 0, 0]],
+    'F#m': [[3, 2, 1], [2, 2, 1], [1, 2, 1]],
+    'D':   [[3, 2, 1], [2, 3, 3], [1, 2, 2]]
+  };
+  function mesureLa(acc) {
+    var f = FORMES_LA[acc], c = function (k, main) { return [f[k][0], f[k][1], f[k][2], main, .5]; };
+    var debut = acc === 'D' ? [4, 0, 0, 'p', .5] : c(0, 'i');
+    return { accord: acc, notes: [debut, c(1, 'm'), c(2, 'a'), c(1, 'm'), c(0, 'i'), c(1, 'm'), c(2, 'a'), c(1, 'm')] };
+  }
+  ajoute({
+    id: 'tiktok-arpege-la', titre: 'Arpège La – Do♯m – Fa♯m – Ré', sous_titre: 'TikTok · @aka_11.03 · trois cordes aiguës, formes courtes',
+    niveau: 2, tempo: 120, signature: [4, 4], categorie: 'tiktok',
+    sections: [{ titre: 'La', de: 1, a: 2 }, { titre: 'Do♯m', de: 3, a: 4 }, { titre: 'Fa♯m', de: 5, a: 6 }, { titre: 'Ré', de: 7, a: 8 }],
+    description: 'D’après une vidéo TikTok (@aka_11.03) : quatre accords égrenés sur les trois cordes aiguës, avec des formes de trois doigts au plus. La : cases 2 sur les cordes 3 et 2, Mi aigu à vide. Do♯m : case 1 sur la 3e, case 2 sur la 2e, Mi à vide. Fa♯m : petit barré de l’index case 2 sur les trois cordes. Ré : la forme habituelle, le pouce sur le Ré à vide. Deux mesures par accord, en croches index – majeur – annulaire – majeur.',
+    notes: arpegeTT(fois2(2, ['A', 'A', 'C#m', 'C#m', 'F#m', 'F#m', 'D', 'D'].map(mesureLa)))
+  });
+
+  /* @maesstttro et @wiragustiii : La m7 – Fa, quatre notes égrenées puis on
+   * laisse sonner. La m7 (x 0 2 0 1 x) ; Fa joué 1 3 0 2 sur les cordes 6 à 3
+   * (Fa, Do, Ré, La). Rythme mesuré sur le son : croches, ♩ ≈ 86. */
+  var AM7 = { accord: 'Am7', notes: [[5, 0, 0, 'p', .5], [4, 2, 2, 'p', .5], [3, 0, 0, 'i', .5], [2, 1, 1, 'm', 2.5]] };
+  var F6 = { accord: 'F6', notes: [[6, 1, 1, 'p', .5], [5, 3, 3, 'p', .5], [4, 0, 0, 'p', .5], [3, 2, 2, 'i', 2.5]] };
+  ajoute({
+    id: 'tiktok-arpege-am-f', titre: 'Arpège La m7 – Fa', sous_titre: 'TikTok · @maesstttro, @wiragustiii · quatre notes par accord',
+    niveau: 2, tempo: 86, signature: [4, 4], categorie: 'tiktok',
+    description: 'Vu dans deux vidéos TikTok (@maesstttro, @wiragustiii) : deux accords égrenés, quatre notes chacun, puis on laisse sonner. La m7 : La à vide (5e corde), case 2 sur la 4e (majeur), Sol à vide, case 1 sur la 2e (index). Fa : case 1 sur la 6e (index), case 3 sur la 5e (annulaire), Ré à vide, case 2 sur la 3e (majeur). Le pouce prend les cordes graves, l’index et le majeur les aiguës.',
+    notes: arpegeTT(fois2(4, [AM7, F6]))
+  });
+
   /* Le pouce avec la main gauche : l'étape suivante, une fois le pouce sûr
    * de lui sur les cordes à vide (rubrique à part dans la liste). */
   ajoute({

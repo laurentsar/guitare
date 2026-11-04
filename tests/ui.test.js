@@ -449,7 +449,8 @@ function verifie(nom, cond, detail) {
       .every((t) => $('listeMorceaux').textContent.indexOf(t) !== -1));
     verifie('Morceaux : section « 📱 TikTok » avec le riff La – Ré', titres.indexOf('📱 TikTok') > iP && /Le riff La – Ré/.test($('listeMorceaux').textContent) &&
             /Bella Ciao sur une corde/.test($('listeMorceaux').textContent) && /Bella Ciao — version facile/.test($('listeMorceaux').textContent) &&
-            /Vu sur TikTok — grilles d’accords/.test($('listeMorceaux').textContent) && /Smoke on the Water/.test($('listeMorceaux').textContent));
+            /Vu sur TikTok — grilles d’accords/.test($('listeMorceaux').textContent) && /Smoke on the Water/.test($('listeMorceaux').textContent) &&
+            /Arpège La – Do♯m – Fa♯m – Ré/.test($('listeMorceaux').textContent) && /Arpège La m7 – Fa/.test($('listeMorceaux').textContent));
     w.AppGuitare.ouvrirMorceau('pouce-g-c-d');
     verifie('fiche : main droite « pom-tcha » au pouce', /pom-tcha/i.test($('detailMorceau').textContent));
   }

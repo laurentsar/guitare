@@ -620,7 +620,11 @@
    * bibliothèque : on choisit les doigts qui bougent le moins d'un accord au
    * suivant). Chaque note reçoit donc le doigt de main gauche (`doigt`, affiché
    * sur le manche) et celui de main droite (`main`, sous la tablature). */
-  function accompagnement(accords, sections) {
+  function accompagnement(accords, sections, parMesure) {
+    // parMesure : noires par mesure (4 en 4/4, 3 en 3/4). « F|G » coupe la
+    // mesure en deux : 2 + 2 temps, ou 2 + 1 à trois temps.
+    parMesure = parMesure || 4;
+    var milieu = Math.ceil(parMesure / 2);
     var t = 0, notes = [];
     function note(a, corde, temps, duree, main) {
       var frette = a.frettes[corde - 1];
@@ -638,10 +642,10 @@
           var a1 = accords[deux[0]], a2 = accords[deux[1] || deux[0]];
           if (!a1 || !a2) throw new Error('accord inconnu : ' + id);
           s.motif.forEach(function (pas) {
-            var a = pas.temps < 2 ? a1 : a2;
+            var a = pas.temps < milieu ? a1 : a2;
             // Deux accords dans la mesure : le second reprend la basse au
             // 3e temps — sauf un balayé, qui balaie aussi le second accord.
-            var cordes = deux.length > 1 && pas.temps === 2 && pas.cordes.indexOf('tout') === -1 ? ['basse'] : pas.cordes;
+            var cordes = deux.length > 1 && pas.temps === milieu && pas.cordes.indexOf('tout') === -1 ? ['basse'] : pas.cordes;
             cordes.forEach(function (c) {
               // « tout » = toutes les cordes jouées de l'accord, balayées au
               // pouce de la grave vers l'aiguë.
@@ -655,7 +659,7 @@
               note(a, corde, t + pas.temps, pas.duree, main);
             });
           });
-          t += 4;
+          t += parMesure;
         });
       }
     });
@@ -1065,6 +1069,12 @@
             { temps: 2, duree: 1, cordes: ['alt'] }, { temps: 3, duree: 1, cordes: [3, 2, 1] }] },
     // Rock : le pouce balaie l'accord (power chord : ses seules cordes) en
     // croches, toujours vers le bas — « l'aller du pouce ».
+    // Mesures à trois temps (valse, 3/4).
+    valse: { texte: 'Valse à trois temps : la basse au pouce sur le 1er temps, l’accord pincé (i-m-a) sur le 2e et le 3e — « boum, tcha, tcha ».',
+      pas: [{ temps: 0, duree: 1, cordes: ['basse'] }, { temps: 1, duree: 1, cordes: [3, 2, 1] }, { temps: 2, duree: 1, cordes: [3, 2, 1] }] },
+    'arpege-3': { texte: 'Arpège à trois temps, en croches p-i-m-a-m-i : le pouce prend la basse, puis index, majeur, annulaire et retour.',
+      pas: [{ temps: 0, duree: 0.5, cordes: ['basse'] }, { temps: 0.5, duree: 0.5, cordes: [3] }, { temps: 1, duree: 0.5, cordes: [2] },
+            { temps: 1.5, duree: 0.5, cordes: [1] }, { temps: 2, duree: 0.5, cordes: [2] }, { temps: 2.5, duree: 0.5, cordes: [3] }] },
     rock: { texte: 'Rock : le pouce balaie l’accord en croches, huit coups par mesure, toujours vers le bas, d’un geste sec de l’avant-bras.',
       pas: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5].map(function (t) { return { temps: t, duree: 0.5, cordes: ['tout'] }; }) }
   };
@@ -1089,7 +1099,7 @@
     var def = {
       id: c.id, titre: c.titre, artiste: c.artiste,
       sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
-      niveau: { hit: 7, international: 8, rock: 9, tiktok: 10, top20: 11 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      niveau: { hit: 7, international: 8, rock: 9, tiktok: 10, top20: 11 }[c.groupe] || 6, tempo: c.tempo, signature: c.signature || [4, 4], capo: c.capo || 0,
       categorie: c.groupe === 'tiktok' ? 'tiktok' : c.groupe === 'top20' ? 'top20' : undefined, top: c.top,
       chanson: true,
       description: 'Grille d’accords de la chanson, accompagnement écrit pour cette app (ni mélodie ni paroles : elles sont sous droits). ' +
@@ -1099,11 +1109,12 @@
       mains: {
         gauche: ordre.map(function (id) { return dico[id]; }),
         droite: motifsVus.map(function (m) { return MOTIFS_CHANSON[m].texte; }).concat(
-          ['Une case de la grille = une mesure à 4 temps ; « F / G » = deux accords dans la mesure, 2 temps chacun.'])
+          [(c.signature && c.signature[0] === 3 ? 'Une case de la grille = une mesure à 3 temps ; « F / G » = deux accords dans la mesure, 2 temps puis 1.'
+            : 'Une case de la grille = une mesure à 4 temps ; « F / G » = deux accords dans la mesure, 2 temps chacun.')])
       },
       notes: accompagnement(dico, parties.map(function (s) {
         return { tours: s.tours || 1, grille: s.grille, motif: MOTIFS_CHANSON[s.motif].pas };
-      }))
+      }), c.signature ? c.signature[0] * 4 / c.signature[1] : 4)
     };
     Object.keys(extra || {}).forEach(function (k) { def[k] = extra[k]; });
     return ajoute(def);
@@ -1134,7 +1145,7 @@
     var longues = partiesLongues(c);
     creerChanson(c, c.sections, { longue: c.id + '-longue' });
     var l = creerChanson({ id: c.id + '-longue', titre: c.titre + ' — version longue', artiste: c.artiste, annee: c.annee,
-                           capo: c.capo, tempo: c.tempo, groupe: c.groupe, top: c.top, note: c.note }, longues, { versionDe: c.id });
+                           capo: c.capo, tempo: c.tempo, groupe: c.groupe, top: c.top, note: c.note, signature: c.signature }, longues, { versionDe: c.id });
     l.description += ' Version longue : la chanson entière, partie par partie, dans l’ordre habituel du morceau (simplifié) : ' +
       longues.map(function (p) { return p.titre; }).join(' · ') + '.';
   });

@@ -440,6 +440,18 @@ function verifie(nom, cond, detail) {
     w.AppGuitare.ouvrirMorceau('acc-em-am'); w.AppGuitare.aller('morceaux');
     const ouvertes = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].filter((d) => d.open).map((d) => d.querySelector('h3').textContent);
     verifie('une rubrique ouverte le reste en revenant d’un morceau', ouvertes.length === 1 && /Travailler les accords/.test(ouvertes[0]), ouvertes.join(','));
+    [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'artiste').click();
+    const titresA = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux h3')].map((x) => x.textContent);
+    verifie('rangement par artiste : une rubrique par artiste, triées', titresA.includes('🎤 Nirvana') && titresA.includes('🎤 F. Sor') && titresA.includes('🎤 Traditionnel') &&
+            titresA.indexOf('🎤 Bob Marley') < titresA.indexOf('🎤 Nirvana'), titresA.slice(0, 8).join(' | '));
+    const nirvana = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => d.querySelector('h3').textContent === '🎤 Nirvana');
+    verifie('Nirvana : ses 5 chansons, sans version longue', nirvana && nirvana.querySelectorAll('.ligne-morceau').length === 5);
+    const cran = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => d.querySelector('h3').textContent === '🎤 The Cranberries');
+    verifie('« The » ignoré pour le tri, Zombie avec les Cranberries', cran && /Zombie/.test(cran.textContent) && titresA.indexOf('🎤 The Cranberries') < titresA.indexOf('🎤 Deep Purple'));
+    verifie('« Leonard Cohen » rangé à L, pas à « onard »', titresA.indexOf('🎤 Leonard Cohen') > titresA.indexOf('🎤 L. van Beethoven') && titresA.indexOf('🎤 Leonard Cohen') < titresA.indexOf('🎤 Louane'));
+    verifie('rangement mémorisé', w.Store.reglages().rangementMorceaux === 'artiste');
+    [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'rubrique').click();
+    verifie('retour au rangement par rubrique', [...$('listeMorceaux').querySelectorAll('h3')].some((x) => /Travailler les accords/.test(x.textContent)));
     verifie('le bouton « Mon programme » reste visible hors des rubriques', /Mon programme progressif/.test($('listeMorceaux').firstChild.textContent));
   }
 

@@ -682,7 +682,7 @@
 
   ajoute({
     id: 'zombie',
-    titre: 'Zombie',
+    titre: 'Zombie', artiste: 'The Cranberries',
     sous_titre: 'The Cranberries · grille d’accords, accompagnement écrit pour cette app',
     niveau: 3, tempo: 76, signature: [4, 4],
     description: 'Quatre accords qui tournent du début à la fin : Mi mineur, Do maj7, Sol, Ré (♩ ≈ 84 sur le disque). Couplet en arpège pouce-index-majeur-annulaire, refrain en basse + accord plaqué, comme on l’accompagne à la guitare classique. Ni mélodie ni paroles : elles sont sous droits.',
@@ -1087,7 +1087,7 @@
     });
     var capoTxt = c.capo ? ' · capo case ' + c.capo : '';
     var def = {
-      id: c.id, titre: c.titre,
+      id: c.id, titre: c.titre, artiste: c.artiste,
       sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
       niveau: { hit: 7, international: 8, rock: 9, tiktok: 10 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
       categorie: c.groupe === 'tiktok' ? 'tiktok' : undefined,
@@ -1468,7 +1468,7 @@
       mesure += n;
     });
     ajoute({
-      id: 'pouce-' + cid, titre: c.titre + ' au pouce', chanson: true, categorie: 'pouce-main',
+      id: 'pouce-' + cid, titre: c.titre + ' au pouce', chanson: true, categorie: 'pouce-main', artiste: c.artiste,
       sous_titre: c.artiste + ' · pouce + main gauche' + (c.capo ? ' · capo case ' + c.capo : ''),
       niveau: 2, tempo: Math.min(c.tempo, 90), signature: [4, 4], capo: c.capo || 0,
       description: 'La grille de « ' + c.titre + ' » accompagnée au pouce seul (pom-tcha). Accompagnement écrit pour cette app : ni mélodie ni paroles, elles sont sous droits. ' +

@@ -36,7 +36,8 @@
     clicLecture: false,    // métronome pendant la lecture
     ecranAllume: true,     // l'écran ne s'éteint pas pendant qu'on joue (ecran.js)
     aides: false,          // aides débutant sur la fiche morceau (mains, pas à pas, lecture)
-    zoomPartition: null    // échelle de la partition ; null = ajustée à la largeur
+    zoomPartition: null,   // échelle de la partition ; null = ajustée à la largeur
+    rangementMorceaux: 'rubrique'   // liste des morceaux : 'rubrique' | 'artiste'
   };
 
   function reglages() {

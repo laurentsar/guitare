@@ -829,6 +829,25 @@
    * qu'on ouvre le restent jusqu'à la fermeture de l'app (on revient d'un
    * morceau sur la liste telle qu'on l'a laissée). */
   var rubriquesOuvertes = {};
+  /* Artiste (ou compositeur) d'un morceau, pour le rangement par artiste.
+   * Les exercices écrits pour l'app n'en ont pas. */
+  var COMPOSITEURS = [[/Beethoven/, 'L. van Beethoven'], [/Mozart/, 'W. A. Mozart'], [/Bach/, 'J. S. Bach'],
+                      [/Mason/, 'L. Mason'], [/Hill/, 'Mildred et Patty Hill'], [/Pierpont/, 'J. L. Pierpont'],
+                      [/[Tt]raditionnel|chant traditionnel/, 'Traditionnel']];
+  function artisteDe(p) {
+    if (p.artiste) return p.artiste;
+    if (p.categorie === 'accords' || p.categorie === 'entrainement' || p.categorie === 'pouce') return null;
+    var st = p.sous_titre || '';
+    // Mélodie jouée au pouce : l'artiste de la mélodie d'origine.
+    var orig = /^pouce-/.test(p.id) && Morceaux.get(p.id.replace(/^pouce-/, ''));
+    if (orig) return artisteDe(orig);
+    if (p.source) st = st.split(' · ')[0];
+    for (var k = 0; k < COMPOSITEURS.length; k++) if (COMPOSITEURS[k][0].test(st)) return COMPOSITEURS[k][1];
+    if (p.source) return st;
+    return null;
+  }
+  // « The Police » se range à P ; un mot entier seulement (pas « Le » de Leonard).
+  function cleArtiste(a) { return a.replace(/^(The|Les|Le|La)\s+|^L[’']/i, '').toLowerCase(); }
   function rendreMorceaux() {
     var h = vide($('listeMorceaux'));
     var cible = h;
@@ -846,6 +865,16 @@
     var bProg = el('button', 'btn primaire large', '🪜 Mon programme progressif');
     bProg.onclick = function () { aller('programme'); };
     h.appendChild(bProg);
+    // Rangement : par rubrique (niveaux, sections) ou par artiste.
+    var parArtiste = Store.reglages().rangementMorceaux === 'artiste';
+    var choix = el('div', 'filtres rangement');
+    [['rubrique', '📂 Par rubrique'], ['artiste', '🎤 Par artiste']].forEach(function (o) {
+      var b = el('button', (o[0] === 'artiste') === parArtiste ? 'actif' : '', o[1]);
+      b.dataset.rangement = o[0];
+      b.onclick = function () { Store.reglage('rangementMorceaux', o[0]); rendreMorceaux(); };
+      choix.appendChild(b);
+    });
+    h.appendChild(choix);
     var bloc = blocEnchainer();
     var tEnch = bloc.querySelector('h3');
     rubrique(tEnch.textContent).appendChild(bloc);
@@ -870,6 +899,27 @@
       return b;
     }
     var aimes = Store.aimes();
+    if (parArtiste) {
+      var artistes = {};
+      Morceaux.tous().forEach(function (p) {
+        if (p.versionDe) return;
+        var a = artisteDe(p);
+        if (a) (artistes[a] = artistes[a] || []).push(p);
+      });
+      Object.keys(artistes).sort(function (x, y) { return cleArtiste(x).localeCompare(cleArtiste(y), 'fr'); }).forEach(function (a) {
+        cible = rubrique('🎤 ' + a);
+        artistes[a].forEach(function (p) { cible.appendChild(ligne(p, p.chanson ? 'grille' : '♩ = ' + p.tempo)); });
+      });
+      cible = rubrique('Mes tablatures');
+      var persoA = Store.tablatures();
+      if (!persoA.length) cible.appendChild(el('p', 'aide', 'Écris ta propre tablature, ou colles-en une trouvée sur internet.'));
+      persoA.forEach(function (p) { cible.appendChild(ligne(p, p.notes.length + ' notes')); });
+      var bNouvA = el('button', 'btn primaire large', '✏️ Nouvelle tablature');
+      bNouvA.onclick = function () { ouvrirEditeur(null); };
+      cible.appendChild(bNouvA);
+      compterRubriques();
+      return;
+    }
     var favoris = aimes.map(trouverMorceau).filter(Boolean);
     if (favoris.length) {
       cible = rubrique('♥ Mes favoris');
@@ -919,11 +969,14 @@
     var bNouv = el('button', 'btn primaire large', '✏️ Nouvelle tablature');
     bNouv.onclick = function () { ouvrirEditeur(null); };
     cible.appendChild(bNouv);
+    compterRubriques();
     // Nombre de morceaux dans chaque rubrique, à droite du titre.
-    Array.prototype.forEach.call(h.querySelectorAll('.rubrique-morceaux'), function (d) {
-      var n = d.querySelectorAll('.ligne-morceau').length;
-      if (n) d.querySelector('.rubrique-nb').textContent = n;
-    });
+    function compterRubriques() {
+      Array.prototype.forEach.call(h.querySelectorAll('.rubrique-morceaux'), function (d) {
+        var n = d.querySelectorAll('.ligne-morceau').length;
+        if (n) d.querySelector('.rubrique-nb').textContent = n;
+      });
+    }
   }
 
   /* Le lecteur, façon logiciel de tablature : tempo, boucle sur une section,

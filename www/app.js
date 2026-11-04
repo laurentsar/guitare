@@ -1482,6 +1482,7 @@
         b.classList.toggle('actif', b.dataset.vue === vue);
       });
       ligneSuivie = null;
+      if (typeof majPagesBientot === 'function' && pages) majPagesBientot();
       appliquerZoom();
       marquerSection();
     }
@@ -1518,11 +1519,23 @@
       var lignes = zone.children;
       return lignes[Math.min(lignes.length - 1, Math.floor((m - 1) / page.mesuresParLigne))];
     }
+    /* Zone réellement visible : sous l'en-tête collant (ou la barre du plein
+     * écran), au-dessus de la barre d'onglets. */
+    function bornesVisibles() {
+      if (pleinEcranOuvert()) return { haut: peBarre.offsetHeight, bas: window.innerHeight };
+      var en = document.querySelector('.entete'), on = $('onglets');
+      return { haut: en ? Math.max(0, en.getBoundingClientRect().bottom) : 0,
+               bas: window.innerHeight - (on && on.offsetParent ? on.offsetHeight : 0) };
+    }
+    function defilerDe(d) {
+      if (pleinEcranOuvert()) {
+        if (boitePartition.scrollBy) boitePartition.scrollBy({ top: d, behavior: 'smooth' }); else boitePartition.scrollTop += d;
+      } else if (window.scrollBy) window.scrollBy({ top: d, behavior: 'smooth' });
+    }
     function amener(ligne, haut) {
       if (!ligne) return;
       var r = ligne.getBoundingClientRect();
-      if (pleinEcranOuvert()) boitePartition.scrollTop += r.top - (haut != null ? haut : peBarre.offsetHeight + 8);
-      else if (window.scrollBy) window.scrollBy(0, r.top - (haut != null ? haut : 12));
+      defilerDe(r.top - (haut != null ? haut : bornesVisibles().haut + 8));
     }
     function allerMesure(m) { amener(ligneDeMesure(m)); }
     var boitePartition = el('div', 'partition');
@@ -1551,6 +1564,45 @@
     boitePartition.appendChild(legende);
     boitePartition.appendChild(reperes);
     boitePartition.appendChild(zone);
+    /* Tablature plus haute que l'écran : « ⬇ Suite » amène la première ligne
+     * qui n'est pas entièrement visible, « ⬆ » revient d'un écran. Les
+     * boutons n'apparaissent que si la partition dépasse et qu'elle est à
+     * l'écran (pas pendant qu'on lit la description). */
+    var pages = el('div', 'pages-partition');
+    var bHaut = el('button', 'btn', '⬆'), bSuite = el('button', 'btn primaire', '⬇ Suite');
+    bHaut.setAttribute('aria-label', 'Écran précédent de la tablature');
+    bSuite.setAttribute('aria-label', 'Écran suivant de la tablature');
+    pages.appendChild(bHaut); pages.appendChild(bSuite);
+    boitePartition.appendChild(pages);
+    function lignesPartition() { return Array.prototype.slice.call(zone.children); }
+    bSuite.onclick = function () {
+      var b = bornesVisibles();
+      var l = lignesPartition().filter(function (x) { return x.getBoundingClientRect().bottom > b.bas + 2; })[0];
+      if (l) amener(l);
+      setTimeout(majPages, 400);
+    };
+    bHaut.onclick = function () {
+      var b = bornesVisibles();
+      var hauteur = b.bas - b.haut - 16;
+      var premiere = lignesPartition()[0];
+      var r = premiere && premiere.getBoundingClientRect();
+      // Pas plus haut que le début de la partition.
+      defilerDe(-Math.min(hauteur, r ? Math.max(0, b.haut + 8 - r.top) : hauteur));
+      setTimeout(majPages, 400);
+    };
+    function majPages() {
+      if (!zone.isConnected) return;
+      var b = bornesVisibles(), z = zone.getBoundingClientRect();
+      var visible = z.bottom > b.haut + 40 && z.top < b.bas - 40;
+      var avant = z.top < b.haut - 2, apres = z.bottom > b.bas + 2;
+      pages.hidden = !(visible && (avant || apres));
+      bHaut.disabled = !avant; bSuite.disabled = !apres;
+    }
+    var minuteurPages = null;
+    function majPagesBientot() { clearTimeout(minuteurPages); minuteurPages = setTimeout(majPages, 80); }
+    window.addEventListener('scroll', majPagesBientot, { passive: true });
+    window.addEventListener('resize', majPagesBientot);
+    boitePartition.addEventListener('scroll', majPagesBientot, { passive: true });
     // Pincement à deux doigts (en plus des boutons 🔍) : aperçu immédiat
     // (agrandissement CSS), puis mise en page à la nouvelle échelle au lâcher.
     // La page elle-même ne zoome pas (touch-action).
@@ -1721,10 +1773,8 @@
         if (z.bottom < 0 || z.top > window.innerHeight) return;
       }
       ligneSuivie = ligne;
-      var r = ligne.getBoundingClientRect();
-      var haut = pleinEcranOuvert() ? peBarre.offsetHeight + 6 : 0;
-      var bas = window.innerHeight - (pleinEcranOuvert() ? 20 : 90);   // la barre d'onglets en bas
-      if (r.top < haut || r.bottom > bas) amener(ligne, haut + Math.round(window.innerHeight * 0.15));
+      var r = ligne.getBoundingClientRect(), b = bornesVisibles();
+      if (r.top < b.haut + 6 || r.bottom > b.bas - 20) amener(ligne, b.haut + Math.round(window.innerHeight * 0.15));
     }
 
     // Manche virtuel : la note jouée s'allume là où poser le doigt.

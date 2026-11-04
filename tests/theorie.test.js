@@ -815,6 +815,22 @@ console.log('\n— TikTok —');
   verifie('Top 20 niveau 1 : pas de barré', top.filter((p) => p.top === 1).every((p) => !p.mains.gauche.some((a) => a.barre)));
 }
 
+console.log('\n— Difficulté d’exécution —');
+{
+  const niv = (id) => Programme.difficulte(Morceaux.get(id)).niveau;
+  verifie('cordes à vide au pouce : niveau 1', niv('pouce-vide-morceau') === 1 && niv('basses-pouce') === 1);
+  verifie('mélodies en première position : niveau 2 (la case 5 à l’auriculaire n’est pas un déplacement)', niv('frere-jacques') === 2 && niv('dirai-je') === 2);
+  verifie('Knockin’ et Wonderwall : premiers accords (3)', niv('ch-knockin') === 3 && niv('ch-wonderwall') === 3);
+  verifie('barrés et deux voix : avancé ou expert', niv('acc-barre') >= 5 && niv('menuet-sol') >= 5 && niv('brahms-valse-3') === 6);
+  // La vitesse ne compte pas : le même morceau à un autre tempo garde son niveau.
+  const p = Morceaux.get('ch-hey-jude'), copie = Object.assign({}, p, { tempo: p.tempo * 2, _difficulte: null });
+  verifie('la difficulté ne dépend pas du tempo', Programme.difficulte(copie).score === Programme.difficulte(p).score);
+  const tous = Morceaux.tous().filter((m) => !m.versionDe && m.categorie !== 'entrainement');
+  const parNiv = [1, 2, 3, 4, 5, 6].map((n) => tous.filter((m) => Programme.difficulte(m).niveau === n).length);
+  verifie('six niveaux, aucun vide', parNiv.every((n) => n > 0), parNiv.join(','));
+  verifie('chaque morceau a une raison lisible', tous.every((m) => Programme.difficulte(m).raisons.length > 0));
+}
+
 console.log('\n— Programme progressif —');
 {
   const tous = Morceaux.tous();

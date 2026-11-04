@@ -624,3 +624,4 @@ html.tv .pages-partition { display: none; }
 /* Barre de lecture en haut de la fiche : Écouter / Arrêter, puis le tempo. */
 .barre-lecture { margin: 6px 0 10px; }
 .barre-lecture .actions { margin: 6px 0; }
+.difficulte { font-size: 13px; color: var(--bois); margin: 2px 0 6px; }

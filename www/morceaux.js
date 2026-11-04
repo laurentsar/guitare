@@ -1229,9 +1229,9 @@
    * intervalles réguliers (~0,46 s, soit ♩ ≈ 130). 17 notes : quatre mesures
    * de noires et une ronde pour finir. */
   ajoute({
-    id: 'tiktok-la-re', titre: 'Le riff La – Ré', sous_titre: 'TikTok · @maesstttro · pouce seul, cordes 5 et 4 à vide',
+    id: 'tiktok-la-re', titre: 'Le riff La – Ré (I – IV en La)', sous_titre: 'TikTok · @maesstttro · pouce seul, cordes 5 et 4 à vide · titre non indiqué',
     niveau: 1, tempo: 130, signature: [4, 4], categorie: 'tiktok',
-    description: 'Relevé d’une vidéo TikTok (@maesstttro) : seulement deux cordes à vide, La (5e) et Ré (4e), toutes au pouce. La – Ré quatre fois, Ré quatre fois, puis La La Ré La… et La qu’on laisse sonner. Une note par temps, bien régulier : à la vidéo, ♩ ≈ 130 — commence plus lentement (−10) et remonte.',
+    description: 'Relevé d’une vidéo TikTok (@maesstttro) : seulement deux cordes à vide, La (5e) et Ré (4e), toutes au pouce. La – Ré quatre fois, Ré quatre fois, puis La La Ré La… et La qu’on laisse sonner. Une note par temps, bien régulier : à la vidéo, ♩ ≈ 130 — commence plus lentement (−10) et remonte. Ce qu’on entend : La, la tonique, et Ré, sa quarte (degrés I et IV en La) — les deux basses de presque tous les blues et rocks en La. La vidéo ne donne pas le titre de la chanson.',
     sections: [{ titre: 'La – Ré (×4)', de: 1, a: 2 }, { titre: 'Ré (×4)', de: 3, a: 3 }, { titre: 'Fin : La La Ré La… La', de: 4, a: 5 }],
     notes: aVide([[5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1],
                   [4, 1], [4, 1], [4, 1], [4, 1],
@@ -1312,10 +1312,10 @@
     return { accord: acc, notes: [debut, c(1, 'm'), c(2, 'a'), c(1, 'm'), c(0, 'i'), c(1, 'm'), c(2, 'a'), c(1, 'm')] };
   }
   ajoute({
-    id: 'tiktok-arpege-la', titre: 'Arpège La – Do♯m – Fa♯m – Ré', sous_titre: 'TikTok · @aka_11.03 · trois cordes aiguës, formes courtes',
+    id: 'tiktok-arpege-la', titre: 'Arpège La – Do♯m – Fa♯m – Ré (I – iii – vi – IV)', sous_titre: 'TikTok · @aka_11.03 · La majeur, trois cordes aiguës · titre non indiqué',
     niveau: 2, tempo: 120, signature: [4, 4], categorie: 'tiktok',
     sections: [{ titre: 'La', de: 1, a: 2 }, { titre: 'Do♯m', de: 3, a: 4 }, { titre: 'Fa♯m', de: 5, a: 6 }, { titre: 'Ré', de: 7, a: 8 }],
-    description: 'D’après une vidéo TikTok (@aka_11.03) : quatre accords égrenés sur les trois cordes aiguës, avec des formes de trois doigts au plus. La : cases 2 sur les cordes 3 et 2, Mi aigu à vide. Do♯m : case 1 sur la 3e, case 2 sur la 2e, Mi à vide. Fa♯m : petit barré de l’index case 2 sur les trois cordes. Ré : la forme habituelle, le pouce sur le Ré à vide. Deux mesures par accord, en croches index – majeur – annulaire – majeur.',
+    description: 'D’après une vidéo TikTok (@aka_11.03) : quatre accords égrenés sur les trois cordes aiguës, avec des formes de trois doigts au plus. La : cases 2 sur les cordes 3 et 2, Mi aigu à vide. Do♯m : case 1 sur la 3e, case 2 sur la 2e, Mi à vide. Fa♯m : petit barré de l’index case 2 sur les trois cordes. Ré : la forme habituelle, le pouce sur le Ré à vide. Deux mesures par accord, en croches index – majeur – annulaire – majeur. Les accords : en La majeur, I (La) – iii (Do♯m) – vi (Fa♯m) – IV (Ré). Le Mi aigu à vide sonne dans les trois premiers accords, et c’est lui qui donne cette couleur rêveuse. La vidéo ne donne pas le titre de la chanson. Le motif d’arpège est écrit pour l’app : le son de la vidéo ne permet pas de retrouver l’ordre exact des notes.',
     notes: arpegeTT(fois2(2, ['A', 'A', 'C#m', 'C#m', 'F#m', 'F#m', 'D', 'D'].map(mesureLa)))
   });
 
@@ -1325,9 +1325,9 @@
   var AM7 = { accord: 'Am7', notes: [[5, 0, 0, 'p', .5], [4, 2, 2, 'p', .5], [3, 0, 0, 'i', .5], [2, 1, 1, 'm', 2.5]] };
   var F6 = { accord: 'F6', notes: [[6, 1, 1, 'p', .5], [5, 3, 3, 'p', .5], [4, 0, 0, 'p', .5], [3, 2, 2, 'i', 2.5]] };
   ajoute({
-    id: 'tiktok-arpege-am-f', titre: 'Arpège La m7 – Fa', sous_titre: 'TikTok · @maesstttro, @wiragustiii · quatre notes par accord',
+    id: 'tiktok-arpege-am-f', titre: 'Arpège La m7 – Fa (i – VI en La mineur)', sous_titre: 'TikTok · @maesstttro, @wiragustiii · quatre notes par accord · titre non indiqué',
     niveau: 2, tempo: 86, signature: [4, 4], categorie: 'tiktok',
-    description: 'Vu dans deux vidéos TikTok (@maesstttro, @wiragustiii) : deux accords égrenés, quatre notes chacun, puis on laisse sonner. La m7 : La à vide (5e corde), case 2 sur la 4e (majeur), Sol à vide, case 1 sur la 2e (index). Fa : case 1 sur la 6e (index), case 3 sur la 5e (annulaire), Ré à vide, case 2 sur la 3e (majeur). Le pouce prend les cordes graves, l’index et le majeur les aiguës.',
+    description: 'Vu dans deux vidéos TikTok (@maesstttro, @wiragustiii) : deux accords égrenés, quatre notes chacun, puis on laisse sonner. La m7 : La à vide (5e corde), case 2 sur la 4e (majeur), Sol à vide, case 1 sur la 2e (index). Fa : case 1 sur la 6e (index), case 3 sur la 5e (annulaire), Ré à vide, case 2 sur la 3e (majeur). Le pouce prend les cordes graves, l’index et le majeur les aiguës. Les accords : en La mineur, i (La m7 : La, Mi, Sol, Do) puis VI (Fa avec une sixte : Fa, Do, Ré, La). Les deux accords ont en commun le Do et le La : c’est ce qui fait ce balancement doux, sans tension. Le même motif revient dans plusieurs vidéos, sans titre de chanson.',
     notes: arpegeTT(fois2(4, [AM7, F6]))
   });
 

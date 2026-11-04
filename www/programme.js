@@ -172,7 +172,72 @@
     return { palier: courant, paliers: et, items: items, enCours: enCours };
   }
 
+  /* Difficulté d'exécution : ce que demandent les notes elles-mêmes, pas la
+   * vitesse (le tempo se règle). Hauteur sur le manche, changements de
+   * position, écart de la main, barrés, accords à connaître et à enchaîner,
+   * notes pincées ensemble (deux voix), doigts de la main droite, auriculaire,
+   * et densité du rythme comptée en temps (croches, doubles croches). */
+  var NIVEAUX_DIFF = [
+    { max: 1,   nom: 'Premiers sons', but: 'cordes à vide ou une note à la fois, sans main gauche ou presque' },
+    { max: 2.8, nom: 'Débutant', but: 'mélodies en première position, premiers accords ouverts' },
+    { max: 4.7, nom: 'Premiers accords', but: 'accords ouverts enchaînés, basse et accord, arpèges simples' },
+    { max: 6, nom: 'Intermédiaire', but: 'plus d’accords, notes pincées ensemble, premiers déplacements' },
+    { max: 8, nom: 'Avancé', but: 'barrés, deux voix, la main monte sur le manche' },
+    { max: 99,  nom: 'Expert', but: 'haut du manche, changements de position fréquents, écarts' }
+  ];
+  function criteres(p) {
+    var parT = {}, temps = [];
+    p.notes.forEach(function (n) { if (!parT[n.temps]) { parT[n.temps] = []; temps.push(n.temps); } parT[n.temps].push(n); });
+    temps.sort(function (a, b) { return a - b; });
+    var duree = p.notes.reduce(function (m, n) { return Math.max(m, n.temps + (n.duree || 1)); }, 0) || 1;
+    var parMesure = p.signature ? p.signature[0] * 4 / p.signature[1] : 4;
+    var mesures = Math.max(1, Math.round(duree / parMesure));
+    var k = { maxFr: 0, ecart: 0, dep: 0, appuyes: 0, ensemble: 0, doigtsG: {}, doigtsD: {}, chg: 0 };
+    var pos = null, prec = null;
+    temps.forEach(function (t) {
+      var g = parT[t], f = g.filter(function (n) { return n.frette > 0; });
+      g.forEach(function (n) { k.doigtsD[n.main] = 1; if (n.frette > k.maxFr) k.maxFr = n.frette; });
+      if (g.length > 1 && !g.every(function (n) { return n.main === 'p'; })) k.ensemble++;
+      if (g[0].accord && g[0].accord !== prec) { k.chg++; prec = g[0].accord; }
+      if (!f.length) return;
+      k.appuyes++;
+      f.forEach(function (n) { if (n.doigt) k.doigtsG[n.doigt] = 1; });
+      var lo = Math.min.apply(null, f.map(function (n) { return n.frette; })), hi = Math.max.apply(null, f.map(function (n) { return n.frette; }));
+      if (hi - lo > k.ecart) k.ecart = hi - lo;
+      // En première position, l'auriculaire atteint la case 5 sans bouger la main.
+      var ps = hi <= 5 ? 1 : lo;
+      if (pos !== null && Math.abs(ps - pos) >= 3) k.dep++;
+      pos = ps;
+    });
+    var acc = (p.mains && p.mains.gauche) || [];
+    return { maxFr: k.maxFr, ecart: k.ecart, depPct: k.appuyes ? k.dep / k.appuyes * 100 : 0,
+             barres: acc.filter(function (a) { return a.barre; }).length, nbAcc: acc.length, chgMes: k.chg / mesures,
+             ensPct: temps.length ? k.ensemble / temps.length * 100 : 0, densite: temps.length / duree,
+             doigtsD: Object.keys(k.doigtsD).length, doigtsG: Object.keys(k.doigtsG).length, mainG: k.appuyes > 0 };
+  }
+  function difficulte(p) {
+    if (p._difficulte) return p._difficulte;
+    var k = criteres(p), s = 0, r = [];
+    var h = !k.mainG ? 0 : k.maxFr <= 3 ? 1 : k.maxFr <= 5 ? 1.8 : k.maxFr <= 7 ? 2.5 : k.maxFr <= 10 ? 3.2 : 3.8;
+    s += h; if (k.maxFr >= 5) r.push('jusqu’à la case ' + k.maxFr);
+    var dp = Math.min(2, k.depPct * 0.2); s += dp; if (dp >= 1) r.push('changements de position');
+    if (k.ecart >= 4) { s += 1.2; r.push('écart de ' + (k.ecart + 1) + ' cases'); } else if (k.ecart === 3) s += 0.6;
+    if (k.barres) { s += Math.min(3, k.barres * 1.3); r.push(k.barres + ' barré' + (k.barres > 1 ? 's' : '')); }
+    s += Math.min(1.5, k.nbAcc * 0.15); if (k.nbAcc >= 6) r.push(k.nbAcc + ' accords');
+    s += Math.min(1, k.chgMes * 0.5);
+    s += k.ensPct / 100 * 2.5; if (k.ensPct >= 35) r.push('notes pincées ensemble');
+    s += (k.doigtsD - 1) * 0.35;
+    s += k.doigtsG >= 4 ? 0.6 : k.doigtsG === 3 ? 0.3 : 0;
+    s += Math.max(0, Math.min(1, (k.densite - 1) * 0.6)); if (k.densite >= 2.5) r.push('rythme serré');
+    if (!r.length) r.push(!k.mainG ? 'cordes à vide' : k.nbAcc ? k.nbAcc + ' accords ouverts' : 'première position');
+    var niveau = 1;
+    while (niveau < NIVEAUX_DIFF.length && s > NIVEAUX_DIFF[niveau - 1].max) niveau++;
+    p._difficulte = { score: Math.round(s * 100) / 100, niveau: niveau, raisons: r };
+    return p._difficulte;
+  }
+
   global.Programme = {
+    NIVEAUX_DIFF: NIVEAUX_DIFF, difficulte: difficulte,
     PALIERS: PALIERS, INTERVALLES: INTERVALLES, ACQUIS: ACQUIS, MAITRISE: MAITRISE,
     difficulteChanson: difficulteChanson, palierDe: palierDe, paliers: paliers, etat: etat,
     noter: noter, aRevoir: aRevoir, joursAvant: joursAvant, acquis: acquis,

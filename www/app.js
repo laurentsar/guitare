@@ -828,6 +828,7 @@
   /* Rubriques de la liste : des menus dépliants, fermés par défaut. Ceux
    * qu'on ouvre le restent jusqu'à la fermeture de l'app (on revient d'un
    * morceau sur la liste telle qu'on l'a laissée). */
+  function cap(x) { return x.charAt(0).toUpperCase() + x.slice(1); }
   var rubriquesOuvertes = {};
   /* Artiste (ou compositeur) d'un morceau, pour le rangement par artiste.
    * Les exercices écrits pour l'app n'en ont pas. */
@@ -866,10 +867,11 @@
     bProg.onclick = function () { aller('programme'); };
     h.appendChild(bProg);
     // Rangement : par rubrique (niveaux, sections) ou par artiste.
-    var parArtiste = Store.reglages().rangementMorceaux === 'artiste';
+    var rangement = Store.reglages().rangementMorceaux;
+    var parArtiste = rangement === 'artiste', parDifficulte = rangement === 'difficulte';
     var choix = el('div', 'filtres rangement');
-    [['rubrique', '📂 Par rubrique'], ['artiste', '🎤 Par artiste']].forEach(function (o) {
-      var b = el('button', (o[0] === 'artiste') === parArtiste ? 'actif' : '', o[1]);
+    [['rubrique', '📂 Par rubrique'], ['artiste', '🎤 Par artiste'], ['difficulte', '📊 Par difficulté']].forEach(function (o) {
+      var b = el('button', o[0] === (parArtiste ? 'artiste' : parDifficulte ? 'difficulte' : 'rubrique') ? 'actif' : '', o[1]);
       b.dataset.rangement = o[0];
       b.onclick = function () { Store.reglage('rangementMorceaux', o[0]); rendreMorceaux(); };
       choix.appendChild(b);
@@ -900,6 +902,26 @@
       return b;
     }
     var aimes = Store.aimes();
+    if (parDifficulte) {
+      /* Classés par la difficulté des notes (Programme.difficulte), pas par la
+       * vitesse : le tempo se règle sur chaque fiche. */
+      var parNiv = {};
+      Morceaux.tous().forEach(function (p) {
+        if (p.versionDe || p.categorie === 'entrainement') return;
+        var d = Programme.difficulte(p);
+        (parNiv[d.niveau] = parNiv[d.niveau] || []).push(p);
+      });
+      Programme.NIVEAUX_DIFF.forEach(function (nv, k) {
+        var l = parNiv[k + 1];
+        if (!l) return;
+        cible = rubrique('📊 ' + (k + 1) + ' · ' + nv.nom);
+        cible.appendChild(el('p', 'aide', cap(nv.but) + '. Du plus simple au plus exigeant ; la vitesse ne compte pas, le tempo se règle sur chaque fiche.'));
+        l.sort(function (a, b) { return Programme.difficulte(a).score - Programme.difficulte(b).score; })
+          .forEach(function (p) { cible.appendChild(ligne(p, Programme.difficulte(p).raisons[0])); });
+      });
+      compterRubriques();
+      return;
+    }
     if (parArtiste) {
       var artistes = {};
       Morceaux.tous().forEach(function (p) {
@@ -1425,6 +1447,10 @@
     }
     h.appendChild(el('h2', null, p.titre));
     h.appendChild(el('p', 'aide', p.sous_titre));
+    if (window.Programme && Morceaux.get(p.id)) {
+      var dif = Programme.difficulte(p);
+      h.appendChild(el('p', 'difficulte', '📊 Difficulté ' + dif.niveau + '/6 · ' + Programme.NIVEAUX_DIFF[dif.niveau - 1].nom + ' — ' + dif.raisons.join(', ')));
+    }
     h.appendChild(blocRessenti(p.id));
     // Version longue / courte de la même chanson, sur la même fiche.
     var autre = p.longue ? trouverMorceau(p.longue) : p.versionDe ? trouverMorceau(p.versionDe) : null;

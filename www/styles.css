@@ -620,3 +620,7 @@ details.rubrique-morceaux .enchainer { margin: 0; border: 0; padding: 0; backgro
 /* Les commandes de zoom flottent déjà en bas à droite du plein écran : on se met à gauche. */
 .partition.plein-ecran .pages-partition { right: auto; left: max(14px, env(safe-area-inset-left)); }
 html.tv .pages-partition { display: none; }
+
+/* Barre de lecture en haut de la fiche : Écouter / Arrêter, puis le tempo. */
+.barre-lecture { margin: 6px 0 10px; }
+.barre-lecture .actions { margin: 6px 0; }

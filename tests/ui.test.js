@@ -118,6 +118,14 @@ function verifie(nom, cond, detail) {
   w.AppGuitare.aller('morceaux');
   verifie('tous les morceaux sont listés',
           $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + DOUBLONS_TOP);
+  w.AppGuitare.ouvrirMorceau('ch-hey-jude');
+  {
+    const d = $('detailMorceau');
+    const ecouter = [...d.querySelectorAll('button')].find((b) => /▶ Écouter/.test(b.textContent));
+    const desc = [...d.querySelectorAll(':scope > p')].find((x) => /Grille d’accords de la chanson/.test(x.textContent));
+    verifie('« ▶ Écouter » en haut de la fiche, avant la description et la tablature', ecouter && desc &&
+            (ecouter.compareDocumentPosition(desc) & w.Node.DOCUMENT_POSITION_FOLLOWING) && (ecouter.compareDocumentPosition(d.querySelector('.tab-ligne')) & w.Node.DOCUMENT_POSITION_FOLLOWING));
+  }
   w.AppGuitare.ouvrirMorceau('ode-joie');
   const notesTab = $('detailMorceau').querySelectorAll('.tab-note');
   verifie('la tablature contient toutes les notes',

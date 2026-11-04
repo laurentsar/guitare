@@ -1089,8 +1089,8 @@
     var def = {
       id: c.id, titre: c.titre, artiste: c.artiste,
       sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
-      niveau: { hit: 7, international: 8, rock: 9, tiktok: 10 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
-      categorie: c.groupe === 'tiktok' ? 'tiktok' : undefined,
+      niveau: { hit: 7, international: 8, rock: 9, tiktok: 10, top20: 11 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      categorie: c.groupe === 'tiktok' ? 'tiktok' : c.groupe === 'top20' ? 'top20' : undefined, top: c.top,
       chanson: true,
       description: 'Grille d’accords de la chanson, accompagnement écrit pour cette app (ni mélodie ni paroles : elles sont sous droits). ' +
         (c.capo ? 'Capodastre case ' + c.capo + ' pour retrouver la tonalité du disque : les accords se jouent comme écrits, le capo fait le reste. ' : '') +
@@ -1134,7 +1134,7 @@
     var longues = partiesLongues(c);
     creerChanson(c, c.sections, { longue: c.id + '-longue' });
     var l = creerChanson({ id: c.id + '-longue', titre: c.titre + ' — version longue', artiste: c.artiste, annee: c.annee,
-                           capo: c.capo, tempo: c.tempo, groupe: c.groupe, note: c.note }, longues, { versionDe: c.id });
+                           capo: c.capo, tempo: c.tempo, groupe: c.groupe, top: c.top, note: c.note }, longues, { versionDe: c.id });
     l.description += ' Version longue : la chanson entière, partie par partie, dans l’ordre habituel du morceau (simplifié) : ' +
       longues.map(function (p) { return p.titre; }).join(' · ') + '.';
   });

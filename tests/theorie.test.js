@@ -758,7 +758,7 @@ console.log('\n— TikTok —');
           Morceaux.get('ch-feel-good-inc').capo === 6 && Morceaux.get('ch-do-i-wanna-know').capo === 3 && Morceaux.get('ch-dance-monkey').capo === 2 &&
           Morceaux.get('ch-where-is-my-mind').capo === 4 && Morceaux.get('ch-hit-the-road-jack').capo === 4);
   const longues = Morceaux.tous().filter((p) => p.versionDe);
-  verifie('versions longues : une par chanson TikTok + Bella Ciao (×2)', longues.length === 9 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
+  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 24 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
   verifie('version longue plus longue que la courte, mêmes accords', longues.every((l) => {
     const c = Morceaux.get(l.versionDe);
     return Tablature.duree_totale(l) > Tablature.duree_totale(c) &&
@@ -798,6 +798,15 @@ console.log('\n— TikTok —');
     const k = {};
     return p.notes.every((n) => { const c = n.temps + '/' + n.corde; const ok = k[c] === undefined || k[c] === n.frette; k[c] = n.frette; return ok; });
   }));
+}
+
+{
+  const top = Morceaux.tous().filter((p) => p.categorie === 'top20' && !p.versionDe);
+  verifie('Top 20 : 15 grilles, niveaux 1 à 4, chacune avec sa version longue', top.length === 15 && [1, 2, 3, 4].every((n) => top.some((p) => p.top === n)) &&
+          top.every((p) => p.longue && Morceaux.get(p.longue)), top.length);
+  verifie('Top 20 : capos (Wonderwall 2, I’m Yours 4, Hotel California 7, Hey Jude 3)', Morceaux.get('ch-wonderwall').capo === 2 && Morceaux.get('ch-im-yours').capo === 4 &&
+          Morceaux.get('ch-hotel-california').capo === 7 && Morceaux.get('ch-hey-jude').capo === 3);
+  verifie('Top 20 niveau 1 : pas de barré', top.filter((p) => p.top === 1).every((p) => !p.mains.gauche.some((a) => a.barre)));
 }
 
 console.log('\n— Programme progressif —');

@@ -463,6 +463,112 @@
       sections: [
         { titre: 'Intro et refrain', motif: 'plaque', tours: 2, grille: ['Em', 'Em', 'C', 'C', 'Am', 'Am', 'D', 'D'] },
         { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['Em', 'C', 'Am', 'D'] }
+      ] },
+    /* Top 20 de la guitare acoustique, par niveau (top : 1 débutant, 2
+     * intermédiaire, 3 confirmé, 4 avancé). Grilles d'après Hooktheory,
+     * simplifiées et transposées au capo vers des formes ouvertes. */
+    { id: 'ch-wonderwall', titre: 'Wonderwall', artiste: 'Oasis', annee: 1995, capo: 2, tempo: 87, groupe: 'top20', top: 1,
+      note: 'Capo case 2 : Fa♯ m7 – La – Mi sus4 – Si m7 du disque se jouent Mi m7 – Sol – Ré – La7 (sus4 joués simples).',
+      structure: ['Couplet', 'Pré-refrain', 'Couplet', 'Pré-refrain', 'Refrain', 'Couplet', 'Pré-refrain', 'Refrain', 'Refrain:Fin:1'],
+      sections: [
+        { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['Em7', 'G', 'D', 'A7'] },
+        { titre: 'Pré-refrain', motif: 'plaque', grille: ['C', 'D', 'Em7', 'Em7'] },
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['C', 'Em7', 'G', 'Em7'] }
+      ] },
+    { id: 'ch-vent-nous-portera', titre: 'Le vent nous portera', artiste: 'Noir Désir', annee: 2001, capo: 0, tempo: 105, groupe: 'top20', top: 1,
+      note: 'Deux accords du début à la fin : Mi m (quatre mesures), Ré (deux), Mi m (deux).',
+      structure: ['Grille:Intro:1', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Fin:1'],
+      sections: [
+        { titre: 'Grille', motif: 'balade', tours: 2, grille: ['Em', 'Em', 'Em', 'Em', 'D', 'D', 'Em', 'Em'] }
+      ] },
+    { id: 'ch-talkin-revolution', titre: 'Talkin’ Bout a Revolution', artiste: 'Tracy Chapman', annee: 1988, capo: 0, tempo: 120, groupe: 'top20', top: 1,
+      note: 'Quatre accords en boucle : Sol – Do – Mi m – Ré.',
+      structure: ['Grille:Intro:1', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Fin:1'],
+      sections: [
+        { titre: 'Grille', motif: 'balade', tours: 2, grille: ['G', 'C', 'Em', 'D'] }
+      ] },
+    { id: 'ch-horse-no-name', titre: 'A Horse with No Name', artiste: 'America', annee: 1971, capo: 0, tempo: 120, groupe: 'top20', top: 1,
+      note: 'Deux accords pour toute la chanson : Mi m et Ré (le disque joue des Mi m9 et Ré6/9, plus riches, avec les mêmes basses).',
+      structure: ['Grille:Intro:1', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Fin'],
+      sections: [
+        { titre: 'Grille', motif: 'balade', tours: 2, grille: ['Em', 'D', 'Em', 'D'] }
+      ] },
+    { id: 'ch-im-yours', titre: 'I’m Yours', artiste: 'Jason Mraz', annee: 2008, capo: 4, tempo: 76, groupe: 'top20', top: 1,
+      note: 'Capo case 4 : Si – Fa♯ – Sol♯ m – Mi du disque se jouent Sol – Ré – Mi m – Do (I – V – vi – IV).',
+      structure: ['Couplet:Intro:1', 'Couplet', 'Couplet:Refrain', 'Couplet', 'Couplet:Refrain', 'Pont', 'Couplet:Refrain', 'Couplet:Fin:1'],
+      sections: [
+        { titre: 'Couplet', motif: 'plaque', tours: 2, grille: ['G', 'D', 'Em', 'C'] },
+        { titre: 'Pont', motif: 'plaque', grille: ['G', 'D', 'Em', 'D', 'C', 'C'] }
+      ] },
+    { id: 'ch-hotel-california', titre: 'Hotel California', artiste: 'Eagles', annee: 1976, capo: 7, tempo: 74, groupe: 'top20', top: 2,
+      note: 'Capo case 7, la version simple : Si m – Fa♯7 – La – Mi – Sol – Ré – Mi m – Fa♯7 du disque se jouent Mi m – Si7 – Ré – La – Do – Sol – La m – Si7.',
+      structure: ['Couplet:Intro', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Couplet:Solo', 'Couplet:Fin'],
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', grille: ['Em', 'B7', 'D', 'A', 'C', 'G', 'Am', 'B7'] },
+        { titre: 'Refrain', motif: 'plaque', grille: ['C', 'G', 'B7', 'Em', 'C', 'G', 'Am', 'B7'] }
+      ] },
+    { id: 'ch-wish-you-were-here', titre: 'Wish You Were Here', artiste: 'Pink Floyd', annee: 1975, capo: 0, tempo: 62, groupe: 'top20', top: 2,
+      note: 'Intro en Mi m7 – Sol – La m – Sol, puis le couplet Do – Ré – La m – Sol – Ré. (Le solo d’intro, une mélodie, n’est pas reproduit.)',
+      structure: ['Intro', 'Couplet', 'Intro:Interlude', 'Couplet', 'Intro:Fin'],
+      sections: [
+        { titre: 'Intro', motif: 'plaque', tours: 2, grille: ['Em7', 'G', 'Am', 'G'] },
+        { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['C', 'D', 'Am', 'G', 'D', 'C', 'Am', 'G'] }
+      ] },
+    { id: 'ch-fast-car', titre: 'Fast Car', artiste: 'Tracy Chapman', annee: 1988, capo: 2, tempo: 104, groupe: 'top20', top: 2,
+      note: 'Capo case 2 : Ré – La – Fa♯ m – Mi du disque se jouent Do – Sol – Mi m – Ré.',
+      structure: ['Couplet:Intro:1', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Couplet:Fin:1'],
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['C', 'G', 'Em', 'D'] },
+        { titre: 'Refrain', motif: 'balade', tours: 2, grille: ['C', 'G', 'Em', 'D', 'C', 'C'] }
+      ] },
+    { id: 'ch-losing-my-religion', titre: 'Losing My Religion', artiste: 'R.E.M.', annee: 1991, capo: 0, tempo: 126, groupe: 'top20', top: 2,
+      note: 'Couplet La m – Mi m, refrain Fa – Ré m – Sol – La m (Fa barré). La mandoline du disque est remplacée par l’arpège.',
+      structure: ['Refrain:Intro:1', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Refrain:Fin:1'],
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', grille: ['Am', 'Em', 'Am', 'Em', 'Am', 'Em', 'Dm', 'G'] },
+        { titre: 'Refrain', motif: 'balade', tours: 2, grille: ['F', 'Dm', 'G', 'Am'] }
+      ] },
+    { id: 'ch-hey-jude', titre: 'Hey Jude', artiste: 'The Beatles', annee: 1968, capo: 3, tempo: 74, groupe: 'top20', top: 2,
+      note: 'Capo case 3 : Fa – Do – Si♭ du disque se jouent Ré – La – Sol. La fin (« na na na ») : Ré – Do – Sol – Ré.',
+      structure: ['Couplet', 'Couplet', 'Pont', 'Couplet', 'Fin', 'Fin', 'Fin'],
+      sections: [
+        { titre: 'Couplet', motif: 'plaque', grille: ['D', 'A', 'A7', 'D', 'G', 'D', 'A7', 'D'] },
+        { titre: 'Pont', motif: 'balade', grille: ['D7', 'G', 'Em', 'A7', 'D', 'D'] },
+        { titre: 'Fin', motif: 'plaque', grille: ['D', 'C', 'G', 'D'] }
+      ] },
+    { id: 'ch-dust-in-the-wind', titre: 'Dust in the Wind', artiste: 'Kansas', annee: 1977, capo: 0, tempo: 94, groupe: 'top20', top: 3,
+      note: 'Arpège constant (picking) : Do – La m, puis Do – Sol – La m – Sol – Ré m.',
+      structure: ['Intro', 'Couplet', 'Intro', 'Couplet', 'Fin', 'Couplet', 'Intro:Fin'],
+      sections: [
+        { titre: 'Intro', motif: 'arpege', tours: 2, grille: ['C', 'Am', 'C', 'Am'] },
+        { titre: 'Couplet', motif: 'arpege', grille: ['C', 'G', 'Am', 'G', 'Dm', 'Am'] },
+        { titre: 'Fin', motif: 'arpege', grille: ['D', 'G', 'Am', 'Am'] }
+      ] },
+    { id: 'ch-tears-in-heaven', titre: 'Tears in Heaven', artiste: 'Eric Clapton', annee: 1992, capo: 0, tempo: 77, groupe: 'top20', top: 3,
+      note: 'Couplet La – Mi – Fa♯ m – La – Ré – La – Mi7 – La (le disque fait descendre la basse : La, Sol♯, Fa♯, Mi, Ré…). Pont Do – Sol – La m7 – Ré – Sol. Fa♯ m est barré.',
+      structure: ['Couplet:Intro:1', 'Couplet', 'Couplet', 'Pont', 'Couplet', 'Couplet:Fin:1'],
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['A', 'E', 'F#m', 'A', 'D', 'A', 'E7', 'A'] },
+        { titre: 'Pont', motif: 'balade', grille: ['C', 'G', 'Am7', 'D', 'G', 'G'] }
+      ] },
+    { id: 'ch-more-than-words', titre: 'More Than Words', artiste: 'Extreme', annee: 1990, capo: 0, tempo: 92, groupe: 'top20', top: 3,
+      note: 'Écrit en Sol : le disque est accordé un demi-ton plus bas. Couplet Sol – Do – La m7 – Do – Ré, refrain Sol – Ré – Mi m – Si m – Do (Si m barré).',
+      structure: ['Couplet', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Refrain:Fin'],
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', grille: ['G', 'C', 'Am7', 'C', 'D', 'D', 'G', 'G'] },
+        { titre: 'Refrain', motif: 'balade', grille: ['G', 'D', 'Em', 'Bm', 'C', 'C', 'D', 'D'] }
+      ] },
+    { id: 'ch-neon', titre: 'Neon', artiste: 'John Mayer', annee: 2001, capo: 3, tempo: 103, groupe: 'top20', top: 4,
+      note: 'Capo case 3 : Do m7 – Mi♭ – Fa m7 – La♭ – Si♭ du disque se jouent La m7 – Do – Ré m – Fa – Sol. Le jeu percussif du disque (pouce slappé) n’est pas reproduit : ici la grille.',
+      structure: ['Grille:Intro:1', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Fin:1'],
+      sections: [
+        { titre: 'Grille', motif: 'balade', tours: 2, grille: ['Am7', 'C', 'Dm', 'F', 'G', 'G'] }
+      ] },
+    { id: 'ch-angeles', titre: 'Angeles', artiste: 'Elliott Smith', annee: 1997, capo: 0, tempo: 118, groupe: 'top20', top: 4,
+      note: 'La m – Ré – Do – Ré – Do (le disque joue des renversements et un Ré sus4) ; le picking rapide est remplacé par l’arpège.',
+      structure: ['Grille:Intro:1', 'Grille:Couplet', 'Grille:Couplet', 'Grille:Fin:1'],
+      sections: [
+        { titre: 'Grille', motif: 'arpege', tours: 2, grille: ['Am', 'D', 'C', 'D', 'C', 'C'] }
       ] }
   ];
 })(typeof window !== 'undefined' ? window : globalThis);

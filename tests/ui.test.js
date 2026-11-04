@@ -38,6 +38,8 @@ vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.ge
 const $ = (id) => w.document.getElementById(id);
 // Les exercices d'entraînement s'ouvrent depuis leur écran, pas depuis la liste.
 const listables = () => w.Morceaux.tous().filter((p) => p.categorie !== 'entrainement' && !p.versionDe).length;
+// Knockin' et House of the Rising Sun figurent aussi dans le Top 20 : deux lignes chacun.
+const DOUBLONS_TOP = 2;
 // Les aides débutant sont éteintes par défaut (v1.16) ; les blocs ci-dessous
 // les testent, on les allume. Le comportement par défaut a son propre bloc.
 w.Store.reglage('aides', true);
@@ -115,7 +117,7 @@ function verifie(nom, cond, detail) {
   console.log('\n— Morceaux —');
   w.AppGuitare.aller('morceaux');
   verifie('tous les morceaux sont listés',
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables());
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + DOUBLONS_TOP);
   w.AppGuitare.ouvrirMorceau('ode-joie');
   const notesTab = $('detailMorceau').querySelectorAll('.tab-note');
   verifie('la tablature contient toutes les notes',
@@ -177,7 +179,7 @@ function verifie(nom, cond, detail) {
   verifie('enregistrée puis ouverte dans le lecteur', $('ecran-morceau').classList.contains('actif') && w.Store.tablatures().length === 1);
   w.AppGuitare.aller('morceaux');
   verifie('« Mes tablatures » la liste', /Mes tablatures/.test($('listeMorceaux').textContent) &&
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + 1);
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + DOUBLONS_TOP + 1);
 
   console.log('\n— Gammes —');
   w.AppGuitare.aller('gammes');
@@ -468,6 +470,10 @@ function verifie(nom, cond, detail) {
             /Bella Ciao sur une corde/.test($('listeMorceaux').textContent) && /Bella Ciao — version facile/.test($('listeMorceaux').textContent) &&
             /Vu sur TikTok — grilles d’accords/.test($('listeMorceaux').textContent) && /Smoke on the Water/.test($('listeMorceaux').textContent) &&
             /Arpège La – Do♯m – Fa♯m – Ré/.test($('listeMorceaux').textContent) && /Arpège La m7 – Fa/.test($('listeMorceaux').textContent));
+    const titresT = [...$('listeMorceaux').querySelectorAll('h3')].map((x) => x.textContent).filter((t) => /Top 20/.test(t));
+    verifie('Top 20 : 4 rubriques par niveau', titresT.length === 4 && /Débutant/.test(titresT[0]) && /Avancé/.test(titresT[3]), titresT.join(' | '));
+    const top1 = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /Débutant/.test(d.querySelector('h3').textContent));
+    verifie('Top 20 débutant : Knockin’ (déjà dans l’app), Wonderwall, Le vent nous portera…', /Knockin/.test(top1.textContent) && /Wonderwall/.test(top1.textContent) && /Le vent nous portera/.test(top1.textContent));
     verifie('versions longues absentes de la liste', !/version longue/.test($('listeMorceaux').textContent));
     w.AppGuitare.ouvrirMorceau('ch-final-countdown');
     const bL = $('detailMorceau').querySelector('.version-autre');

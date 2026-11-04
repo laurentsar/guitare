@@ -879,13 +879,14 @@
     var tEnch = bloc.querySelector('h3');
     rubrique(tEnch.textContent).appendChild(bloc);
     tEnch.remove();
-    var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [];
+    var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [], top20 = {};
     Morceaux.tous().forEach(function (p) {
       if (p.versionDe) return;   // version longue : proposée sur la fiche de la courte
       if (p.categorie === 'accords') exercices.push(p);
       else if (p.categorie === 'pouce') pouce.push(p);
       else if (p.categorie === 'pouce-main') pouceMain.push(p);
       else if (p.categorie === 'tiktok') tiktok.push(p);
+      else if (p.categorie === 'top20') (top20[p.top] = top20[p.top] || []).push(p);
       else if (p.categorie !== 'entrainement') (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
     });
     function ligne(p, droite) {
@@ -953,6 +954,17 @@
         grillesTT.forEach(function (p) { cible.appendChild(ligne(p, 'grille')); });
       }
     }
+    /* Top 20 de la guitare acoustique, par niveau. Knockin' on Heaven's Door
+     * et House of the Rising Sun y figurent aussi, depuis leurs rubriques. */
+    var DEJA_TOP = { 'ch-knockin': 1, 'acc-rising-sun': 3 };
+    Object.keys(DEJA_TOP).forEach(function (id) { var m = Morceaux.get(id); if (m) (top20[DEJA_TOP[id]] = top20[DEJA_TOP[id]] || []).unshift(m); });
+    var NOMS_TOP = { 1: 'Débutant — accords ouverts, rythmiques de base', 2: 'Intermédiaire — premiers barrés, rythmiques syncopées',
+                     3: 'Confirmé — arpèges et picking', 4: 'Avancé — fingerstyle' };
+    [1, 2, 3, 4].forEach(function (n) {
+      if (!top20[n]) return;
+      cible = rubrique('⭐ Top 20 acoustique · ' + NOMS_TOP[n]);
+      top20[n].forEach(function (p) { cible.appendChild(ligne(p, p.chanson ? 'grille' : 'niv. ' + p.niveau)); });
+    });
     var NOMS_NIVEAUX = { 1: 'Niveau 1 — grand débutant', 2: 'Niveau 2 — premières mélodies', 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
                          6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)', 9: 'Rock et reggae — Offspring, Nirvana, Cranberries, Police, Marley' };
     Object.keys(niveaux).sort().forEach(function (n) {

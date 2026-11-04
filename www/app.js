@@ -852,6 +852,7 @@
     tEnch.remove();
     var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [];
     Morceaux.tous().forEach(function (p) {
+      if (p.versionDe) return;   // version longue : proposée sur la fiche de la courte
       if (p.categorie === 'accords') exercices.push(p);
       else if (p.categorie === 'pouce') pouce.push(p);
       else if (p.categorie === 'pouce-main') pouceMain.push(p);
@@ -1137,7 +1138,7 @@
     var r = Store.revision();
     if (r && r.jour === jour && r.ids.every(trouverMorceau)) return r.ids;
     var joues = Store.joues();
-    var tous = Morceaux.tous();
+    var tous = Morceaux.tous().filter(function (m) { return !m.versionDe; });
     var debut = new Date(); debut.setHours(0, 0, 0, 0);
     // Déjà joués (pas aujourd'hui), du plus ancien au plus récent : à revoir.
     var anciens = tous.filter(function (m) { return joues[m.id] && joues[m.id].t < debut.getTime(); })
@@ -1360,6 +1361,16 @@
     h.appendChild(el('h2', null, p.titre));
     h.appendChild(el('p', 'aide', p.sous_titre));
     h.appendChild(blocRessenti(p.id));
+    // Version longue / courte de la même chanson, sur la même fiche.
+    var autre = p.longue ? trouverMorceau(p.longue) : p.versionDe ? trouverMorceau(p.versionDe) : null;
+    if (autre) {
+      var nbAutre = Math.ceil(Tablature.duree_totale(autre) / Tablature.noiresParMesure(autre));
+      var bAutre = el('button', 'btn large version-autre', p.longue
+        ? '📜 Version longue : la chanson entière (' + nbAutre + ' mesures)'
+        : '⏱ Version courte (' + nbAutre + ' mesures)');
+      bAutre.onclick = function () { ouvrirMorceau(autre.id); };
+      h.appendChild(bAutre);
+    }
     if (p.description) h.appendChild(el('p', null, p.description));
     // Aides débutant (position des mains, pas à pas, « Que font mes mains ? »,
     // lecture de la tablature) : derrière un réglage, éteint par défaut —

@@ -751,12 +751,23 @@ console.log('\n— TikTok —');
 }
 
 {
-  const tt = Morceaux.tous().filter((p) => p.chanson && p.categorie === 'tiktok');
+  const tt = Morceaux.tous().filter((p) => p.chanson && p.categorie === 'tiktok' && !p.versionDe);
   verifie('vu sur TikTok : 7 grilles d’accords, ni mélodie ni paroles', tt.length === 7 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
           tt.map((p) => p.id).join(','));
   verifie('capos : Feel Good 6, Do I Wanna Know 3, Dance Monkey 2, Where Is My Mind 4, Hit the Road Jack 4',
           Morceaux.get('ch-feel-good-inc').capo === 6 && Morceaux.get('ch-do-i-wanna-know').capo === 3 && Morceaux.get('ch-dance-monkey').capo === 2 &&
           Morceaux.get('ch-where-is-my-mind').capo === 4 && Morceaux.get('ch-hit-the-road-jack').capo === 4);
+  const longues = Morceaux.tous().filter((p) => p.versionDe);
+  verifie('versions longues : une par chanson TikTok + Bella Ciao (×2)', longues.length === 9 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
+  verifie('version longue plus longue que la courte, mêmes accords', longues.every((l) => {
+    const c = Morceaux.get(l.versionDe);
+    return Tablature.duree_totale(l) > Tablature.duree_totale(c) &&
+      (!c.mains || l.mains.gauche.map((a) => a.id).sort().join() === c.mains.gauche.map((a) => a.id).sort().join());
+  }));
+  verifie('Final Countdown longue : intro, couplets, refrains, solo', Morceaux.get('ch-final-countdown-longue').sections.map((s) => s.titre).join(' · ') ===
+          'Intro · Couplet 1 · Refrain 1 · Couplet 2 · Refrain 2 · Solo · Refrain final');
+  verifie('Bella Ciao longue : trois strophes', Morceaux.get('tiktok-bella-ciao-longue').sections.length === 3 &&
+          Tablature.duree_totale(Morceaux.get('tiktok-bella-ciao-longue')) === 3 * Tablature.duree_totale(Morceaux.get('tiktok-bella-ciao')));
   verifie('The Final Countdown : capo 2, Em C Am D', Morceaux.get('ch-final-countdown').capo === 2 && Morceaux.get('ch-final-countdown').mains.gauche.map((a) => a.id).join(' ') === 'Em C Am D');
   verifie('Hit the Road Jack : Em D C B7 qui descendent', Morceaux.get('ch-hit-the-road-jack').mains.gauche.map((a) => a.id).join(' ') === 'Em D C B7');
 }
@@ -777,7 +788,7 @@ console.log('\n— Programme progressif —');
   const tous = Morceaux.tous();
   const pals = Programme.paliers(tous);
   const ranges = pals.reduce((t, p) => t.concat(p.ids), []);
-  verifie('chaque morceau est dans exactement un palier', ranges.length === tous.length && new Set(ranges).size === tous.length);
+  verifie('chaque morceau est dans exactement un palier', ranges.length === tous.filter((p) => !p.versionDe).length && new Set(ranges).size === ranges.length);
   verifie('7 paliers, aucun vide', pals.length === 7 && pals.every((p) => p.ids.length > 0));
   verifie('palier 1 : pas de chanson ni de barré', pals[0].ids.every((id) => !Morceaux.get(id).chanson));
   const barre = (id) => (Morceaux.get(id).mains || { gauche: [] }).gauche.some((a) => a.barre);

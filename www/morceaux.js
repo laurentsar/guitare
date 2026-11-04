@@ -1054,9 +1054,9 @@
     rock: { texte: 'Rock : le pouce balaie l’accord en croches, huit coups par mesure, toujours vers le bas, d’un geste sec de l’avant-bras.',
       pas: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5].map(function (t) { return { temps: t, duree: 0.5, cordes: ['tout'] }; }) }
   };
-  (global.CHANSONS || []).forEach(function (c) {
+  function creerChanson(c, parties, extra) {
     var dico = {}, ordre = [];
-    c.sections.forEach(function (s) {
+    parties.forEach(function (s) {
       s.grille.forEach(function (g) {
         String(g).split('|').forEach(function (id) {
           if (!dico[id]) { dico[id] = accordChanson(id); ordre.push(id); }
@@ -1064,7 +1064,7 @@
       });
     });
     var mesure = 1, sections = [], motifsVus = [];
-    c.sections.forEach(function (s) {
+    parties.forEach(function (s) {
       var n = s.grille.length * (s.tours || 1);
       sections.push({ titre: s.titre, de: mesure, a: mesure + n - 1,
         texte: s.grille.join(' · ').replace(/\|/g, ' / ') + ((s.tours || 1) > 1 ? ' (×' + s.tours + ')' : '') + ' — ' + MOTIFS_CHANSON[s.motif].texte });
@@ -1072,7 +1072,7 @@
       if (motifsVus.indexOf(s.motif) === -1) motifsVus.push(s.motif);
     });
     var capoTxt = c.capo ? ' · capo case ' + c.capo : '';
-    ajoute({
+    var def = {
       id: c.id, titre: c.titre,
       sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
       niveau: { hit: 7, international: 8, rock: 9, tiktok: 10 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
@@ -1087,10 +1087,42 @@
         droite: motifsVus.map(function (m) { return MOTIFS_CHANSON[m].texte; }).concat(
           ['Une case de la grille = une mesure à 4 temps ; « F / G » = deux accords dans la mesure, 2 temps chacun.'])
       },
-      notes: accompagnement(dico, c.sections.map(function (s) {
+      notes: accompagnement(dico, parties.map(function (s) {
         return { tours: s.tours || 1, grille: s.grille, motif: MOTIFS_CHANSON[s.motif].pas };
       }))
+    };
+    Object.keys(extra || {}).forEach(function (k) { def[k] = extra[k]; });
+    return ajoute(def);
+  }
+
+  /* Version longue : la chanson entière, partie par partie, dans l'ordre
+   * donné par `structure` — « Partie », « Partie:Titre » ou
+   * « Partie:Titre:tours ». Proposée sur la fiche de la version courte. */
+  function partiesLongues(c) {
+    var vus = {};
+    return c.structure.map(function (x) {
+      var morceaux = x.split(':');
+      var src = c.sections.filter(function (s) { return s.titre === morceaux[0]; })[0];
+      if (!src) throw new Error(c.id + ' : partie inconnue dans la structure : ' + morceaux[0]);
+      var titre = morceaux[1] || src.titre;
+      vus[titre] = (vus[titre] || 0) + 1;
+      return { titre: titre, motif: src.motif, grille: src.grille, tours: morceaux[2] ? +morceaux[2] : (src.tours || 1) };
+    }).map(function (p, k, tout) {
+      // « Couplet », « Couplet » → « Couplet 1 », « Couplet 2 ».
+      var memes = tout.filter(function (q) { return q.titre === p.titre; });
+      if (memes.length > 1 && !/\d$/.test(p.titre)) p = { titre: p.titre + ' ' + (memes.indexOf(p) + 1), motif: p.motif, grille: p.grille, tours: p.tours };
+      return p;
     });
+  }
+
+  (global.CHANSONS || []).forEach(function (c) {
+    if (!c.structure) { creerChanson(c, c.sections); return; }
+    var longues = partiesLongues(c);
+    creerChanson(c, c.sections, { longue: c.id + '-longue' });
+    var l = creerChanson({ id: c.id + '-longue', titre: c.titre + ' — version longue', artiste: c.artiste, annee: c.annee,
+                           capo: c.capo, tempo: c.tempo, groupe: c.groupe, note: c.note }, longues, { versionDe: c.id });
+    l.description += ' Version longue : la chanson entière, partie par partie, dans l’ordre habituel du morceau (simplifié) : ' +
+      longues.map(function (p) { return p.titre; }).join(' · ') + '.';
   });
 
   // --- Pouce seul -------------------------------------------------------------
@@ -1278,6 +1310,25 @@
     notes: melodie(BELLA_CIAO.map(function (x) {
       return [{ 0: 'mi3', 5: 'la3', 7: 'si3', 8: 'do4', 10: 're4', 12: 'mi4', 13: 'fa4' }[x[0]], x[1]];
     }), { alterne: true })
+  });
+
+  /* Bella Ciao, version longue : la chanson a plusieurs strophes sur la
+   * même mélodie ; trois strophes à la suite, la dernière note tenue
+   * seulement à la fin. */
+  ['tiktok-bella-ciao', 'tiktok-bella-ciao-facile'].forEach(function (id) {
+    var c = PIECES.filter(function (p) { return p.id === id; })[0];
+    var tour = Tablature.duree_totale(c), notes = [], sections = [];
+    for (var k = 0; k < 3; k++) {
+      c.notes.forEach(function (n) { var x = {}; Object.keys(n).forEach(function (cle) { x[cle] = n[cle]; }); x.temps += k * tour; notes.push(x); });
+      sections.push({ titre: 'Strophe ' + (k + 1), de: k * 9 + 1, a: k * 9 + 9 });
+    }
+    c.longue = id + '-longue';
+    ajoute({
+      id: id + '-longue', titre: c.titre + ' — version longue', sous_titre: c.sous_titre + ' · trois strophes',
+      niveau: c.niveau, tempo: c.tempo, signature: c.signature, categorie: 'tiktok', versionDe: id, sections: sections,
+      description: c.description + ' Version longue : trois strophes à la suite, comme dans la chanson (même mélodie à chaque strophe).',
+      notes: notes
+    });
   });
 
   /* Arpèges vus sur TikTok : des accords égrenés, pas une mélodie.

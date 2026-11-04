@@ -37,7 +37,7 @@ vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.ge
 
 const $ = (id) => w.document.getElementById(id);
 // Les exercices d'entraînement s'ouvrent depuis leur écran, pas depuis la liste.
-const listables = () => w.Morceaux.tous().filter((p) => p.categorie !== 'entrainement').length;
+const listables = () => w.Morceaux.tous().filter((p) => p.categorie !== 'entrainement' && !p.versionDe).length;
 // Les aides débutant sont éteintes par défaut (v1.16) ; les blocs ci-dessous
 // les testent, on les allume. Le comportement par défaut a son propre bloc.
 w.Store.reglage('aides', true);
@@ -456,6 +456,13 @@ function verifie(nom, cond, detail) {
             /Bella Ciao sur une corde/.test($('listeMorceaux').textContent) && /Bella Ciao — version facile/.test($('listeMorceaux').textContent) &&
             /Vu sur TikTok — grilles d’accords/.test($('listeMorceaux').textContent) && /Smoke on the Water/.test($('listeMorceaux').textContent) &&
             /Arpège La – Do♯m – Fa♯m – Ré/.test($('listeMorceaux').textContent) && /Arpège La m7 – Fa/.test($('listeMorceaux').textContent));
+    verifie('versions longues absentes de la liste', !/version longue/.test($('listeMorceaux').textContent));
+    w.AppGuitare.ouvrirMorceau('ch-final-countdown');
+    const bL = $('detailMorceau').querySelector('.version-autre');
+    verifie('fiche courte : bouton « Version longue »', !!bL && /Version longue/.test(bL.textContent));
+    bL.click();
+    verifie('version longue ouverte, avec retour à la courte', /version longue/.test($('detailMorceau').querySelector('h2').textContent) &&
+            /Version courte/.test($('detailMorceau').querySelector('.version-autre').textContent));
     w.AppGuitare.ouvrirMorceau('pouce-g-c-d');
     verifie('fiche : main droite « pom-tcha » au pouce', /pom-tcha/i.test($('detailMorceau').textContent));
   }

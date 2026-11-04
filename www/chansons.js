@@ -411,6 +411,7 @@
      * rangée dans la section 📱 TikTok. Grilles d'après Hooktheory. */
     { id: 'ch-smoke-on-the-water', titre: 'Smoke on the Water', artiste: 'Deep Purple', annee: 1972,
       capo: 0, tempo: 112, groupe: 'tiktok',
+      structure: ['Intro', 'Couplet:Couplet', 'Refrain', 'Intro:Riff', 'Couplet', 'Refrain', 'Intro:Riff', 'Couplet:Solo', 'Couplet', 'Refrain', 'Intro:Fin'],
       note: 'En Sol mineur, tout en power chords. Les accords de l’intro (Sol, Si♭, Do) sont ceux sur lesquels tourne le riff célèbre.',
       sections: [
         { titre: 'Intro', motif: 'rock', tours: 2, grille: ['G5', 'Bb5', 'C5', 'G5'] },
@@ -419,6 +420,7 @@
       ] },
     { id: 'ch-feel-good-inc', titre: 'Feel Good Inc', artiste: 'Gorillaz', annee: 2005,
       capo: 6, tempo: 138, groupe: 'tiktok',
+      structure: ['Couplet', 'Refrain', 'Couplet', 'Refrain', 'Couplet:Pont', 'Refrain', 'Couplet:Fin:1'],
       note: 'Capo case 6 : Ré♯ m – La♯7 – Sol♯ m7 se jouent La m – Mi7 – Ré m (le m7 joué simple).',
       sections: [
         { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['Am', 'E7', 'Dm', 'Am'] },
@@ -426,6 +428,7 @@
       ] },
     { id: 'ch-do-i-wanna-know', titre: 'Do I Wanna Know?', artiste: 'Arctic Monkeys', annee: 2013,
       capo: 3, tempo: 85, groupe: 'tiktok',
+      structure: ['Couplet et refrain:Intro:1', 'Couplet et refrain:Couplet', 'Pré-refrain', 'Couplet et refrain:Refrain', 'Couplet et refrain:Couplet', 'Pré-refrain', 'Couplet et refrain:Refrain', 'Couplet et refrain:Fin:1'],
       note: 'Capo case 3 : Sol m – Mi♭ – Do m – Ré se jouent Mi m – Do – La m – Si7.',
       sections: [
         { titre: 'Couplet et refrain', motif: 'plaque', tours: 2, grille: ['Em', 'C', 'Am', 'B7'] },
@@ -433,6 +436,7 @@
       ] },
     { id: 'ch-dance-monkey', titre: 'Dance Monkey', artiste: 'Tones and I', annee: 2019,
       capo: 2, tempo: 98, groupe: 'tiktok',
+      structure: ['Couplet', 'Refrain', 'Couplet', 'Refrain', 'Refrain:Refrain final'],
       note: 'Capo case 2 : Fa♯ m – Ré – Mi – Do♯ m se jouent Mi m – Do – Ré – Si m (barré).',
       sections: [
         { titre: 'Couplet', motif: 'plaque', tours: 2, grille: ['Bm', 'Em', 'C', 'D'] },
@@ -440,18 +444,21 @@
       ] },
     { id: 'ch-where-is-my-mind', titre: 'Where Is My Mind?', artiste: 'Pixies', annee: 1988,
       capo: 4, tempo: 81, groupe: 'tiktok',
+      structure: ['Couplet et refrain:Intro:1', 'Couplet et refrain:Couplet:2', 'Couplet et refrain:Refrain:2', 'Couplet et refrain:Couplet:2', 'Couplet et refrain:Refrain:2', 'Couplet et refrain:Solo:2', 'Couplet et refrain:Refrain final:2'],
       note: 'Capo case 4 : Mi – Do♯ m – Sol♯ – La se jouent Do – La m – Mi – Fa (barré). La même grille du début à la fin.',
       sections: [
         { titre: 'Couplet et refrain', motif: 'balade', tours: 4, grille: ['C', 'Am', 'E', 'F'] }
       ] },
     { id: 'ch-hit-the-road-jack', titre: 'Hit the Road Jack', artiste: 'Ray Charles', annee: 1961,
       capo: 4, tempo: 87, groupe: 'tiktok',
+      structure: ['Grille:Refrain:2', 'Grille:Couplet:2', 'Grille:Refrain:2', 'Grille:Couplet:2', 'Grille:Refrain:2', 'Grille:Couplet:2', 'Grille:Fin:2'],
       note: 'Capo case 4 : Sol♯ m – Fa♯ – Mi – Ré♯ se jouent Mi m – Ré – Do – Si7 : quatre accords qui descendent, en boucle.',
       sections: [
         { titre: 'Grille', motif: 'plaque', tours: 4, grille: ['Em', 'D', 'C', 'B7'] }
       ] },
     { id: 'ch-final-countdown', titre: 'The Final Countdown', artiste: 'Europe', annee: 1986,
       capo: 2, tempo: 118, groupe: 'tiktok',
+      structure: ['Intro et refrain:Intro:1', 'Couplet', 'Intro et refrain:Refrain', 'Couplet', 'Intro et refrain:Refrain', 'Couplet:Solo', 'Intro et refrain:Refrain final'],
       note: 'Capo case 2 : Fa♯ m – Ré – Si m – Mi du disque se jouent Mi m – Do – La m – Ré, les accords que montre la vidéo. Deux mesures par accord, comme sous le riff du synthé.',
       sections: [
         { titre: 'Intro et refrain', motif: 'plaque', tours: 2, grille: ['Em', 'Em', 'C', 'C', 'Am', 'Am', 'D', 'D'] },

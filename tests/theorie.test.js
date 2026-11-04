@@ -752,11 +752,12 @@ console.log('\n— TikTok —');
 
 {
   const tt = Morceaux.tous().filter((p) => p.chanson && p.categorie === 'tiktok');
-  verifie('vu sur TikTok : 6 grilles d’accords, ni mélodie ni paroles', tt.length === 6 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
+  verifie('vu sur TikTok : 7 grilles d’accords, ni mélodie ni paroles', tt.length === 7 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
           tt.map((p) => p.id).join(','));
   verifie('capos : Feel Good 6, Do I Wanna Know 3, Dance Monkey 2, Where Is My Mind 4, Hit the Road Jack 4',
           Morceaux.get('ch-feel-good-inc').capo === 6 && Morceaux.get('ch-do-i-wanna-know').capo === 3 && Morceaux.get('ch-dance-monkey').capo === 2 &&
           Morceaux.get('ch-where-is-my-mind').capo === 4 && Morceaux.get('ch-hit-the-road-jack').capo === 4);
+  verifie('The Final Countdown : capo 2, Em C Am D', Morceaux.get('ch-final-countdown').capo === 2 && Morceaux.get('ch-final-countdown').mains.gauche.map((a) => a.id).join(' ') === 'Em C Am D');
   verifie('Hit the Road Jack : Em D C B7 qui descendent', Morceaux.get('ch-hit-the-road-jack').mains.gauche.map((a) => a.id).join(' ') === 'Em D C B7');
 }
 

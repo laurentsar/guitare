@@ -68,7 +68,8 @@
 
   function paliers(tous) {
     var out = PALIERS.map(function (x, k) { return { num: k + 1, nom: x.nom, but: x.but, ids: [] }; });
-    var tries = tous.slice().sort(function (a, b) { return cleTri(a) - cleTri(b); });
+    // Les versions longues se travaillent depuis la fiche de la courte.
+    var tries = tous.filter(function (p) { return !p.versionDe; }).sort(function (a, b) { return cleTri(a) - cleTri(b); });
     tries.forEach(function (p) { out[palierDe(p)].ids.push(p.id); });
     return out;
   }

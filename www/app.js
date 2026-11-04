@@ -829,6 +829,25 @@
    * qu'on ouvre le restent jusqu'à la fermeture de l'app (on revient d'un
    * morceau sur la liste telle qu'on l'a laissée). */
   var rubriquesOuvertes = {};
+  /* Artiste (ou compositeur) d'un morceau, pour le rangement par artiste.
+   * Les exercices écrits pour l'app n'en ont pas. */
+  var COMPOSITEURS = [[/Beethoven/, 'L. van Beethoven'], [/Mozart/, 'W. A. Mozart'], [/Bach/, 'J. S. Bach'],
+                      [/Mason/, 'L. Mason'], [/Hill/, 'Mildred et Patty Hill'], [/Pierpont/, 'J. L. Pierpont'],
+                      [/[Tt]raditionnel|chant traditionnel/, 'Traditionnel']];
+  function artisteDe(p) {
+    if (p.artiste) return p.artiste;
+    if (p.categorie === 'accords' || p.categorie === 'entrainement' || p.categorie === 'pouce') return null;
+    var st = p.sous_titre || '';
+    // Mélodie jouée au pouce : l'artiste de la mélodie d'origine.
+    var orig = /^pouce-/.test(p.id) && Morceaux.get(p.id.replace(/^pouce-/, ''));
+    if (orig) return artisteDe(orig);
+    if (p.source) st = st.split(' · ')[0];
+    for (var k = 0; k < COMPOSITEURS.length; k++) if (COMPOSITEURS[k][0].test(st)) return COMPOSITEURS[k][1];
+    if (p.source) return st;
+    return null;
+  }
+  // « The Police » se range à P ; un mot entier seulement (pas « Le » de Leonard).
+  function cleArtiste(a) { return a.replace(/^(The|Les|Le|La)\s+|^L[’']/i, '').toLowerCase(); }
   function rendreMorceaux() {
     var h = vide($('listeMorceaux'));
     var cible = h;
@@ -846,16 +865,28 @@
     var bProg = el('button', 'btn primaire large', '🪜 Mon programme progressif');
     bProg.onclick = function () { aller('programme'); };
     h.appendChild(bProg);
+    // Rangement : par rubrique (niveaux, sections) ou par artiste.
+    var parArtiste = Store.reglages().rangementMorceaux === 'artiste';
+    var choix = el('div', 'filtres rangement');
+    [['rubrique', '📂 Par rubrique'], ['artiste', '🎤 Par artiste']].forEach(function (o) {
+      var b = el('button', (o[0] === 'artiste') === parArtiste ? 'actif' : '', o[1]);
+      b.dataset.rangement = o[0];
+      b.onclick = function () { Store.reglage('rangementMorceaux', o[0]); rendreMorceaux(); };
+      choix.appendChild(b);
+    });
+    h.appendChild(choix);
     var bloc = blocEnchainer();
     var tEnch = bloc.querySelector('h3');
     rubrique(tEnch.textContent).appendChild(bloc);
     tEnch.remove();
-    var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [];
+    var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [], top20 = {};
     Morceaux.tous().forEach(function (p) {
+      if (p.versionDe) return;   // version longue : proposée sur la fiche de la courte
       if (p.categorie === 'accords') exercices.push(p);
       else if (p.categorie === 'pouce') pouce.push(p);
       else if (p.categorie === 'pouce-main') pouceMain.push(p);
       else if (p.categorie === 'tiktok') tiktok.push(p);
+      else if (p.categorie === 'top20') (top20[p.top] = top20[p.top] || []).push(p);
       else if (p.categorie !== 'entrainement') (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
     });
     function ligne(p, droite) {
@@ -869,6 +900,27 @@
       return b;
     }
     var aimes = Store.aimes();
+    if (parArtiste) {
+      var artistes = {};
+      Morceaux.tous().forEach(function (p) {
+        if (p.versionDe) return;
+        var a = artisteDe(p);
+        if (a) (artistes[a] = artistes[a] || []).push(p);
+      });
+      Object.keys(artistes).sort(function (x, y) { return cleArtiste(x).localeCompare(cleArtiste(y), 'fr'); }).forEach(function (a) {
+        cible = rubrique('🎤 ' + a);
+        artistes[a].forEach(function (p) { cible.appendChild(ligne(p, p.chanson ? 'grille' : '♩ = ' + p.tempo)); });
+      });
+      cible = rubrique('Mes tablatures');
+      var persoA = Store.tablatures();
+      if (!persoA.length) cible.appendChild(el('p', 'aide', 'Écris ta propre tablature, ou colles-en une trouvée sur internet.'));
+      persoA.forEach(function (p) { cible.appendChild(ligne(p, p.notes.length + ' notes')); });
+      var bNouvA = el('button', 'btn primaire large', '✏️ Nouvelle tablature');
+      bNouvA.onclick = function () { ouvrirEditeur(null); };
+      cible.appendChild(bNouvA);
+      compterRubriques();
+      return;
+    }
     var favoris = aimes.map(trouverMorceau).filter(Boolean);
     if (favoris.length) {
       cible = rubrique('♥ Mes favoris');
@@ -902,6 +954,17 @@
         grillesTT.forEach(function (p) { cible.appendChild(ligne(p, 'grille')); });
       }
     }
+    /* Top 20 de la guitare acoustique, par niveau. Knockin' on Heaven's Door
+     * et House of the Rising Sun y figurent aussi, depuis leurs rubriques. */
+    var DEJA_TOP = { 'ch-knockin': 1, 'acc-rising-sun': 3 };
+    Object.keys(DEJA_TOP).forEach(function (id) { var m = Morceaux.get(id); if (m) (top20[DEJA_TOP[id]] = top20[DEJA_TOP[id]] || []).unshift(m); });
+    var NOMS_TOP = { 1: 'Débutant — accords ouverts, rythmiques de base', 2: 'Intermédiaire — premiers barrés, rythmiques syncopées',
+                     3: 'Confirmé — arpèges et picking', 4: 'Avancé — fingerstyle' };
+    [1, 2, 3, 4].forEach(function (n) {
+      if (!top20[n]) return;
+      cible = rubrique('⭐ Top 20 acoustique · ' + NOMS_TOP[n]);
+      top20[n].forEach(function (p) { cible.appendChild(ligne(p, p.chanson ? 'grille' : 'niv. ' + p.niveau)); });
+    });
     var NOMS_NIVEAUX = { 1: 'Niveau 1 — grand débutant', 2: 'Niveau 2 — premières mélodies', 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
                          6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)', 9: 'Rock et reggae — Offspring, Nirvana, Cranberries, Police, Marley' };
     Object.keys(niveaux).sort().forEach(function (n) {
@@ -918,11 +981,14 @@
     var bNouv = el('button', 'btn primaire large', '✏️ Nouvelle tablature');
     bNouv.onclick = function () { ouvrirEditeur(null); };
     cible.appendChild(bNouv);
+    compterRubriques();
     // Nombre de morceaux dans chaque rubrique, à droite du titre.
-    Array.prototype.forEach.call(h.querySelectorAll('.rubrique-morceaux'), function (d) {
-      var n = d.querySelectorAll('.ligne-morceau').length;
-      if (n) d.querySelector('.rubrique-nb').textContent = n;
-    });
+    function compterRubriques() {
+      Array.prototype.forEach.call(h.querySelectorAll('.rubrique-morceaux'), function (d) {
+        var n = d.querySelectorAll('.ligne-morceau').length;
+        if (n) d.querySelector('.rubrique-nb').textContent = n;
+      });
+    }
   }
 
   /* Le lecteur, façon logiciel de tablature : tempo, boucle sur une section,
@@ -1137,7 +1203,7 @@
     var r = Store.revision();
     if (r && r.jour === jour && r.ids.every(trouverMorceau)) return r.ids;
     var joues = Store.joues();
-    var tous = Morceaux.tous();
+    var tous = Morceaux.tous().filter(function (m) { return !m.versionDe; });
     var debut = new Date(); debut.setHours(0, 0, 0, 0);
     // Déjà joués (pas aujourd'hui), du plus ancien au plus récent : à revoir.
     var anciens = tous.filter(function (m) { return joues[m.id] && joues[m.id].t < debut.getTime(); })
@@ -1360,6 +1426,16 @@
     h.appendChild(el('h2', null, p.titre));
     h.appendChild(el('p', 'aide', p.sous_titre));
     h.appendChild(blocRessenti(p.id));
+    // Version longue / courte de la même chanson, sur la même fiche.
+    var autre = p.longue ? trouverMorceau(p.longue) : p.versionDe ? trouverMorceau(p.versionDe) : null;
+    if (autre) {
+      var nbAutre = Math.ceil(Tablature.duree_totale(autre) / Tablature.noiresParMesure(autre));
+      var bAutre = el('button', 'btn large version-autre', p.longue
+        ? '📜 Version longue : la chanson entière (' + nbAutre + ' mesures)'
+        : '⏱ Version courte (' + nbAutre + ' mesures)');
+      bAutre.onclick = function () { ouvrirMorceau(autre.id); };
+      h.appendChild(bAutre);
+    }
     if (p.description) h.appendChild(el('p', null, p.description));
     // Aides débutant (position des mains, pas à pas, « Que font mes mains ? »,
     // lecture de la tablature) : derrière un réglage, éteint par défaut —

@@ -155,8 +155,22 @@
         else if (lo < pos) pos = lo;
         else if (hi > pos + 3) pos = Math.max(lo, hi - 3);
         if (lo < pos) pos = lo;
-        var dernier = 0;
-        fr.slice().sort(function (a, b) { return a.frette - b.frette || b.corde - a.corde; }).forEach(function (n) {
+        var dernier = 0, tries = fr.slice().sort(function (a, b) { return a.frette - b.frette || b.corde - a.corde; });
+        var libres = tries.filter(function (n) { return !n.doigt; });
+        var deborde = false;
+        tries.forEach(function (n) {
+          var base = Math.min(4, n.frette - pos + 1);
+          if (Math.max(base, dernier + 1) > 4) deborde = true;
+          dernier = n.doigt || Math.max(base, dernier + 1);
+        });
+        dernier = 0;
+        if (deborde && libres.length === tries.length && tries.length <= 4) {
+          // Plus de doigt libre en suivant les cases : quatre notes (ou
+          // moins), un doigt chacune, dans l'ordre des cases — sinon le même
+          // doigt se retrouvait sur deux cases différentes.
+          var decal = Math.max(0, Math.min(Math.min(4, tries[0].frette - pos + 1) - 1, 4 - tries.length));
+          tries.forEach(function (n, k) { n.doigt = k + 1 + decal; });
+        } else tries.forEach(function (n) {
           var base = Math.min(4, n.frette - pos + 1);
           var d = Math.max(base, dernier + 1);
           if (d > 4) d = base;                    // plus de doigt libre : petit barré
@@ -668,7 +682,7 @@
 
   ajoute({
     id: 'zombie',
-    titre: 'Zombie',
+    titre: 'Zombie', artiste: 'The Cranberries',
     sous_titre: 'The Cranberries · grille d’accords, accompagnement écrit pour cette app',
     niveau: 3, tempo: 76, signature: [4, 4],
     description: 'Quatre accords qui tournent du début à la fin : Mi mineur, Do maj7, Sol, Ré (♩ ≈ 84 sur le disque). Couplet en arpège pouce-index-majeur-annulaire, refrain en basse + accord plaqué, comme on l’accompagne à la guitare classique. Ni mélodie ni paroles : elles sont sous droits.',
@@ -1054,9 +1068,9 @@
     rock: { texte: 'Rock : le pouce balaie l’accord en croches, huit coups par mesure, toujours vers le bas, d’un geste sec de l’avant-bras.',
       pas: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5].map(function (t) { return { temps: t, duree: 0.5, cordes: ['tout'] }; }) }
   };
-  (global.CHANSONS || []).forEach(function (c) {
+  function creerChanson(c, parties, extra) {
     var dico = {}, ordre = [];
-    c.sections.forEach(function (s) {
+    parties.forEach(function (s) {
       s.grille.forEach(function (g) {
         String(g).split('|').forEach(function (id) {
           if (!dico[id]) { dico[id] = accordChanson(id); ordre.push(id); }
@@ -1064,7 +1078,7 @@
       });
     });
     var mesure = 1, sections = [], motifsVus = [];
-    c.sections.forEach(function (s) {
+    parties.forEach(function (s) {
       var n = s.grille.length * (s.tours || 1);
       sections.push({ titre: s.titre, de: mesure, a: mesure + n - 1,
         texte: s.grille.join(' · ').replace(/\|/g, ' / ') + ((s.tours || 1) > 1 ? ' (×' + s.tours + ')' : '') + ' — ' + MOTIFS_CHANSON[s.motif].texte });
@@ -1072,11 +1086,11 @@
       if (motifsVus.indexOf(s.motif) === -1) motifsVus.push(s.motif);
     });
     var capoTxt = c.capo ? ' · capo case ' + c.capo : '';
-    ajoute({
-      id: c.id, titre: c.titre,
+    var def = {
+      id: c.id, titre: c.titre, artiste: c.artiste,
       sous_titre: c.artiste + (c.annee ? ' (' + c.annee + ')' : '') + ' · grille d’accords' + capoTxt,
-      niveau: { hit: 7, international: 8, rock: 9, tiktok: 10 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
-      categorie: c.groupe === 'tiktok' ? 'tiktok' : undefined,
+      niveau: { hit: 7, international: 8, rock: 9, tiktok: 10, top20: 11 }[c.groupe] || 6, tempo: c.tempo, signature: [4, 4], capo: c.capo || 0,
+      categorie: c.groupe === 'tiktok' ? 'tiktok' : c.groupe === 'top20' ? 'top20' : undefined, top: c.top,
       chanson: true,
       description: 'Grille d’accords de la chanson, accompagnement écrit pour cette app (ni mélodie ni paroles : elles sont sous droits). ' +
         (c.capo ? 'Capodastre case ' + c.capo + ' pour retrouver la tonalité du disque : les accords se jouent comme écrits, le capo fait le reste. ' : '') +
@@ -1087,10 +1101,42 @@
         droite: motifsVus.map(function (m) { return MOTIFS_CHANSON[m].texte; }).concat(
           ['Une case de la grille = une mesure à 4 temps ; « F / G » = deux accords dans la mesure, 2 temps chacun.'])
       },
-      notes: accompagnement(dico, c.sections.map(function (s) {
+      notes: accompagnement(dico, parties.map(function (s) {
         return { tours: s.tours || 1, grille: s.grille, motif: MOTIFS_CHANSON[s.motif].pas };
       }))
+    };
+    Object.keys(extra || {}).forEach(function (k) { def[k] = extra[k]; });
+    return ajoute(def);
+  }
+
+  /* Version longue : la chanson entière, partie par partie, dans l'ordre
+   * donné par `structure` — « Partie », « Partie:Titre » ou
+   * « Partie:Titre:tours ». Proposée sur la fiche de la version courte. */
+  function partiesLongues(c) {
+    var vus = {};
+    return c.structure.map(function (x) {
+      var morceaux = x.split(':');
+      var src = c.sections.filter(function (s) { return s.titre === morceaux[0]; })[0];
+      if (!src) throw new Error(c.id + ' : partie inconnue dans la structure : ' + morceaux[0]);
+      var titre = morceaux[1] || src.titre;
+      vus[titre] = (vus[titre] || 0) + 1;
+      return { titre: titre, motif: src.motif, grille: src.grille, tours: morceaux[2] ? +morceaux[2] : (src.tours || 1) };
+    }).map(function (p, k, tout) {
+      // « Couplet », « Couplet » → « Couplet 1 », « Couplet 2 ».
+      var memes = tout.filter(function (q) { return q.titre === p.titre; });
+      if (memes.length > 1 && !/\d$/.test(p.titre)) p = { titre: p.titre + ' ' + (memes.indexOf(p) + 1), motif: p.motif, grille: p.grille, tours: p.tours };
+      return p;
     });
+  }
+
+  (global.CHANSONS || []).forEach(function (c) {
+    if (!c.structure) { creerChanson(c, c.sections); return; }
+    var longues = partiesLongues(c);
+    creerChanson(c, c.sections, { longue: c.id + '-longue' });
+    var l = creerChanson({ id: c.id + '-longue', titre: c.titre + ' — version longue', artiste: c.artiste, annee: c.annee,
+                           capo: c.capo, tempo: c.tempo, groupe: c.groupe, top: c.top, note: c.note }, longues, { versionDe: c.id });
+    l.description += ' Version longue : la chanson entière, partie par partie, dans l’ordre habituel du morceau (simplifié) : ' +
+      longues.map(function (p) { return p.titre; }).join(' · ') + '.';
   });
 
   // --- Pouce seul -------------------------------------------------------------
@@ -1229,9 +1275,9 @@
    * intervalles réguliers (~0,46 s, soit ♩ ≈ 130). 17 notes : quatre mesures
    * de noires et une ronde pour finir. */
   ajoute({
-    id: 'tiktok-la-re', titre: 'Le riff La – Ré', sous_titre: 'TikTok · @maesstttro · pouce seul, cordes 5 et 4 à vide',
+    id: 'tiktok-la-re', titre: 'Le riff La – Ré (I – IV en La)', sous_titre: 'TikTok · @maesstttro · pouce seul, cordes 5 et 4 à vide · titre non indiqué',
     niveau: 1, tempo: 130, signature: [4, 4], categorie: 'tiktok',
-    description: 'Relevé d’une vidéo TikTok (@maesstttro) : seulement deux cordes à vide, La (5e) et Ré (4e), toutes au pouce. La – Ré quatre fois, Ré quatre fois, puis La La Ré La… et La qu’on laisse sonner. Une note par temps, bien régulier : à la vidéo, ♩ ≈ 130 — commence plus lentement (−10) et remonte.',
+    description: 'Relevé d’une vidéo TikTok (@maesstttro) : seulement deux cordes à vide, La (5e) et Ré (4e), toutes au pouce. La – Ré quatre fois, Ré quatre fois, puis La La Ré La… et La qu’on laisse sonner. Une note par temps, bien régulier : à la vidéo, ♩ ≈ 130 — commence plus lentement (−10) et remonte. Ce qu’on entend : La, la tonique, et Ré, sa quarte (degrés I et IV en La) — les deux basses de presque tous les blues et rocks en La. La vidéo ne donne pas le titre de la chanson.',
     sections: [{ titre: 'La – Ré (×4)', de: 1, a: 2 }, { titre: 'Ré (×4)', de: 3, a: 3 }, { titre: 'Fin : La La Ré La… La', de: 4, a: 5 }],
     notes: aVide([[5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1],
                   [4, 1], [4, 1], [4, 1], [4, 1],
@@ -1280,6 +1326,25 @@
     }), { alterne: true })
   });
 
+  /* Bella Ciao, version longue : la chanson a plusieurs strophes sur la
+   * même mélodie ; trois strophes à la suite, la dernière note tenue
+   * seulement à la fin. */
+  ['tiktok-bella-ciao', 'tiktok-bella-ciao-facile'].forEach(function (id) {
+    var c = PIECES.filter(function (p) { return p.id === id; })[0];
+    var tour = Tablature.duree_totale(c), notes = [], sections = [];
+    for (var k = 0; k < 3; k++) {
+      c.notes.forEach(function (n) { var x = {}; Object.keys(n).forEach(function (cle) { x[cle] = n[cle]; }); x.temps += k * tour; notes.push(x); });
+      sections.push({ titre: 'Strophe ' + (k + 1), de: k * 9 + 1, a: k * 9 + 9 });
+    }
+    c.longue = id + '-longue';
+    ajoute({
+      id: id + '-longue', titre: c.titre + ' — version longue', sous_titre: c.sous_titre + ' · trois strophes',
+      niveau: c.niveau, tempo: c.tempo, signature: c.signature, categorie: 'tiktok', versionDe: id, sections: sections,
+      description: c.description + ' Version longue : trois strophes à la suite, comme dans la chanson (même mélodie à chaque strophe).',
+      notes: notes
+    });
+  });
+
   /* Arpèges vus sur TikTok : des accords égrenés, pas une mélodie.
    * `arpegeTT` lit, par mesure, l'accord et sa suite de [corde, case, doigt
    * gauche, doigt droit, durée]. */
@@ -1312,10 +1377,10 @@
     return { accord: acc, notes: [debut, c(1, 'm'), c(2, 'a'), c(1, 'm'), c(0, 'i'), c(1, 'm'), c(2, 'a'), c(1, 'm')] };
   }
   ajoute({
-    id: 'tiktok-arpege-la', titre: 'Arpège La – Do♯m – Fa♯m – Ré', sous_titre: 'TikTok · @aka_11.03 · trois cordes aiguës, formes courtes',
+    id: 'tiktok-arpege-la', titre: 'Arpège La – Do♯m – Fa♯m – Ré (I – iii – vi – IV)', sous_titre: 'TikTok · @aka_11.03 · La majeur, trois cordes aiguës · titre non indiqué',
     niveau: 2, tempo: 120, signature: [4, 4], categorie: 'tiktok',
     sections: [{ titre: 'La', de: 1, a: 2 }, { titre: 'Do♯m', de: 3, a: 4 }, { titre: 'Fa♯m', de: 5, a: 6 }, { titre: 'Ré', de: 7, a: 8 }],
-    description: 'D’après une vidéo TikTok (@aka_11.03) : quatre accords égrenés sur les trois cordes aiguës, avec des formes de trois doigts au plus. La : cases 2 sur les cordes 3 et 2, Mi aigu à vide. Do♯m : case 1 sur la 3e, case 2 sur la 2e, Mi à vide. Fa♯m : petit barré de l’index case 2 sur les trois cordes. Ré : la forme habituelle, le pouce sur le Ré à vide. Deux mesures par accord, en croches index – majeur – annulaire – majeur.',
+    description: 'D’après une vidéo TikTok (@aka_11.03) : quatre accords égrenés sur les trois cordes aiguës, avec des formes de trois doigts au plus. La : cases 2 sur les cordes 3 et 2, Mi aigu à vide. Do♯m : case 1 sur la 3e, case 2 sur la 2e, Mi à vide. Fa♯m : petit barré de l’index case 2 sur les trois cordes. Ré : la forme habituelle, le pouce sur le Ré à vide. Deux mesures par accord, en croches index – majeur – annulaire – majeur. Les accords : en La majeur, I (La) – iii (Do♯m) – vi (Fa♯m) – IV (Ré). Le Mi aigu à vide sonne dans les trois premiers accords, et c’est lui qui donne cette couleur rêveuse. La vidéo ne donne pas le titre de la chanson. Le motif d’arpège est écrit pour l’app : le son de la vidéo ne permet pas de retrouver l’ordre exact des notes.',
     notes: arpegeTT(fois2(2, ['A', 'A', 'C#m', 'C#m', 'F#m', 'F#m', 'D', 'D'].map(mesureLa)))
   });
 
@@ -1325,9 +1390,9 @@
   var AM7 = { accord: 'Am7', notes: [[5, 0, 0, 'p', .5], [4, 2, 2, 'p', .5], [3, 0, 0, 'i', .5], [2, 1, 1, 'm', 2.5]] };
   var F6 = { accord: 'F6', notes: [[6, 1, 1, 'p', .5], [5, 3, 3, 'p', .5], [4, 0, 0, 'p', .5], [3, 2, 2, 'i', 2.5]] };
   ajoute({
-    id: 'tiktok-arpege-am-f', titre: 'Arpège La m7 – Fa', sous_titre: 'TikTok · @maesstttro, @wiragustiii · quatre notes par accord',
+    id: 'tiktok-arpege-am-f', titre: 'Arpège La m7 – Fa (i – VI en La mineur)', sous_titre: 'TikTok · @maesstttro, @wiragustiii · quatre notes par accord · titre non indiqué',
     niveau: 2, tempo: 86, signature: [4, 4], categorie: 'tiktok',
-    description: 'Vu dans deux vidéos TikTok (@maesstttro, @wiragustiii) : deux accords égrenés, quatre notes chacun, puis on laisse sonner. La m7 : La à vide (5e corde), case 2 sur la 4e (majeur), Sol à vide, case 1 sur la 2e (index). Fa : case 1 sur la 6e (index), case 3 sur la 5e (annulaire), Ré à vide, case 2 sur la 3e (majeur). Le pouce prend les cordes graves, l’index et le majeur les aiguës.',
+    description: 'Vu dans deux vidéos TikTok (@maesstttro, @wiragustiii) : deux accords égrenés, quatre notes chacun, puis on laisse sonner. La m7 : La à vide (5e corde), case 2 sur la 4e (majeur), Sol à vide, case 1 sur la 2e (index). Fa : case 1 sur la 6e (index), case 3 sur la 5e (annulaire), Ré à vide, case 2 sur la 3e (majeur). Le pouce prend les cordes graves, l’index et le majeur les aiguës. Les accords : en La mineur, i (La m7 : La, Mi, Sol, Do) puis VI (Fa avec une sixte : Fa, Do, Ré, La). Les deux accords ont en commun le Do et le La : c’est ce qui fait ce balancement doux, sans tension. Le même motif revient dans plusieurs vidéos, sans titre de chanson.',
     notes: arpegeTT(fois2(4, [AM7, F6]))
   });
 
@@ -1403,7 +1468,7 @@
       mesure += n;
     });
     ajoute({
-      id: 'pouce-' + cid, titre: c.titre + ' au pouce', chanson: true, categorie: 'pouce-main',
+      id: 'pouce-' + cid, titre: c.titre + ' au pouce', chanson: true, categorie: 'pouce-main', artiste: c.artiste,
       sous_titre: c.artiste + ' · pouce + main gauche' + (c.capo ? ' · capo case ' + c.capo : ''),
       niveau: 2, tempo: Math.min(c.tempo, 90), signature: [4, 4], capo: c.capo || 0,
       description: 'La grille de « ' + c.titre + ' » accompagnée au pouce seul (pom-tcha). Accompagnement écrit pour cette app : ni mélodie ni paroles, elles sont sous droits. ' +

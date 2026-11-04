@@ -37,7 +37,9 @@ vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.ge
 
 const $ = (id) => w.document.getElementById(id);
 // Les exercices d'entraînement s'ouvrent depuis leur écran, pas depuis la liste.
-const listables = () => w.Morceaux.tous().filter((p) => p.categorie !== 'entrainement').length;
+const listables = () => w.Morceaux.tous().filter((p) => p.categorie !== 'entrainement' && !p.versionDe).length;
+// Knockin' et House of the Rising Sun figurent aussi dans le Top 20 : deux lignes chacun.
+const DOUBLONS_TOP = 2;
 // Les aides débutant sont éteintes par défaut (v1.16) ; les blocs ci-dessous
 // les testent, on les allume. Le comportement par défaut a son propre bloc.
 w.Store.reglage('aides', true);
@@ -115,7 +117,7 @@ function verifie(nom, cond, detail) {
   console.log('\n— Morceaux —');
   w.AppGuitare.aller('morceaux');
   verifie('tous les morceaux sont listés',
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables());
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + DOUBLONS_TOP);
   w.AppGuitare.ouvrirMorceau('ode-joie');
   const notesTab = $('detailMorceau').querySelectorAll('.tab-note');
   verifie('la tablature contient toutes les notes',
@@ -177,7 +179,7 @@ function verifie(nom, cond, detail) {
   verifie('enregistrée puis ouverte dans le lecteur', $('ecran-morceau').classList.contains('actif') && w.Store.tablatures().length === 1);
   w.AppGuitare.aller('morceaux');
   verifie('« Mes tablatures » la liste', /Mes tablatures/.test($('listeMorceaux').textContent) &&
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + 1);
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + DOUBLONS_TOP + 1);
 
   console.log('\n— Gammes —');
   w.AppGuitare.aller('gammes');
@@ -440,6 +442,18 @@ function verifie(nom, cond, detail) {
     w.AppGuitare.ouvrirMorceau('acc-em-am'); w.AppGuitare.aller('morceaux');
     const ouvertes = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].filter((d) => d.open).map((d) => d.querySelector('h3').textContent);
     verifie('une rubrique ouverte le reste en revenant d’un morceau', ouvertes.length === 1 && /Travailler les accords/.test(ouvertes[0]), ouvertes.join(','));
+    [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'artiste').click();
+    const titresA = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux h3')].map((x) => x.textContent);
+    verifie('rangement par artiste : une rubrique par artiste, triées', titresA.includes('🎤 Nirvana') && titresA.includes('🎤 F. Sor') && titresA.includes('🎤 Traditionnel') &&
+            titresA.indexOf('🎤 Bob Marley') < titresA.indexOf('🎤 Nirvana'), titresA.slice(0, 8).join(' | '));
+    const nirvana = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => d.querySelector('h3').textContent === '🎤 Nirvana');
+    verifie('Nirvana : ses 5 chansons, sans version longue', nirvana && nirvana.querySelectorAll('.ligne-morceau').length === 5);
+    const cran = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => d.querySelector('h3').textContent === '🎤 The Cranberries');
+    verifie('« The » ignoré pour le tri, Zombie avec les Cranberries', cran && /Zombie/.test(cran.textContent) && titresA.indexOf('🎤 The Cranberries') < titresA.indexOf('🎤 Deep Purple'));
+    verifie('« Leonard Cohen » rangé à L, pas à « onard »', titresA.indexOf('🎤 Leonard Cohen') > titresA.indexOf('🎤 L. van Beethoven') && titresA.indexOf('🎤 Leonard Cohen') < titresA.indexOf('🎤 Louane'));
+    verifie('rangement mémorisé', w.Store.reglages().rangementMorceaux === 'artiste');
+    [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'rubrique').click();
+    verifie('retour au rangement par rubrique', [...$('listeMorceaux').querySelectorAll('h3')].some((x) => /Travailler les accords/.test(x.textContent)));
     verifie('le bouton « Mon programme » reste visible hors des rubriques', /Mon programme progressif/.test($('listeMorceaux').firstChild.textContent));
   }
 
@@ -456,6 +470,17 @@ function verifie(nom, cond, detail) {
             /Bella Ciao sur une corde/.test($('listeMorceaux').textContent) && /Bella Ciao — version facile/.test($('listeMorceaux').textContent) &&
             /Vu sur TikTok — grilles d’accords/.test($('listeMorceaux').textContent) && /Smoke on the Water/.test($('listeMorceaux').textContent) &&
             /Arpège La – Do♯m – Fa♯m – Ré/.test($('listeMorceaux').textContent) && /Arpège La m7 – Fa/.test($('listeMorceaux').textContent));
+    const titresT = [...$('listeMorceaux').querySelectorAll('h3')].map((x) => x.textContent).filter((t) => /Top 20/.test(t));
+    verifie('Top 20 : 4 rubriques par niveau', titresT.length === 4 && /Débutant/.test(titresT[0]) && /Avancé/.test(titresT[3]), titresT.join(' | '));
+    const top1 = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /Débutant/.test(d.querySelector('h3').textContent));
+    verifie('Top 20 débutant : Knockin’ (déjà dans l’app), Wonderwall, Le vent nous portera…', /Knockin/.test(top1.textContent) && /Wonderwall/.test(top1.textContent) && /Le vent nous portera/.test(top1.textContent));
+    verifie('versions longues absentes de la liste', !/version longue/.test($('listeMorceaux').textContent));
+    w.AppGuitare.ouvrirMorceau('ch-final-countdown');
+    const bL = $('detailMorceau').querySelector('.version-autre');
+    verifie('fiche courte : bouton « Version longue »', !!bL && /Version longue/.test(bL.textContent));
+    bL.click();
+    verifie('version longue ouverte, avec retour à la courte', /version longue/.test($('detailMorceau').querySelector('h2').textContent) &&
+            /Version courte/.test($('detailMorceau').querySelector('.version-autre').textContent));
     w.AppGuitare.ouvrirMorceau('pouce-g-c-d');
     verifie('fiche : main droite « pom-tcha » au pouce', /pom-tcha/i.test($('detailMorceau').textContent));
   }

@@ -609,3 +609,14 @@ details.rubrique-morceaux .enchainer { margin: 0; border: 0; padding: 0; backgro
   .partition.plein-ecran .reperes { padding: 0 0 4px; }
   .partition.plein-ecran .reperes .btn { min-height: 28px; padding: 2px 8px; }
 }
+
+/* « ⬇ Suite » / « ⬆ » : la tablature dépasse l'écran. Au-dessus de la barre
+ * d'onglets sur la page, en bas à droite en plein écran. */
+.pages-partition { position: fixed; right: max(12px, env(safe-area-inset-right)); bottom: calc(78px + env(safe-area-inset-bottom, 0px)); z-index: 25; display: flex; gap: 8px; }
+.pages-partition[hidden] { display: none; }
+.pages-partition .btn { min-height: 48px; min-width: 52px; box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
+.pages-partition .btn:disabled { opacity: .35; }
+.partition.plein-ecran .pages-partition { z-index: 902; bottom: max(14px, env(safe-area-inset-bottom)); }
+/* Les commandes de zoom flottent déjà en bas à droite du plein écran : on se met à gauche. */
+.partition.plein-ecran .pages-partition { right: auto; left: max(14px, env(safe-area-inset-left)); }
+html.tv .pages-partition { display: none; }

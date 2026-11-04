@@ -410,6 +410,11 @@ function verifie(nom, cond, detail) {
     w.AppGuitare.ouvrirMorceau('carulli-valse-1');
     const rep2 = [...$('detailMorceau').querySelectorAll('.reperes .btn')].map((b) => b.textContent);
     verifie('pièce sans sections : un repère toutes les 8 mesures', rep2[0] === 'Mes. 1' && (rep2.length < 2 || rep2[1] === 'Mes. 9'), rep2.join(' | '));
+    w.AppGuitare.ouvrirMorceau('ch-knockin');
+    const pg = $('detailMorceau').querySelector('.pages-partition');
+    verifie('boutons « ⬆ » et « ⬇ Suite » pour une tablature sur plusieurs écrans', !!pg && /Suite/.test(pg.textContent) &&
+            pg.querySelectorAll('[aria-label="Écran suivant de la tablature"], [aria-label="Écran précédent de la tablature"]').length === 2);
+    verifie('« Suite » cliquable sans erreur', (() => { try { pg.querySelector('.btn.primaire').click(); return true; } catch (e) { return false; } })());
     const vue = w.Store.reglages().vuePartition;
     w.Store.reglage('vuePartition', null);
     const lw = w.innerWidth;
@@ -449,7 +454,8 @@ function verifie(nom, cond, detail) {
       .every((t) => $('listeMorceaux').textContent.indexOf(t) !== -1));
     verifie('Morceaux : section « 📱 TikTok » avec le riff La – Ré', titres.indexOf('📱 TikTok') > iP && /Le riff La – Ré/.test($('listeMorceaux').textContent) &&
             /Bella Ciao sur une corde/.test($('listeMorceaux').textContent) && /Bella Ciao — version facile/.test($('listeMorceaux').textContent) &&
-            /Vu sur TikTok — grilles d’accords/.test($('listeMorceaux').textContent) && /Smoke on the Water/.test($('listeMorceaux').textContent));
+            /Vu sur TikTok — grilles d’accords/.test($('listeMorceaux').textContent) && /Smoke on the Water/.test($('listeMorceaux').textContent) &&
+            /Arpège La – Do♯m – Fa♯m – Ré/.test($('listeMorceaux').textContent) && /Arpège La m7 – Fa/.test($('listeMorceaux').textContent));
     w.AppGuitare.ouvrirMorceau('pouce-g-c-d');
     verifie('fiche : main droite « pom-tcha » au pouce', /pom-tcha/i.test($('detailMorceau').textContent));
   }

@@ -752,12 +752,24 @@ console.log('\n— TikTok —');
 
 {
   const tt = Morceaux.tous().filter((p) => p.chanson && p.categorie === 'tiktok');
-  verifie('vu sur TikTok : 6 grilles d’accords, ni mélodie ni paroles', tt.length === 6 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
+  verifie('vu sur TikTok : 7 grilles d’accords, ni mélodie ni paroles', tt.length === 7 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
           tt.map((p) => p.id).join(','));
   verifie('capos : Feel Good 6, Do I Wanna Know 3, Dance Monkey 2, Where Is My Mind 4, Hit the Road Jack 4',
           Morceaux.get('ch-feel-good-inc').capo === 6 && Morceaux.get('ch-do-i-wanna-know').capo === 3 && Morceaux.get('ch-dance-monkey').capo === 2 &&
           Morceaux.get('ch-where-is-my-mind').capo === 4 && Morceaux.get('ch-hit-the-road-jack').capo === 4);
+  verifie('The Final Countdown : capo 2, Em C Am D', Morceaux.get('ch-final-countdown').capo === 2 && Morceaux.get('ch-final-countdown').mains.gauche.map((a) => a.id).join(' ') === 'Em C Am D');
   verifie('Hit the Road Jack : Em D C B7 qui descendent', Morceaux.get('ch-hit-the-road-jack').mains.gauche.map((a) => a.id).join(' ') === 'Em D C B7');
+}
+
+{
+  const la = Morceaux.get('tiktok-arpege-la'), am = Morceaux.get('tiktok-arpege-am-f');
+  verifie('arpège La : La, Do♯m, Fa♯m, Ré, deux mesures chacun, 16 mesures', Tablature.duree_totale(la) === 64 &&
+          ['A', 'C#m', 'F#m', 'D'].every((a, k) => la.notes.find((n) => n.temps === k * 8).accord === a));
+  verifie('arpège La : formes de la vidéo (La x x x 2 2 0, Do♯m x x x 1 2 0)', la.notes.filter((n) => n.accord === 'C#m' && n.corde === 3).every((n) => n.frette === 1) &&
+          la.notes.filter((n) => n.accord === 'A' && n.corde === 2).every((n) => n.frette === 2) && la.notes.filter((n) => n.corde === 1 && n.accord === 'A').every((n) => n.frette === 0));
+  verifie('arpège La m7 – Fa : 0 2 0 1 puis 1 3 0 2', am.notes.slice(0, 8).map((n) => n.frette).join('') === '02011302' &&
+          am.notes.slice(0, 8).map((n) => n.corde).join('') === '54326543');
+  verifie('arpège La m7 – Fa : 8 mesures, la 4e note tenue', Tablature.duree_totale(am) === 32 && am.notes[3].duree === 2.5);
 }
 
 console.log('\n— Programme progressif —');

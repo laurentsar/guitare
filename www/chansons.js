@@ -449,6 +449,13 @@
       note: 'Capo case 4 : Sol♯ m – Fa♯ – Mi – Ré♯ se jouent Mi m – Ré – Do – Si7 : quatre accords qui descendent, en boucle.',
       sections: [
         { titre: 'Grille', motif: 'plaque', tours: 4, grille: ['Em', 'D', 'C', 'B7'] }
+      ] },
+    { id: 'ch-final-countdown', titre: 'The Final Countdown', artiste: 'Europe', annee: 1986,
+      capo: 2, tempo: 118, groupe: 'tiktok',
+      note: 'Capo case 2 : Fa♯ m – Ré – Si m – Mi du disque se jouent Mi m – Do – La m – Ré, les accords que montre la vidéo. Deux mesures par accord, comme sous le riff du synthé.',
+      sections: [
+        { titre: 'Intro et refrain', motif: 'plaque', tours: 2, grille: ['Em', 'Em', 'C', 'C', 'Am', 'Am', 'D', 'D'] },
+        { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['Em', 'C', 'Am', 'D'] }
       ] }
   ];
 })(typeof window !== 'undefined' ? window : globalThis);

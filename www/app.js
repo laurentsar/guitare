@@ -1436,6 +1436,10 @@
       bAutre.onclick = function () { ouvrirMorceau(autre.id); };
       h.appendChild(bAutre);
     }
+    // Barre de lecture en haut de la fiche, avant la description : Écouter,
+    // Arrêter et le tempo sont ce qu'on touche en premier (remplie plus bas).
+    var hautLecture = el('div', 'barre-lecture');
+    h.appendChild(hautLecture);
     if (p.description) h.appendChild(el('p', null, p.description));
     // Aides débutant (position des mains, pas à pas, « Que font mes mains ? »,
     // lecture de la tablature) : derrière un réglage, éteint par défaut —
@@ -1468,7 +1472,7 @@
     moins.onclick = function () { etat.tempo = Math.max(30, etat.tempo - 10); majTempo(); };
     plus.onclick = function () { etat.tempo = Math.min(220, etat.tempo + 10); majTempo(); };
     ligneTempo.appendChild(moins); ligneTempo.appendChild(affiche); ligneTempo.appendChild(plus);
-    h.appendChild(ligneTempo);
+    hautLecture.appendChild(ligneTempo);
     majTempo();
 
     /* Portée, tablature, ou les deux. Le choix est mémorisé : un élève qui
@@ -1876,7 +1880,7 @@
     var bStop = el('button', 'btn', '■ Arrêter');
     var bMetro = el('button', 'btn', '🥁 Métronome seul');
     actions.appendChild(bJouer); actions.appendChild(bStop); actions.appendChild(bMetro);
-    h.appendChild(actions);
+    hautLecture.insertBefore(actions, hautLecture.firstChild);
 
     // Options de travail : des interrupteurs, pas des cases à cocher — plus
     // gros au doigt, et atteignables à la télécommande.

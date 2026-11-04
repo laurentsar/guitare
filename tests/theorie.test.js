@@ -688,7 +688,7 @@ console.log('\n— Chansons : grilles d’accords (v1.18) —');
     const a = p.mains.gauche.find((x) => x.id === n.accord);
     return a && a.frettes[n.corde - 1] === n.frette;
   })));
-  const nbMesures = (p) => Math.ceil(Tablature.duree_totale(p) / 4);
+  const nbMesures = (p) => Math.ceil(Tablature.duree_totale(p) / Tablature.noiresParMesure(p));
   verifie('sections contiguës qui couvrent tout le morceau', ch.every((p) => p.sections[0].de === 1 &&
     p.sections.every((s, i) => i === 0 || s.de === p.sections[i - 1].a + 1) && p.sections[p.sections.length - 1].a === nbMesures(p)));
   const lb = Morceaux.get('ch-je-l-aime-a-mourir');
@@ -758,7 +758,7 @@ console.log('\n— TikTok —');
           Morceaux.get('ch-feel-good-inc').capo === 6 && Morceaux.get('ch-do-i-wanna-know').capo === 3 && Morceaux.get('ch-dance-monkey').capo === 2 &&
           Morceaux.get('ch-where-is-my-mind').capo === 4 && Morceaux.get('ch-hit-the-road-jack').capo === 4);
   const longues = Morceaux.tous().filter((p) => p.versionDe);
-  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 24 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
+  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 25 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
   verifie('version longue plus longue que la courte, mêmes accords', longues.every((l) => {
     const c = Morceaux.get(l.versionDe);
     return Tablature.duree_totale(l) > Tablature.duree_totale(c) &&
@@ -802,10 +802,16 @@ console.log('\n— TikTok —');
 
 {
   const top = Morceaux.tous().filter((p) => p.categorie === 'top20' && !p.versionDe);
-  verifie('Top 20 : 15 grilles, niveaux 1 à 4, chacune avec sa version longue', top.length === 15 && [1, 2, 3, 4].every((n) => top.some((p) => p.top === n)) &&
+  verifie('Top 20 : 16 grilles, niveaux 1 à 4, chacune avec sa version longue', top.length === 16 && [1, 2, 3, 4].every((n) => top.some((p) => p.top === n)) &&
           top.every((p) => p.longue && Morceaux.get(p.longue)), top.length);
   verifie('Top 20 : capos (Wonderwall 2, I’m Yours 4, Hotel California 7, Hey Jude 3)', Morceaux.get('ch-wonderwall').capo === 2 && Morceaux.get('ch-im-yours').capo === 4 &&
           Morceaux.get('ch-hotel-california').capo === 7 && Morceaux.get('ch-hey-jude').capo === 3);
+  const bb = Morceaux.get('ch-blackbird');
+  verifie('Blackbird : chanson à 3 temps, mesures de 3 noires', bb.signature.join('/') === '3/4' && Tablature.noiresParMesure(bb) === 3 &&
+          Tablature.duree_totale(bb) === 3 * (6 * 2 + 4 * 2));
+  verifie('Blackbird : changement d’accord tous les 3 temps (Sol, La m7, Si m…)', ['G', 'Am7', 'Bm'].every((a, k) => bb.notes.filter((n) => n.temps === k * 3)[0].accord === a));
+  verifie('valse : basse au 1er temps, accord sur le 2e et le 3e', (() => { const p = bb.notes.filter((n) => n.temps >= 36 && n.temps < 39);
+    return p.filter((n) => n.temps === 36).length === 1 && p.filter((n) => n.temps === 37).length === 3 && p.filter((n) => n.temps === 38).length === 3; })());
   verifie('Top 20 niveau 1 : pas de barré', top.filter((p) => p.top === 1).every((p) => !p.mains.gauche.some((a) => a.barre)));
 }
 

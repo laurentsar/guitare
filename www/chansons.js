@@ -536,6 +536,14 @@
         { titre: 'Pont', motif: 'balade', grille: ['D7', 'G', 'Em', 'A7', 'D', 'D'] },
         { titre: 'Fin', motif: 'plaque', grille: ['D', 'C', 'G', 'D'] }
       ] },
+    { id: 'ch-blackbird', titre: 'Blackbird', artiste: 'The Beatles', annee: 1968, capo: 0, tempo: 91, groupe: 'top20', top: 3,
+      signature: [3, 4],
+      note: 'À trois temps. Le disque change souvent de mesure (3/4 et 4/4) et joue une mélodie en contrepoint sur les accords : ici, tout à trois temps et la grille seule. Couplet Sol – La m7 – Si m – Sol – Do, pont en Fa (Fa – Ré m – Do – Si♭, deux barrés ; le Mi dim du disque est omis).',
+      structure: ['Couplet', 'Couplet', 'Pont', 'Couplet', 'Pont', 'Couplet:Fin:1'],
+      sections: [
+        { titre: 'Couplet', motif: 'arpege-3', tours: 2, grille: ['G', 'Am7', 'Bm', 'G', 'C', 'C'] },
+        { titre: 'Pont', motif: 'valse', tours: 2, grille: ['F', 'Dm', 'C', 'Bb'] }
+      ] },
     { id: 'ch-dust-in-the-wind', titre: 'Dust in the Wind', artiste: 'Kansas', annee: 1977, capo: 0, tempo: 94, groupe: 'top20', top: 3,
       note: 'Arpège constant (picking) : Do – La m, puis Do – Sol – La m – Sol – Ré m.',
       structure: ['Intro', 'Couplet', 'Intro', 'Couplet', 'Fin', 'Couplet', 'Intro:Fin'],

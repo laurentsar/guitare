@@ -536,6 +536,13 @@
         { titre: 'Pont', motif: 'balade', grille: ['D7', 'G', 'Em', 'A7', 'D', 'D'] },
         { titre: 'Fin', motif: 'plaque', grille: ['D', 'C', 'G', 'D'] }
       ] },
+    { id: 'ch-jument-michao', titre: 'La jument de Michao', artiste: 'Tri Yann', annee: 1976, capo: 0, tempo: 120, groupe: 'top20', top: 2,
+      note: 'Chanson traditionnelle de Bretagne, rendue célèbre par Tri Yann ; grille simplifiée en Mi mineur. Couplet Mi m – Ré – Mi m, refrain Do – Ré – Mi m, avec une rythmique bien appuyée.',
+      structure: ['Couplet:Intro:1', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Refrain:Fin:1'],
+      sections: [
+        { titre: 'Couplet', motif: 'rock', tours: 2, grille: ['Em', 'D', 'Em', 'Em'] },
+        { titre: 'Refrain', motif: 'rock', tours: 2, grille: ['C', 'D', 'Em', 'Em'] }
+      ] },
     { id: 'ch-blackbird', titre: 'Blackbird', artiste: 'The Beatles', annee: 1968, capo: 0, tempo: 91, groupe: 'top20', top: 3,
       signature: [3, 4],
       note: 'À trois temps. Le disque change souvent de mesure (3/4 et 4/4) et joue une mélodie en contrepoint sur les accords : ici, tout à trois temps et la grille seule. Couplet Sol – La m7 – Si m – Sol – Do, pont en Fa (Fa – Ré m – Do – Si♭, deux barrés ; le Mi dim du disque est omis).',
@@ -571,6 +578,14 @@
       structure: ['Grille:Intro:1', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Fin:1'],
       sections: [
         { titre: 'Grille', motif: 'balade', tours: 2, grille: ['Am7', 'C', 'Dm', 'F', 'G', 'G'] }
+      ] },
+    { id: 'ch-classical-gas', titre: 'Classical Gas', artiste: 'Mason Williams', annee: 1968, capo: 0, tempo: 112, groupe: 'top20', top: 4,
+      note: 'Un instrumental : le disque joue le thème en fingerstyle par-dessus ces accords. Ici la grille seule, simplifiée, en La mineur : thème La m – Sol – Fa – Mi, puis Do – Sol – La m – Mi et Ré m – La m – Mi – La m (Fa barré).',
+      structure: ['Thème:Intro:1', 'Thème', 'Partie B', 'Thème', 'Pont', 'Thème', 'Partie B', 'Thème:Fin:1'],
+      sections: [
+        { titre: 'Thème', motif: 'arpege', tours: 2, grille: ['Am', 'G', 'F', 'E'] },
+        { titre: 'Partie B', motif: 'arpege', tours: 2, grille: ['C', 'G', 'Am', 'E'] },
+        { titre: 'Pont', motif: 'balade', grille: ['Dm', 'Am', 'E', 'Am'] }
       ] },
     { id: 'ch-angeles', titre: 'Angeles', artiste: 'Elliott Smith', annee: 1997, capo: 0, tempo: 118, groupe: 'top20', top: 4,
       note: 'La m – Ré – Do – Ré – Do (le disque joue des renversements et un Ré sus4) ; le picking rapide est remplacé par l’arpège.',

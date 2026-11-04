@@ -174,6 +174,10 @@
     ecrire('suivi', s);
     return entree;
   }
+  // Historique des ressentis (le programme y lit s'il faut consolider ou
+  // remonter) : [{id, note, t}], les 200 derniers.
+  function ressentis() { return lire('ressentis', []); }
+  function ajouterRessenti(e) { var l = ressentis(); l.push(e); return ecrire('ressentis', l.slice(-200)); }
   function seanceProgramme() { return lire('seance', null); }
   function sauverSeanceProgramme(r) { ecrire('seance', r); }
 
@@ -204,7 +208,7 @@
 
   global.Store = {
     aimes: aimes, aime: aime, aimer: aimer,
-    suivi: suivi, noterSuivi: noterSuivi,
+    suivi: suivi, noterSuivi: noterSuivi, ressentis: ressentis, ajouterRessenti: ajouterRessenti,
     seanceProgramme: seanceProgramme, sauverSeanceProgramme: sauverSeanceProgramme,
     entrainementJour: entrainementJour, cocherEntrainement: cocherEntrainement,
     joursEntrainement: joursEntrainement, notesCours: notesCours,

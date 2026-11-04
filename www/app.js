@@ -240,10 +240,11 @@
   function programmeDuJour(refaire) {
     var tous = Morceaux.tous();
     var aimes = Store.aimes();
-    var calc = Programme.seance(tous, Store.suivi(), aimes, Date.now());
+    var calc = Programme.seance(tous, Store.suivi(), aimes, Date.now(), Store.ressentis());
     var r = Store.seanceProgramme();
     var valide = r && r.jour === Store.jourCourant() && r.items.every(function (it) { return Morceaux.get(it.id); });
-    if (!refaire && valide && r.aimes === aimes.join(',')) {
+    // Un nouveau ♥ ou un changement de palier (ressenti) refait la séance.
+    if (!refaire && valide && r.aimes === aimes.join(',') && r.palier === calc.palier.num) {
       calc.items = r.items;
       return calc;
     }
@@ -253,12 +254,21 @@
       });
       calc.items = faits.concat(calc.items);
     }
-    Store.sauverSeanceProgramme({ jour: Store.jourCourant(), items: calc.items, aimes: aimes.join(',') });
+    Store.sauverSeanceProgramme({ jour: Store.jourCourant(), items: calc.items, aimes: aimes.join(','), palier: calc.palier.num });
     return calc;
   }
 
+  function palierDeTravail() {
+    return Programme.seance(Morceaux.tous(), Store.suivi(), Store.aimes(), Date.now(), Store.ressentis()).palier.num;
+  }
   function noterRessenti(id, note) {
+    var avant = Morceaux.get(id) ? palierDeTravail() : null;
     Store.noterSuivi(id, Programme.noter(Store.suivi()[id], note, Date.now()));
+    Store.ajouterRessenti({ id: id, note: note, t: Date.now() });
+    if (avant == null) return;
+    var apres = palierDeTravail();
+    if (apres < avant) messageBref('⬇ C’était difficile : le programme consolide au palier ' + apres + ' avant de remonter.');
+    else if (apres > avant) messageBref('⬆ Bien joué : le programme remonte au palier ' + apres + '.');
   }
 
   function boutonsRessenti(id, apres) {
@@ -308,6 +318,14 @@
     var tete = el('div', 'carte accent');
     tete.appendChild(el('h2', null, '🪜 Séance du jour'));
     tete.appendChild(el('p', 'aide', 'Palier ' + sp.palier.num + ' — ' + sp.palier.nom + ' : ' + sp.palier.but));
+    // Adapté au ressenti : on consolide un palier en dessous, ou on y reste.
+    if (sp.travail.descendu) {
+      tete.appendChild(el('p', 'consolide', '⬇ Tes derniers morceaux étaient difficiles : la séance consolide au palier ' + sp.palier.num +
+        ' (le palier ' + sp.palierHaut.num + ' reste ouvert). Encore ' + sp.travail.pourRemonter + ' morceau' + (sp.travail.pourRemonter > 1 ? 'x' : '') +
+        ' réussi' + (sp.travail.pourRemonter > 1 ? 's' : '') + ' (« ça va » ou « facile ») et on remonte.'));
+    } else if (sp.travail.dur > 0 && sp.palier.num > 1) {
+      tete.appendChild(el('p', 'aide', 'Un morceau difficile à ce palier : encore un « dur » et la séance redescendra d’un palier pour consolider.'));
+    }
     var restants = sp.items.filter(function (it) { return !faitAujourdhui(it); });
     sp.items.forEach(function (it) {
       var p = Morceaux.get(it.id);

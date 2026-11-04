@@ -2,7 +2,7 @@
  * les revoir.
  *
  * Trois idées, rien de plus :
- *  - des paliers, du plus simple au plus dur. Un palier s'ouvre quand on a
+ *  - des paliers, les six niveaux de difficulté d'exécution. Un palier s'ouvre quand on a
  *    acquis quelques morceaux du précédent : on ne saute pas aux barrés avant
  *    de savoir changer d'accord ;
  *  - la répétition espacée (boîtes de Leitner) : après chaque morceau, on dit
@@ -24,50 +24,18 @@
   var ACQUIS = 3;      // boîte à partir de laquelle un morceau compte comme acquis
   var MAITRISE = 5;
 
-  var PALIERS = [
-    { nom: 'Premiers pas', but: 'Cordes à vide, premières notes, deux accords de base.' },
-    { nom: 'Premiers accords', but: 'Changer d’accord en rythme, petites mélodies, chansons à trois ou quatre accords.' },
-    { nom: 'Chansons sans barré', but: 'Plus d’accords par chanson, des septièmes, des tempos plus vifs.' },
-    { nom: 'Premières pièces', but: 'Lire une pièce à deux voix : la basse au pouce, la mélodie aux doigts.' },
-    { nom: 'Barrés et power chords', but: 'Le Fa barré, les accords qui se déplacent sur le manche, le rock.' },
-    { nom: 'Répertoire', but: 'Des pièces plus longues, plus de positions sur le manche.' },
-    { nom: 'Études', but: 'Les études de Carcassi, Mertz, Giuliani : la technique en musique.' }
-  ];
-
-  /* Difficulté d'une grille d'accords : un point par accord différent, trois
-   * par barré, deux si la main monte au-delà de la case 4, un si c'est vif. */
-  function difficulteChanson(p) {
-    var g = (p.mains && p.mains.gauche) || [];
-    var barres = g.filter(function (a) { return a.barre; }).length;
-    var haut = (p.notes || []).some(function (n) { return n.frette > 4; });
-    return g.length + 3 * barres + (haut ? 2 : 0) + (p.tempo > 105 ? 1 : 0);
-  }
-
-  function palierDe(p) {
-    if (p.chanson) {
-      var g = (p.mains && p.mains.gauche) || [];
-      var d = difficulteChanson(p);
-      if (g.some(function (a) { return a.barre; }) || (p.notes || []).some(function (n) { return n.frette > 4; })) return 4;
-      return d <= 4 ? 1 : 2;
-    }
-    if (p.categorie === 'accords') return [0, 0, 1, 2, 4][p.niveau] != null ? [0, 0, 1, 2, 4][p.niveau] : 4;
-    var n = p.niveau || 1;
-    if (n <= 1) return 0;
-    if (n === 2) return 1;
-    if (n === 3) return 3;
-    if (n === 4) return 5;
-    return 6;
-  }
+  /* Les paliers suivent les six niveaux de difficulté d'exécution
+   * (difficulte(), plus bas) : ce que demandent les notes, pas la vitesse. */
+  function palierDe(p) { return difficulte(p).niveau - 1; }
 
   // Ordre dans un palier : technique d'abord, puis du plus simple au plus dur.
   function cleTri(p) {
-    var rang = p.categorie === 'entrainement' || (/^pouce/.test(p.categorie || '') && !p.chanson) ? 0 : p.categorie === 'accords' ? 1 : p.chanson ? 3 : 2;
-    var d = p.chanson ? difficulteChanson(p) : (p.niveau || 1) * 10;
-    return rang * 1000 + d;
+    var rang = p.categorie === 'entrainement' || (/^pouce/.test(p.categorie || '') && !p.chanson) ? 0 : p.categorie === 'accords' ? 1 : 2;
+    return rang * 1000 + difficulte(p).score * 10;
   }
 
   function paliers(tous) {
-    var out = PALIERS.map(function (x, k) { return { num: k + 1, nom: x.nom, but: x.but, ids: [] }; });
+    var out = NIVEAUX_DIFF.map(function (x, k) { return { num: k + 1, nom: x.nom, but: x.but.charAt(0).toUpperCase() + x.but.slice(1) + '.', ids: [] }; });
     // Les versions longues se travaillent depuis la fiche de la courte.
     var tries = tous.filter(function (p) { return !p.versionDe; }).sort(function (a, b) { return cleTri(a) - cleTri(b); });
     tries.forEach(function (p) { out[palierDe(p)].ids.push(p.id); });
@@ -118,18 +86,48 @@
   /* La séance du jour : un échauffement technique, les révisions dues (♥
    * d'abord), puis un ou deux morceaux nouveaux — moins si beaucoup sont en
    * cours : mieux vaut consolider que s'éparpiller. */
-  function seance(tous, suivi, aimes, maintenant) {
+  /* Palier de travail, d'après le ressenti : le plus haut palier ouvert,
+   * sauf si les derniers morceaux étaient trop durs. Deux « dur » de suite
+   * sur des morceaux de ce palier (ou plus haut) : on redescend d'un palier
+   * pour consolider. Trois « ça va » ou « facile » de suite au palier de
+   * travail : on remonte d'un palier — jamais au-delà du plus haut ouvert.
+   * Un ressenti mitigé ne change rien : on reste où l'on est. */
+  var DUR_POUR_DESCENDRE = 2, BIEN_POUR_REMONTER = 3;
+  function palierTravail(tous, historique, haut) {
+    var palierId = {};
+    tous.forEach(function (p) { palierId[p.id] = palierDe(p); });
+    var niv = haut, dur = 0, bien = 0;
+    (historique || []).forEach(function (e) {
+      var pl = palierId[e.id];
+      if (pl === undefined || pl < niv) return;   // un morceau plus facile ne dit rien du palier
+      if (e.note === 'dur') {
+        bien = 0; dur++;
+        if (dur >= DUR_POUR_DESCENDRE && niv > 0) { niv--; dur = 0; }
+      } else {
+        dur = 0; bien++;
+        if (bien >= BIEN_POUR_REMONTER && niv < haut) { niv++; bien = 0; }
+      }
+    });
+    niv = Math.min(niv, haut);
+    return { niveau: niv, haut: haut, descendu: niv < haut, dur: dur, bien: bien,
+             pourRemonter: BIEN_POUR_REMONTER - bien, pourDescendre: DUR_POUR_DESCENDRE - dur };
+  }
+
+  function seance(tous, suivi, aimes, maintenant, historique) {
     var parId = {};
     tous.forEach(function (p) { parId[p.id] = p; });
     var pals = paliers(tous);
     var et = etat(pals, suivi);
     var ouverts = et.filter(function (p) { return p.ouvert; });
-    var courant = ouverts[ouverts.length - 1];
+    var haut = ouverts[ouverts.length - 1];
+    var travail = palierTravail(tous.filter(function (p) { return !p.versionDe; }), historique, haut.num - 1);
+    var courant = et[travail.niveau];
     var palierId = {};
     pals.forEach(function (p, k) { p.ids.forEach(function (id) { palierId[id] = k; }); });
     var aime = function (id) { return aimes.indexOf(id) !== -1; };
     var disponibles = [];
-    ouverts.forEach(function (p) { disponibles = disponibles.concat(p.ids); });
+    // Nouveautés et échauffement : jusqu'au palier de travail seulement.
+    ouverts.forEach(function (p) { if (p.num <= courant.num) disponibles = disponibles.concat(p.ids); });
 
     var items = [];
     var pris = {};
@@ -162,14 +160,15 @@
       .sort(function (a, b) { return (aime(b) - aime(a)) || (palierId[a] - palierId[b]); });
     neufs.slice(0, nNeufs).forEach(function (id) { if (items.length < 5) ajoute(id, aime(id) ? 'favori' : 'nouveau'); });
 
-    // Un favori du palier suivant, en défi, si aucun favori n'est déjà au menu.
-    var suivant = et[courant.num];
+    // Un favori du palier suivant, en défi, si aucun favori n'est déjà au menu
+    // — pas quand on consolide un palier en dessous.
+    var suivant = travail.descendu ? null : et[courant.num];
     if (suivant && !items.some(function (x) { return aime(x.id); })) {
       var defi = suivant.ids.filter(function (id) { return aime(id) && !acquis(suivi[id]); })[0];
       if (defi) ajoute(defi, 'defi', !suivi[defi]);
     }
 
-    return { palier: courant, paliers: et, items: items, enCours: enCours };
+    return { palier: courant, palierHaut: haut, travail: travail, paliers: et, items: items, enCours: enCours };
   }
 
   /* Difficulté d'exécution : ce que demandent les notes elles-mêmes, pas la
@@ -238,9 +237,9 @@
 
   global.Programme = {
     NIVEAUX_DIFF: NIVEAUX_DIFF, difficulte: difficulte,
-    PALIERS: PALIERS, INTERVALLES: INTERVALLES, ACQUIS: ACQUIS, MAITRISE: MAITRISE,
-    difficulteChanson: difficulteChanson, palierDe: palierDe, paliers: paliers, etat: etat,
-    noter: noter, aRevoir: aRevoir, joursAvant: joursAvant, acquis: acquis,
+    INTERVALLES: INTERVALLES, ACQUIS: ACQUIS, MAITRISE: MAITRISE,
+    palierDe: palierDe, paliers: paliers, etat: etat,
+    palierTravail: palierTravail, noter: noter, aRevoir: aRevoir, joursAvant: joursAvant, acquis: acquis,
     passages: passages, seance: seance
   };
 })(typeof window !== 'undefined' ? window : globalThis);

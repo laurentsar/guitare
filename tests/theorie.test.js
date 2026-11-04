@@ -884,6 +884,21 @@ console.log('\n— Programme progressif —');
           s4.items[0].id === aimeDu);
   verifie('beaucoup en cours → une seule nouveauté au plus', s4.items.filter((x) => x.raison === 'nouveau' || x.raison === 'favori').length <= 1);
 
+  // Ressenti : consolider (descendre), rester, remonter.
+  const p2 = pals[1].ids.filter((id) => !Morceaux.get(id).categorie || Morceaux.get(id).chanson);
+  const p1 = pals[0].ids;
+  const h = (ids, note) => ids.map((id) => ({ id, note, t: T }));
+  verifie('ressenti : deux « dur » de suite au palier 2 → on consolide au palier 1',
+          Programme.palierTravail(tous, h(p2.slice(0, 2), 'dur'), 1).niveau === 0 && Programme.seance(tous, suivi, [], T + J, h(p2.slice(0, 2), 'dur')).palier.num === 1);
+  verifie('ressenti mitigé (dur, ça va, dur) : on reste au palier', Programme.palierTravail(tous, [...h([p2[0]], 'dur'), ...h([p2[1]], 'moyen'), ...h([p2[2]], 'dur')], 1).niveau === 1);
+  verifie('consolidation : trois « ça va / facile » au palier 1 → on remonte au 2',
+          Programme.palierTravail(tous, [...h(p2.slice(0, 2), 'dur'), ...h(p1.slice(0, 3), 'facile')], 1).niveau === 1);
+  verifie('un morceau plus facile ne fait pas descendre', Programme.palierTravail(tous, h(p1.slice(0, 4), 'dur'), 1).niveau === 1);
+  verifie('jamais au-dessus du plus haut palier ouvert', Programme.palierTravail(tous, h(p2.slice(0, 6), 'facile'), 1).niveau === 1);
+  const sc = Programme.seance(tous, suivi, [], T + J, h(p2.slice(0, 2), 'dur'));
+  verifie('séance en consolidation : nouveautés du palier 1 seulement, pas de défi', sc.travail.descendu &&
+          sc.items.every((x) => pals[0].ids.includes(x.id) || x.raison === 'revision') && !sc.items.some((x) => x.raison === 'defi'));
+
   // Un favori du palier suivant : proposé en défi, lentement.
   const defi = Programme.seance(tous, {}, ['pouce-ch-santiano'], T).items.find((x) => x.raison === 'defi');
   verifie('favori du palier suivant : défi à 50 → 70 %', defi && defi.id === 'pouce-ch-santiano' && defi.passages.join() === '50,60,70');

@@ -625,3 +625,4 @@ html.tv .pages-partition { display: none; }
 .barre-lecture { margin: 6px 0 10px; }
 .barre-lecture .actions { margin: 6px 0; }
 .difficulte { font-size: 13px; color: var(--bois); margin: 2px 0 6px; }
+.consolide { font-size: 14px; color: var(--bois); background: rgba(214, 168, 106, .1); border-left: 3px solid var(--bois); padding: 8px 10px; border-radius: 6px; }

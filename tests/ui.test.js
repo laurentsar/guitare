@@ -533,6 +533,20 @@ function verifie(nom, cond, detail) {
     [...$('detailMorceau').querySelectorAll('.ressenti .btn')].find((b) => /Dur/.test(b.textContent)).click();
     verifie('« Dur » : retour en boîte 1, revu demain', w.Store.suivi().chromatique.b === 1);
 
+    // Ressenti « dur » répété au palier le plus haut : la séance consolide en dessous.
+    {
+      const suiviAvant = w.localStorage.getItem('guitare:suivi'), resAvant = w.localStorage.getItem('guitare:ressentis');
+      const pal = w.Programme.paliers(w.Morceaux.tous());
+      const s = {}; pal[0].ids.slice(0, 4).forEach((id) => { s[id] = { b: 3, t: Date.now() - 86400000 * 2, n: 2 }; });
+      w.localStorage.setItem('guitare:suivi', JSON.stringify(s));
+      w.localStorage.setItem('guitare:ressentis', JSON.stringify(pal[1].ids.slice(0, 2).map((id) => ({ id, note: 'dur', t: Date.now() }))));
+      w.AppGuitare.aller('programme');
+      verifie('ressenti difficile : la séance consolide au palier inférieur', /consolide au palier 1/.test($('pageProgramme').textContent) && /Palier 1 —/.test($('pageProgramme').textContent),
+              ($('pageProgramme').querySelector('.consolide') || {}).textContent);
+      if (suiviAvant) w.localStorage.setItem('guitare:suivi', suiviAvant); else w.localStorage.removeItem('guitare:suivi');
+      if (resAvant) w.localStorage.setItem('guitare:ressentis', resAvant); else w.localStorage.removeItem('guitare:ressentis');
+      w.localStorage.removeItem('guitare:seance');
+    }
     // Séance enchaînée : passages au tempo croissant, ressenti à la fin du morceau.
     let rappel = null;
     w.Tablature.jouer = (n, o) => { rappel = o; };

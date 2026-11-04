@@ -86,18 +86,48 @@
   /* La séance du jour : un échauffement technique, les révisions dues (♥
    * d'abord), puis un ou deux morceaux nouveaux — moins si beaucoup sont en
    * cours : mieux vaut consolider que s'éparpiller. */
-  function seance(tous, suivi, aimes, maintenant) {
+  /* Palier de travail, d'après le ressenti : le plus haut palier ouvert,
+   * sauf si les derniers morceaux étaient trop durs. Deux « dur » de suite
+   * sur des morceaux de ce palier (ou plus haut) : on redescend d'un palier
+   * pour consolider. Trois « ça va » ou « facile » de suite au palier de
+   * travail : on remonte d'un palier — jamais au-delà du plus haut ouvert.
+   * Un ressenti mitigé ne change rien : on reste où l'on est. */
+  var DUR_POUR_DESCENDRE = 2, BIEN_POUR_REMONTER = 3;
+  function palierTravail(tous, historique, haut) {
+    var palierId = {};
+    tous.forEach(function (p) { palierId[p.id] = palierDe(p); });
+    var niv = haut, dur = 0, bien = 0;
+    (historique || []).forEach(function (e) {
+      var pl = palierId[e.id];
+      if (pl === undefined || pl < niv) return;   // un morceau plus facile ne dit rien du palier
+      if (e.note === 'dur') {
+        bien = 0; dur++;
+        if (dur >= DUR_POUR_DESCENDRE && niv > 0) { niv--; dur = 0; }
+      } else {
+        dur = 0; bien++;
+        if (bien >= BIEN_POUR_REMONTER && niv < haut) { niv++; bien = 0; }
+      }
+    });
+    niv = Math.min(niv, haut);
+    return { niveau: niv, haut: haut, descendu: niv < haut, dur: dur, bien: bien,
+             pourRemonter: BIEN_POUR_REMONTER - bien, pourDescendre: DUR_POUR_DESCENDRE - dur };
+  }
+
+  function seance(tous, suivi, aimes, maintenant, historique) {
     var parId = {};
     tous.forEach(function (p) { parId[p.id] = p; });
     var pals = paliers(tous);
     var et = etat(pals, suivi);
     var ouverts = et.filter(function (p) { return p.ouvert; });
-    var courant = ouverts[ouverts.length - 1];
+    var haut = ouverts[ouverts.length - 1];
+    var travail = palierTravail(tous.filter(function (p) { return !p.versionDe; }), historique, haut.num - 1);
+    var courant = et[travail.niveau];
     var palierId = {};
     pals.forEach(function (p, k) { p.ids.forEach(function (id) { palierId[id] = k; }); });
     var aime = function (id) { return aimes.indexOf(id) !== -1; };
     var disponibles = [];
-    ouverts.forEach(function (p) { disponibles = disponibles.concat(p.ids); });
+    // Nouveautés et échauffement : jusqu'au palier de travail seulement.
+    ouverts.forEach(function (p) { if (p.num <= courant.num) disponibles = disponibles.concat(p.ids); });
 
     var items = [];
     var pris = {};
@@ -130,14 +160,15 @@
       .sort(function (a, b) { return (aime(b) - aime(a)) || (palierId[a] - palierId[b]); });
     neufs.slice(0, nNeufs).forEach(function (id) { if (items.length < 5) ajoute(id, aime(id) ? 'favori' : 'nouveau'); });
 
-    // Un favori du palier suivant, en défi, si aucun favori n'est déjà au menu.
-    var suivant = et[courant.num];
+    // Un favori du palier suivant, en défi, si aucun favori n'est déjà au menu
+    // — pas quand on consolide un palier en dessous.
+    var suivant = travail.descendu ? null : et[courant.num];
     if (suivant && !items.some(function (x) { return aime(x.id); })) {
       var defi = suivant.ids.filter(function (id) { return aime(id) && !acquis(suivi[id]); })[0];
       if (defi) ajoute(defi, 'defi', !suivi[defi]);
     }
 
-    return { palier: courant, paliers: et, items: items, enCours: enCours };
+    return { palier: courant, palierHaut: haut, travail: travail, paliers: et, items: items, enCours: enCours };
   }
 
   /* Difficulté d'exécution : ce que demandent les notes elles-mêmes, pas la
@@ -208,7 +239,7 @@
     NIVEAUX_DIFF: NIVEAUX_DIFF, difficulte: difficulte,
     INTERVALLES: INTERVALLES, ACQUIS: ACQUIS, MAITRISE: MAITRISE,
     palierDe: palierDe, paliers: paliers, etat: etat,
-    noter: noter, aRevoir: aRevoir, joursAvant: joursAvant, acquis: acquis,
+    palierTravail: palierTravail, noter: noter, aRevoir: aRevoir, joursAvant: joursAvant, acquis: acquis,
     passages: passages, seance: seance
   };
 })(typeof window !== 'undefined' ? window : globalThis);

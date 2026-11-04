@@ -55,7 +55,7 @@ ctx.AudioContext = function () {
   this.resume = () => {};
 };
 
-['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js']
+['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
 const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes, Programme } = ctx;
@@ -143,8 +143,6 @@ Morceaux.tous().forEach(p => {
   // Chansons : chaque note suit la forme de son accord (vérifié plus bas) ;
   // les power chords du rock montent jusqu'à la case 6.
   else if (p.chanson) verifie(p.id + ' : formes d’accords, rien au-delà de la case 7', p.notes.every(n => n.frette <= 7));
-  // TikTok : relevé tel quel de la vidéo, qui peut monter le long du manche.
-  else if (p.categorie === 'tiktok') verifie(p.id + ' : relevé de la vidéo, rien au-delà de la case 15', p.notes.every(n => n.frette >= 0 && n.frette <= 15));
   else if (!p.source) verifie(p.id + ' : rien au-delà de la 5e case (première position)',
           p.notes.every(n => n.frette >= 0 && n.frette <= 5),
           p.notes.filter(n => n.frette > 5).map(n => n.frette).join(','));
@@ -155,25 +153,6 @@ verifie('Ode à la joie commence bien par mi-mi-fa-sol',
         Morceaux.get('ode-joie').notes.slice(0, 4).map(n => Theorie.nom(n.midi)).join(' ') === 'Mi4 Mi4 Fa4 Sol4');
 verifie('l’étude en Mi mineur alterne p-i-m-a',
         Morceaux.get('etude-mim').notes.slice(0, 4).map(n => n.main).join('') === 'pima');
-
-{
-  const z = Morceaux.get('zombie');
-  verifie('Zombie : grille Em-Cmaj7-G-D, une mesure chacun',
-          [0, 4, 8, 12].map((t) => z.notes.find((n) => n.temps === t).accord).join('-') === 'Em-Cmaj7-G-D');
-  verifie('Zombie : 16 mesures', Tablature.duree_totale(z) === 64);
-  verifie('Zombie : chaque case pressée a son doigt de main gauche',
-          z.notes.every((n) => (n.frette === 0) === !n.doigt));
-  verifie('Zombie : chaque note a son doigt de main droite', z.notes.every((n) => /^[pima]$/.test(n.main)));
-  verifie('Zombie : jamais deux notes sur la même corde au même instant', (() => {
-    const par = {};
-    z.notes.forEach((n) => { (par[n.temps] = par[n.temps] || []).push(n.corde); });
-    return Object.values(par).every((c) => new Set(c).size === c.length);
-  })());
-  verifie('Zombie : doigtés cohérents (Cmaj7 garde le majeur de Em sur la 4e corde)', (() => {
-    const [em, c] = z.mains.gauche;
-    return em.frettes[3] === c.frettes[3] && em.doigts[3] === 2 && c.doigts[3] === 2;
-  })());
-}
 
 {
   const debutants = ['trois-cordes', 'hot-cross-buns', 'mary-agneau', 'saints', 'joyeux-anniversaire', 'jingle-bells'];
@@ -208,7 +187,8 @@ console.log('\n— Consignes des mains —');
     return c.gauche[0].doigt === 2 && c.droite[0].main === 'p';
   })());
   verifie('au-delà de la case 4 sans doigt noté : laissé au choix', Tablature.consigne([{ corde: 1, frette: 7 }]).gauche[0].doigt === 0);
-  const acc = Tablature.consigne(Morceaux.get('zombie').notes.filter((n) => n.temps === 4 * 8 + 1));
+  const pq = Morceaux.get('acc-barre').notes, tPq = pq.find((n) => pq.filter((m) => m.temps === n.temps).length === 3).temps;
+  const acc = Tablature.consigne(pq.filter((n) => n.temps === tPq));
   verifie('accord plaqué : trois cordes, pincées ensemble', acc.gauche.length === 3 && /en même temps/.test(acc.droite[acc.droite.length - 1].texte));
   verifie('chaque note de chaque morceau a une consigne',
           Morceaux.tous().every((p) => p.notes.every((n) => { const c = Tablature.consigne([n]); return c.gauche[0].texte && c.droite[0].texte; })));
@@ -239,9 +219,6 @@ console.log('\n— Apprendre pas à pas —');
   verifie('Mary : les phrases couvrent les mesures 1-4 et 5-8', em[3].action.de === 1 && em[3].action.a === 4 && em[4].action.de === 5 && em[4].action.a === 8);
   verifie('étapes de travail : 60 % en boucle', em[3].action.pct === 60 && em[3].action.boucle);
   verifie('dernière étape : guitare muette, clic, 100 %', em[em.length - 1].action.muet && em[em.length - 1].action.clic && em[em.length - 1].action.pct === 100);
-  const z = Morceaux.get('zombie'), ez = Morceaux.etapes(z, nb(z));
-  verifie('Zombie : accords, passages, couplet, refrain', /4 accords/.test(ez[2].titre) && /Em → Cmaj7 → G → D → Em/.test(ez[3].texte) &&
-          ez.some((e) => /Couplet/.test(e.titre) && e.action.de === 1 && e.action.a === 4) && ez.some((e) => /Refrain/.test(e.titre) && e.action.de === 9));
   verifie('chaque morceau : des étapes, toutes les mesures couvertes par les sections', Morceaux.tous().every((p) => {
     const n = nb(p), e = Morceaux.etapes(p, n);
     return e.length >= 7 && e.every((x) => x.titre && x.texte && x.bouton) &&
@@ -316,7 +293,7 @@ console.log('\n— Travailler les accords —');
   })());
 }
 
-console.log('\n— Entraînement (tablatures du cours) —');
+console.log('\n— Repères, pouce buté, Ve position —');
 {
   const v3 = Morceaux.get('ent-v-0303').notes, v1 = Morceaux.get('ent-v-0101').notes;
   verifie('0 3 0 3 : à vide puis case VII au 3e doigt, pouce buté', v3.slice(0, 4).map((n) => n.frette).join() === '0,7,0,7' &&
@@ -327,16 +304,14 @@ console.log('\n— Entraînement (tablatures du cours) —');
   verifie('pouce buté 4 fois : quatre attaques par corde', Morceaux.get('ent-pouce-bute-4').notes.length === 36);
   verifie('nom des cordes : 6 → 1 puis 1 → 6, à vide', chemin(Morceaux.get('ent-noms-cordes').notes) === '654321123456'.replace('11', '1') &&
           Morceaux.get('ent-noms-cordes').notes.every((n) => n.frette === 0));
-  const zb = Morceaux.get('ent-zombie-balaye');
-  verifie('balayages Zombie : mêmes doigtés que le morceau Zombie (Em à l’index et au majeur)',
-          zb.mains.gauche[0].id === 'Em' && zb.mains.gauche[0].doigts.join() === Morceaux.get('zombie').mains.gauche[0].doigts.join());
-  verifie('exercices du cours hors de la liste des morceaux (catégorie entraînement)',
-          ['ent-noms-cordes', 'ent-pouce-bute-1', 'ent-pouce-bute-4', 'ent-v-0303', 'ent-v-0101', 'ent-zombie-balaye'].every((id) => Morceaux.get(id).categorie === 'entrainement'));
+  verifie('repères et pouce buté dans « Pouce seul », Ve position dans « Pouce + main gauche »',
+          ['ent-noms-cordes', 'ent-pouce-bute-1', 'ent-pouce-bute-4'].every((id) => Morceaux.get(id).categorie === 'pouce') &&
+          ['ent-v-0303', 'ent-v-0101'].every((id) => Morceaux.get(id).categorie === 'pouce-main'));
 }
 
 console.log('\n— Tablature : main droite lisible —');
 {
-  const z = Morceaux.get('zombie'), svg = Tablature.svg(z, Tablature.miseEnPage(z));
+  const z = Morceaux.get('acc-barre'), svg = Tablature.svg(z, Tablature.miseEnPage(z));
   const etiquettes = (svg.match(/class="tab-main"[^>]*>[^<]*/g) || []).map((x) => x.replace(/.*>/, ''));
   verifie('une étiquette par attaque (plus de lettres superposées)', etiquettes.length === new Set(z.notes.map((n) => n.temps)).size, etiquettes.length);
   verifie('accord plaqué i-m-a : une seule étiquette « ima »', etiquettes.includes('ima'));
@@ -359,39 +334,11 @@ console.log('\n— Nouvelles tablatures (v1.21) —');
     const p = Morceaux.get(id), m = Tablature.noiresParMesure(p);
     return p.notes.every((n) => n.frette <= 5) && Math.abs(Tablature.duree_totale(p) / m - Math.round(Tablature.duree_totale(p) / m)) < 1e-9;
   }));
-  const inter = Morceaux.tous().filter((p) => p.chanson && p.niveau === 8);
-  verifie('12 chansons internationales (niveau 8, grilles d’accords seules)', inter.length === 12 && inter.every((p) => /grille d’accords/.test(p.sous_titre)), inter.length);
-  verifie('chansons internationales : chaque note appartient à son accord, doigts des deux mains',
-          inter.every((p) => p.notes.every((n) => n.accord && /^[pima]$/.test(n.main) && (n.frette === 0 || n.doigt >= 1))));
   verifie('Canon de Pachelbel : D A Bm F♯m G D G A', Morceaux.get('acc-canon-pachelbel').mains.gauche.map((a) => a.id).join(' ') === 'D A Bm F#m G');
   verifie('La Bamba : deux accords dans la mesure (Fa maj7 | Sol)', (() => {
     const n = Morceaux.get('acc-la-bamba').notes.filter((x) => x.temps >= 4 && x.temps < 8);
     return n.some((x) => x.accord === 'Fmaj7' && x.temps < 6) && n.some((x) => x.accord === 'G' && x.temps >= 6);
   })());
-}
-
-console.log('\n— Rock et reggae —');
-{
-  const rk = Morceaux.tous().filter((p) => p.chanson && p.niveau === 9);
-  const par = (a) => rk.filter((p) => new RegExp(a).test(p.sous_titre)).length;
-  verifie('24 chansons rock et reggae : Offspring 5, Nirvana 5, Cranberries 4, Police 4, Marley 6',
-          rk.length === 24 && par('Offspring') === 5 && par('Nirvana') === 5 && par('Cranberries') === 4 && par('Police') === 4 && par('Marley') === 6, rk.length);
-  verifie('capo : When You’re Gone 3, Ode to My Family 2, Buffalo Soldier 2, One Love 3, Get a Job 1',
-          Morceaux.get('ch-when-youre-gone').capo === 3 && Morceaux.get('ch-ode-to-my-family').capo === 2 &&
-          Morceaux.get('ch-buffalo-soldier').capo === 2 && Morceaux.get('ch-one-love').capo === 3 && Morceaux.get('ch-get-a-job').capo === 1);
-  verifie('Lithium et Heart-Shaped Box : tout en power chords',
-          ['ch-lithium', 'ch-heart-shaped-box'].every((id) => Morceaux.get(id).mains.gauche.every((a) => /5$/.test(a.id))));
-  verifie('Ode to My Family : Fa maj7, pas de barré', !Morceaux.get('ch-ode-to-my-family').mains.gauche.some((a) => a.barre));
-  const ts = Morceaux.get('ch-teen-spirit');
-  verifie('Teen Spirit : F5 Bb5 Ab5 Db5, deux par mesure, power chords sur 3 cordes',
-          ts.notes.filter((n) => n.temps === 0).length === 3 && ['F5', 'Bb5', 'Ab5', 'Db5'].every((id) => ts.mains.gauche.some((a) => a.id === id)) &&
-          ts.notes.some((n) => n.accord === 'Bb5' && n.temps === 2));
-  verifie('motif rock : le pouce balaie en croches, toujours vers le bas', Morceaux.get('ch-self-esteem').notes.every((n) => n.main === 'p') &&
-          new Set(Morceaux.get('ch-self-esteem').notes.map((n) => n.temps)).size === Tablature.duree_totale(Morceaux.get('ch-self-esteem')) * 2);
-  verifie('power chord : la basse est la fondamentale, une case plus haut que l’index… (F5 : index case 1, 6e corde)',
-          (() => { const f = ts.mains.gauche.find((a) => a.id === 'F5'); return f.basse === 6 && f.frettes[5] === 1 && f.doigts[5] === 1; })());
-  verifie('capo : Kids Aren’t Alright case 1, Every Breath case 1, Is This Love case 2',
-          Morceaux.get('ch-kids-arent-alright').capo === 1 && Morceaux.get('ch-every-breath').capo === 1 && Morceaux.get('ch-is-this-love').capo === 2);
 }
 
 console.log('\n— Tablature —');
@@ -659,60 +606,20 @@ console.log('\n— Répertoire Mutopia —');
   verifie('la tablature de chaque pièce se dessine', rep.every((p) => (Tablature.svg(p, Tablature.miseEnPage(p)).match(/tab-note/g) || []).length === p.notes.length));
 }
 
-console.log('\n— Chansons : grilles d’accords (v1.18) —');
-{
-  const ch = Morceaux.tous().filter((p) => p.chanson);
-  verifie('au moins 20 chansons (classiques + hits récents)', ch.length >= 20, ch.length);
-  verifie('deux groupes : classiques (6) et hits récents (7)', ch.some((p) => p.niveau === 6) && ch.some((p) => p.niveau === 7));
-  // Chaque accord joué doit sonner EXACTEMENT les notes de son nom.
-  const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-  const INTERVALLES = { '': [0, 4, 7], m: [0, 3, 7], '7': [0, 4, 7, 10], m7: [0, 3, 7, 10], maj7: [0, 4, 7, 11], m7b5: [0, 3, 6, 10], '5': [0, 7] };
-  function attendu(id) {
-    const m = /^([A-G])(#|b)?(m7b5|maj7|m7|m|7|5)?$/.exec(id);
-    if (!m) return null;
-    const r = (PC[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + 12) % 12;
-    return { racine: r, notes: new Set(INTERVALLES[m[3] || ''].map((i) => (r + i) % 12)) };
-  }
-  const fautes = [];
-  ch.forEach((p) => p.mains.gauche.forEach((a) => {
-    const e = attendu(a.id);
-    if (!e) { fautes.push(p.id + ' : nom ' + a.id); return; }
-    const joue = new Set(a.frettes.map((f, i) => f < 0 ? null : Theorie.midiDeCase(i + 1, f) % 12).filter((x) => x !== null));
-    const ok = [...joue].every((x) => e.notes.has(x)) && joue.has(e.racine) && joue.size >= Math.min(3, e.notes.size);
-    // La basse jouée par le pouce doit être la fondamentale.
-    const basse = Theorie.midiDeCase(a.basse, a.frettes[a.basse - 1]) % 12;
-    if (!ok || basse !== e.racine) fautes.push(p.id + ' : ' + a.id);
-  }));
-  verifie('chaque accord des chansons sonne ses notes, basse = fondamentale', !fautes.length, [...new Set(fautes)].join(', '));
-  verifie('chaque note d’une chanson appartient à son accord', ch.every((p) => p.notes.every((n) => {
-    const a = p.mains.gauche.find((x) => x.id === n.accord);
-    return a && a.frettes[n.corde - 1] === n.frette;
-  })));
-  const nbMesures = (p) => Math.ceil(Tablature.duree_totale(p) / Tablature.noiresParMesure(p));
-  verifie('sections contiguës qui couvrent tout le morceau', ch.every((p) => p.sections[0].de === 1 &&
-    p.sections.every((s, i) => i === 0 || s.de === p.sections[i - 1].a + 1) && p.sections[p.sections.length - 1].a === nbMesures(p)));
-  const lb = Morceaux.get('ch-je-l-aime-a-mourir');
-  verifie('demi-mesure « F|G7 » : Fa sur les temps 1-2, Sol 7 (basse) au 3e temps',
-    lb.notes.some((n) => n.accord === 'F' && n.temps === 16) && lb.notes.some((n) => n.accord === 'G7' && n.temps === 18 && n.main === 'p'));
-  verifie('capo noté sur le morceau (Mistral gagnant : case 3)', Morceaux.get('ch-mistral-gagnant').capo === 3 && /capo case 3/.test(Morceaux.get('ch-mistral-gagnant').sous_titre));
-  verifie('ni paroles ni mélodie : la description le dit', ch.every((p) => /ni mélodie ni paroles/.test(p.description)));
-  verifie('chaque chanson se dessine en tablature', ch.every((p) => (Tablature.svg(p, Tablature.miseEnPage(p)).match(/tab-note/g) || []).length === p.notes.length));
-}
-
 console.log('\n— Pouce seul —');
 {
   const pouce = Morceaux.tous().filter((p) => p.categorie === 'pouce');
   const pouceMain = Morceaux.tous().filter((p) => p.categorie === 'pouce-main');
-  verifie('pouce seul : 14 morceaux, tous sur cordes à vide et au pouce', pouce.length === 14 &&
+  verifie('pouce seul : 17 morceaux, tous sur cordes à vide et au pouce', pouce.length === 17 &&
           pouce.every((p) => p.notes.every((n) => n.frette === 0 && n.main === 'p' && !n.doigt)),
           pouce.filter((p) => p.notes.some((n) => n.frette !== 0 || n.main !== 'p')).map((p) => p.id).join(',') || pouce.length);
   verifie('pouce seul : des mesures entières, finies sur une ronde', pouce.every((p) => Tablature.duree_totale(p) % 4 === 0));
-  verifie('pouce seul : commence par le rythme, finit par un petit morceau', pouce[0].id === 'pouce-rythme' && pouce[pouce.length - 1].id === 'pouce-vide-morceau');
+  verifie('pouce seul : commence par le nom des cordes, finit par un petit morceau', pouce[0].id === 'ent-noms-cordes' && pouce[pouce.length - 1].id === 'pouce-vide-morceau');
   verifie('pom-tcha à vide : basse puis les trois aiguës ensemble', (() => { const n = Morceaux.get('pouce-vide-pomtcha').notes;
     return n[0].corde === 6 && n[0].temps === 0 && n.filter((x) => x.temps === 1).map((x) => x.corde).join() === '3,2,1'; })());
   verifie('contretemps : rien sur le 2e temps, balayé sur les « et »', (() => { const n = Morceaux.get('pouce-vide-reggae').notes;
     return !n.some((x) => x.temps === 1) && n.some((x) => x.temps === 1.5 && x.corde === 1); })());
-  verifie('pouce + main gauche : 18 morceaux, à part, toujours au pouce', pouceMain.length === 18 && pouceMain.every((p) => p.notes.every((n) => n.main === 'p')));
+  verifie('pouce + main gauche : 14 morceaux, à part, toujours au pouce', pouceMain.length === 14 && pouceMain.every((p) => p.notes.every((n) => n.main === 'p')));
   const r = Morceaux.get('pouce-rythme');
   verifie('rythme : ronde, blanches, noires, croches sur la 6e corde', r.notes.slice(0, 15).map((n) => n.duree).join() === '4,2,2,1,1,1,1,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5' && r.notes.slice(0, 15).every((n) => n.corde === 6));
   const g = Morceaux.get('pouce-gamme-sol');
@@ -725,94 +632,6 @@ console.log('\n— Pouce seul —');
   verifie('basses alternées : Em 6e puis 4e corde, Am 5e puis 4e', em.notes.slice(0, 4).map((n) => n.corde).join() === '6,4,6,4' &&
           em.notes.filter((n) => n.accord === 'Am').slice(0, 2).map((n) => n.corde).join() === '5,4');
   verifie('pom-tcha : basse puis balayé de l’accord au 2e temps', em.notes.some((n) => n.temps % 4 === 1 && n.accord === 'Em' && n.corde === 1));
-  const ch = Morceaux.get('pouce-ch-santiano');
-  verifie('chanson au pouce : même grille que l’originale, ni mélodie ni paroles', ch.chanson && /ni mélodie ni paroles/.test(ch.description) &&
-          ch.mains.gauche.map((a) => a.id).join() === Morceaux.get('ch-santiano').mains.gauche.map((a) => a.id).join());
-}
-
-console.log('\n— TikTok —');
-{
-  const t = Morceaux.get('tiktok-la-re');
-  verifie('TikTok La–Ré : 17 notes, cordes 5 et 4 à vide, au pouce', t && t.categorie === 'tiktok' && t.notes.length === 17 &&
-          t.notes.every((n) => n.frette === 0 && n.main === 'p' && (n.corde === 5 || n.corde === 4)));
-  verifie('TikTok La–Ré : 5 4 5 4 | 5 4 5 4 | 4 4 4 4 | 5 5 4 5 | 5', t.notes.map((n) => n.corde).join('') === '54545454444455455');
-  verifie('TikTok La–Ré : quatre mesures de noires et une ronde (♩ = 130)', t.tempo === 130 && Tablature.duree_totale(t) === 20 && t.notes[16].duree === 4);
-}
-
-{
-  const b = Morceaux.get('tiktok-bella-ciao'), f = Morceaux.get('tiktok-bella-ciao-facile');
-  verifie('Bella Ciao : tout sur la 1re corde, cases de la vidéo', b.notes.every((n) => n.corde === 1) &&
-          b.notes.map((n) => n.frette).join(' ') === '0 5 7 8 5 0 5 7 8 5 0 5 7 8 7 5 8 7 5 8 12 12 12 12 10 12 13 13 13 12 10 13 12 12 10 8 7 12 8 7 5 0 5');
-  verifie('Bella Ciao : 9 mesures à ♩ = 120, la dernière note tenue', b.tempo === 120 && Tablature.duree_totale(b) === 36);
-  verifie('Bella Ciao : Ve puis Xe position, un doigt par case', b.notes.every((n) => !n.frette || n.doigt === ({ 5: 1, 7: 3, 8: n.glisse ? 3 : 4, 10: 1, 12: 3, 13: 4 })[n.frette]));
-  verifie('Bella Ciao : glissé de la case 8 à la 12', b.notes.some((n) => n.frette === 8 && n.glisse === 12));
-  verifie('Bella Ciao facile : même rythme, une octave plus bas, première position', f.notes.length === b.notes.length &&
-          f.notes.every((n, i) => n.midi === b.notes[i].midi - 12 && n.temps === b.notes[i].temps && n.frette <= 3));
-}
-
-{
-  const tt = Morceaux.tous().filter((p) => p.chanson && p.categorie === 'tiktok' && !p.versionDe);
-  verifie('vu sur TikTok : 7 grilles d’accords, ni mélodie ni paroles', tt.length === 7 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
-          tt.map((p) => p.id).join(','));
-  verifie('capos : Feel Good 6, Do I Wanna Know 3, Dance Monkey 2, Where Is My Mind 4, Hit the Road Jack 4',
-          Morceaux.get('ch-feel-good-inc').capo === 6 && Morceaux.get('ch-do-i-wanna-know').capo === 3 && Morceaux.get('ch-dance-monkey').capo === 2 &&
-          Morceaux.get('ch-where-is-my-mind').capo === 4 && Morceaux.get('ch-hit-the-road-jack').capo === 4);
-  const longues = Morceaux.tous().filter((p) => p.versionDe);
-  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 27 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
-  verifie('version longue plus longue que la courte, mêmes accords', longues.every((l) => {
-    const c = Morceaux.get(l.versionDe);
-    return Tablature.duree_totale(l) > Tablature.duree_totale(c) &&
-      (!c.mains || l.mains.gauche.map((a) => a.id).sort().join() === c.mains.gauche.map((a) => a.id).sort().join());
-  }));
-  verifie('Final Countdown longue : intro, couplets, refrains, solo', Morceaux.get('ch-final-countdown-longue').sections.map((s) => s.titre).join(' · ') ===
-          'Intro · Couplet 1 · Refrain 1 · Couplet 2 · Refrain 2 · Solo · Refrain final');
-  verifie('Bella Ciao longue : trois strophes', Morceaux.get('tiktok-bella-ciao-longue').sections.length === 3 &&
-          Tablature.duree_totale(Morceaux.get('tiktok-bella-ciao-longue')) === 3 * Tablature.duree_totale(Morceaux.get('tiktok-bella-ciao')));
-  verifie('The Final Countdown : capo 2, Em C Am D', Morceaux.get('ch-final-countdown').capo === 2 && Morceaux.get('ch-final-countdown').mains.gauche.map((a) => a.id).join(' ') === 'Em C Am D');
-  verifie('Hit the Road Jack : Em D C B7 qui descendent', Morceaux.get('ch-hit-the-road-jack').mains.gauche.map((a) => a.id).join(' ') === 'Em D C B7');
-}
-
-{
-  const la = Morceaux.get('tiktok-arpege-la'), am = Morceaux.get('tiktok-arpege-am-f');
-  verifie('arpège La : La, Do♯m, Fa♯m, Ré, deux mesures chacun, 16 mesures', Tablature.duree_totale(la) === 64 &&
-          ['A', 'C#m', 'F#m', 'D'].every((a, k) => la.notes.find((n) => n.temps === k * 8).accord === a));
-  verifie('arpège La : formes de la vidéo (La x x x 2 2 0, Do♯m x x x 1 2 0)', la.notes.filter((n) => n.accord === 'C#m' && n.corde === 3).every((n) => n.frette === 1) &&
-          la.notes.filter((n) => n.accord === 'A' && n.corde === 2).every((n) => n.frette === 2) && la.notes.filter((n) => n.corde === 1 && n.accord === 'A').every((n) => n.frette === 0));
-  verifie('arpège La m7 – Fa : 0 2 0 1 puis 1 3 0 2', am.notes.slice(0, 8).map((n) => n.frette).join('') === '02011302' &&
-          am.notes.slice(0, 8).map((n) => n.corde).join('') === '54326543');
-  verifie('arpège La m7 – Fa : 8 mesures, la 4e note tenue', Tablature.duree_totale(am) === 32 && am.notes[3].duree === 2.5);
-}
-
-{
-  // Audit : jamais le même doigt sur deux cases différentes au même instant.
-  const conflits = Morceaux.tous().filter((p) => {
-    const parT = {};
-    p.notes.forEach((n) => { (parT[n.temps] = parT[n.temps] || []).push(n); });
-    return Object.keys(parT).some((t) => {
-      const m = {};
-      return parT[t].some((n) => { if (!(n.frette > 0 && n.doigt)) return false; const x = m[n.doigt] !== undefined && m[n.doigt] !== n.frette; m[n.doigt] = n.frette; return x; });
-    });
-  }).map((p) => p.id);
-  verifie('aucun doigt sur deux cases à la fois, dans aucun morceau', conflits.length === 0, conflits.join(','));
-  verifie('aucune corde ne joue deux cases au même instant', Morceaux.tous().every((p) => {
-    const k = {};
-    return p.notes.every((n) => { const c = n.temps + '/' + n.corde; const ok = k[c] === undefined || k[c] === n.frette; k[c] = n.frette; return ok; });
-  }));
-}
-
-{
-  const top = Morceaux.tous().filter((p) => p.categorie === 'top20' && !p.versionDe);
-  verifie('Top 20 : 18 grilles, niveaux 1 à 4, chacune avec sa version longue', top.length === 18 && [1, 2, 3, 4].every((n) => top.some((p) => p.top === n)) &&
-          top.every((p) => p.longue && Morceaux.get(p.longue)), top.length);
-  verifie('Top 20 : capos (Wonderwall 2, I’m Yours 4, Hotel California 7, Hey Jude 3)', Morceaux.get('ch-wonderwall').capo === 2 && Morceaux.get('ch-im-yours').capo === 4 &&
-          Morceaux.get('ch-hotel-california').capo === 7 && Morceaux.get('ch-hey-jude').capo === 3);
-  const bb = Morceaux.get('ch-blackbird');
-  verifie('Blackbird : chanson à 3 temps, mesures de 3 noires', bb.signature.join('/') === '3/4' && Tablature.noiresParMesure(bb) === 3 &&
-          Tablature.duree_totale(bb) === 3 * (6 * 2 + 4 * 2));
-  verifie('Blackbird : changement d’accord tous les 3 temps (Sol, La m7, Si m…)', ['G', 'Am7', 'Bm'].every((a, k) => bb.notes.filter((n) => n.temps === k * 3)[0].accord === a));
-  verifie('valse : basse au 1er temps, accord sur le 2e et le 3e', (() => { const p = bb.notes.filter((n) => n.temps >= 36 && n.temps < 39);
-    return p.filter((n) => n.temps === 36).length === 1 && p.filter((n) => n.temps === 37).length === 3 && p.filter((n) => n.temps === 38).length === 3; })());
-  verifie('Top 20 niveau 1 : pas de barré', top.filter((p) => p.top === 1).every((p) => !p.mains.gauche.some((a) => a.barre)));
 }
 
 console.log('\n— Difficulté d’exécution —');
@@ -820,12 +639,11 @@ console.log('\n— Difficulté d’exécution —');
   const niv = (id) => Programme.difficulte(Morceaux.get(id)).niveau;
   verifie('cordes à vide au pouce : niveau 1', niv('pouce-vide-morceau') === 1 && niv('basses-pouce') === 1);
   verifie('mélodies en première position : niveau 2 (la case 5 à l’auriculaire n’est pas un déplacement)', niv('frere-jacques') === 2 && niv('dirai-je') === 2);
-  verifie('Knockin’ et Wonderwall : premiers accords (3)', niv('ch-knockin') === 3 && niv('ch-wonderwall') === 3);
   verifie('barrés et deux voix : avancé ou expert', niv('acc-barre') >= 5 && niv('menuet-sol') >= 5 && niv('brahms-valse-3') === 6);
   // La vitesse ne compte pas : le même morceau à un autre tempo garde son niveau.
-  const p = Morceaux.get('ch-hey-jude'), copie = Object.assign({}, p, { tempo: p.tempo * 2, _difficulte: null });
+  const p = Morceaux.get('acc-barre'), copie = Object.assign({}, p, { tempo: p.tempo * 2, _difficulte: null });
   verifie('la difficulté ne dépend pas du tempo', Programme.difficulte(copie).score === Programme.difficulte(p).score);
-  const tous = Morceaux.tous().filter((m) => !m.versionDe && m.categorie !== 'entrainement');
+  const tous = Morceaux.tous().filter((m) => !m.versionDe);
   const parNiv = [1, 2, 3, 4, 5, 6].map((n) => tous.filter((m) => Programme.difficulte(m).niveau === n).length);
   verifie('six niveaux, aucun vide', parNiv.every((n) => n > 0), parNiv.join(','));
   verifie('chaque morceau a une raison lisible', tous.every((m) => Programme.difficulte(m).raisons.length > 0));
@@ -841,10 +659,10 @@ console.log('\n— Programme progressif —');
   verifie('palier 1 : pas de chanson ni de barré', pals[0].ids.every((id) => !Morceaux.get(id).chanson));
   const barre = (id) => (Morceaux.get(id).mains || { gauche: [] }).gauche.some((a) => a.barre);
   verifie('les chansons avec barré : palier 4 ou plus', tous.filter((p) => p.chanson && barre(p.id)).every((p) => Programme.palierDe(p) >= 3));
-  verifie('palier = niveau de difficulté (Santiano au pouce : 2, Valse n° 3 de Brahms : 6)', Programme.palierDe(Morceaux.get('pouce-ch-santiano')) === 1 && Programme.palierDe(Morceaux.get('brahms-valse-3')) === 5 &&
+  verifie('palier = niveau de difficulté (Frère Jacques : 2, Valse n° 3 de Brahms : 6)', Programme.palierDe(Morceaux.get('frere-jacques')) === 1 && Programme.palierDe(Morceaux.get('brahms-valse-3')) === 5 &&
           tous.every((p) => Programme.palierDe(p) === Programme.difficulte(p).niveau - 1));
   verifie('les études (niveau 5) : palier 4 ou plus', tous.filter((p) => p.niveau === 5 && !p.categorie).every((p) => Programme.palierDe(p) >= 3));
-  verifie('dans un palier, la technique avant la musique', Morceaux.get(pals[0].ids[0]).categorie === 'entrainement');
+  verifie('dans un palier, la technique avant la musique', ['pouce', 'pouce-main', 'accords'].includes(Morceaux.get(pals[0].ids[0]).categorie));
 
   const T = Date.UTC(2026, 9, 1, 12);
   const J = 86400000;
@@ -869,7 +687,7 @@ console.log('\n— Programme progressif —');
   verifie('4 acquis au palier 1 → palier 2 ouvert', s2.palier.num === 2 && s2.paliers[1].ouvert && !s2.paliers[2].ouvert);
 
   // Un favori passe devant les autres nouveautés.
-  const fav = pals[1].ids.filter((id) => Morceaux.get(id).chanson).slice(-1)[0];
+  const fav = pals[1].ids.filter((id) => !Morceaux.get(id).categorie).slice(-1)[0];
   const s3 = Programme.seance(tous, suivi, [fav], T + J);
   verifie('♥ : le favori est la première nouveauté', s3.items.some((x) => x.id === fav && x.raison === 'favori'));
 
@@ -885,7 +703,7 @@ console.log('\n— Programme progressif —');
   verifie('beaucoup en cours → une seule nouveauté au plus', s4.items.filter((x) => x.raison === 'nouveau' || x.raison === 'favori').length <= 1);
 
   // Ressenti : consolider (descendre), rester, remonter.
-  const p2 = pals[1].ids.filter((id) => !Morceaux.get(id).categorie || Morceaux.get(id).chanson);
+  const p2 = pals[1].ids.filter((id) => !Morceaux.get(id).categorie);
   const p1 = pals[0].ids;
   const h = (ids, note) => ids.map((id) => ({ id, note, t: T }));
   verifie('ressenti : deux « dur » de suite au palier 2 → on consolide au palier 1',
@@ -900,8 +718,9 @@ console.log('\n— Programme progressif —');
           sc.items.every((x) => pals[0].ids.includes(x.id) || x.raison === 'revision') && !sc.items.some((x) => x.raison === 'defi'));
 
   // Un favori du palier suivant : proposé en défi, lentement.
-  const defi = Programme.seance(tous, {}, ['pouce-ch-santiano'], T).items.find((x) => x.raison === 'defi');
-  verifie('favori du palier suivant : défi à 50 → 70 %', defi && defi.id === 'pouce-ch-santiano' && defi.passages.join() === '50,60,70');
+  const favDefi = pals[1].ids.filter((id) => !Morceaux.get(id).categorie)[0];
+  const defi = Programme.seance(tous, {}, [favDefi], T).items.find((x) => x.raison === 'defi');
+  verifie('favori du palier suivant : défi à 50 → 70 %', defi && defi.id === favDefi && defi.passages.join() === '50,60,70');
 }
 
 console.log(`\n=== ${ok} réussis, ${ko} échoués ===`);

@@ -5,13 +5,12 @@
  * le réseau en priorité, le cache dès qu'il n'y a plus de réseau. Le nom du
  * cache porte la version : l'ancien est effacé à l'activation.
  */
-const CACHE = 'guitare-v1.36';
+const CACHE = 'guitare-v1.0';
 const FICHIERS = [
   './', './index.html', './styles.css', './app.js',
-  './theorie.js', './audio.js', './accords.js', './illustrations.js', './tablature.js', './portee.js', './manche.js', './gammes.js', './vr.js', './repertoire.js', './chansons.js', './morceaux.js', './entrainement.js', './programme.js',
+  './theorie.js', './audio.js', './accords.js', './illustrations.js', './tablature.js', './portee.js', './manche.js', './gammes.js', './repertoire.js', './morceaux.js', './programme.js',
   './lecons.js', './accordeur.js', './oreille.js', './store.js', './ecran.js', './dpad-nav.js',
-  './tv.js', './cast.js', './autobackup.js', './update-check.js', './apk-update.js',
-  './manifest.webmanifest', './version.json', './recepteur.html'
+  './tv.js', './manifest.webmanifest', './version.json'
 ];
 
 self.addEventListener('install', (e) => {
@@ -27,7 +26,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const local = new URL(e.request.url).origin === location.origin;
-  // Nos fichiers : réseau d'abord (comme Recettes) — une mise à jour publiée
+  // Nos fichiers : réseau d'abord — une mise à jour publiée
   // est visible au prochain chargement, sans attendre un nouveau service
   // worker ; le cache prend le relais hors ligne. Le reste (SDK Cast…) passe
   // tel quel, sans cache : un SDK périmé casserait la diffusion.

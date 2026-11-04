@@ -59,7 +59,6 @@
     if (nom === 'parcours') rendreParcours();
     if (nom === 'accords') rendreAccords();
     if (nom === 'morceaux') rendreMorceaux();
-    if (nom === 'entrainement') rendreEntrainement();
     if (nom === 'programme') rendreProgramme();
     if (nom === 'oreille') rendreOreilleAccueil();
     if (nom === 'reglages') rendreReglages();
@@ -139,7 +138,7 @@
   // Ne tourne que sur les écrans où l'on joue réellement, et s'arrête quand
   // l'app passe en arrière-plan : un compteur qui gonfle tout seul ne veut
   // plus rien dire.
-  var ECRANS_PRATIQUE = ['entrainement', 'lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur', 'pupitre'];
+  var ECRANS_PRATIQUE = ['lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur', 'pupitre'];
   setInterval(function () {
     if (document.hidden) return;
     if (ECRANS_PRATIQUE.indexOf(ecranCourant) === -1) return;
@@ -179,14 +178,6 @@
       carte.appendChild(el('p', 'aide', 'Toutes les leçons sont validées. Reprends les morceaux au métronome, et monte le tempo de cinq en cinq.'));
     }
 
-    if (window.Entrainement) {
-      var jourE = Store.entrainementJour();
-      var totalE = Entrainement.tous().reduce(function (t, e) { return t + Entrainement.cases(e); }, 0);
-      var faitesE = Entrainement.tous().reduce(function (t, e) { return t + (jourE[e.id] || []).length; }, 0);
-      var bE = el('button', 'btn large', '💪 Entraînement du jour : ' + faitesE + ' / ' + totalE);
-      bE.onclick = function () { aller('entrainement'); };
-      carte.appendChild(bE);
-    }
     if (window.Programme) {
       var sp = programmeDuJour();
       var bP = el('button', 'btn large', '🪜 Programme du jour : ' + sp.items.filter(faitAujourdhui).length + ' / ' + sp.items.length +
@@ -408,95 +399,6 @@
     return n;
   }
 
-  // ---------------------------------------------------------- entraînement
-  /* Les devoirs du cours, à refaire chaque jour. Chaque exercice se coche
-   * (une case par variante : en regardant, yeux fermés…) ; les cases
-   * repartent à zéro chaque matin, l'historique reste pour la série. */
-  var ETATS_ENTRAINEMENT = { nouveau: 'NOUVEAU', continuer: 'à continuer', pasvu: 'pas encore vu en cours' };
-
-  function rendreEntrainement() {
-    var h = vide($('pageEntrainement'));
-    var jour = Store.entrainementJour();
-    var tous = Entrainement.tous();
-    var total = tous.reduce(function (t, e) { return t + Entrainement.cases(e); }, 0);
-    var faites = tous.reduce(function (t, e) { return t + (jour[e.id] || []).length; }, 0);
-    var jours = Store.joursEntrainement();
-    var tete = el('div', 'carte');
-    tete.appendChild(el('h2', null, '💪 Entraînement'));
-    tete.appendChild(el('p', 'aide', 'Les exercices du cours, à refaire chaque jour. Coche-les au fur et à mesure : les cases repartent à zéro demain.'));
-    var barre = el('div', 'barre-objectif');
-    var i = el('i'); i.style.width = Math.round(faites / total * 100) + '%';
-    barre.appendChild(i);
-    tete.appendChild(barre);
-    tete.appendChild(el('p', 'aide', 'Aujourd’hui : ' + faites + ' / ' + total + ' · ' + jours.length + ' jour' + (jours.length > 1 ? 's' : '') + ' d’entraînement en tout'));
-    h.appendChild(tete);
-
-    Entrainement.groupes().forEach(function (g) {
-      h.appendChild(el('h3', 'titre-groupe', g.titre));
-      if (g.intro) h.appendChild(el('p', 'aide', g.intro));
-      g.exercices.forEach(function (e) {
-        var c = el('div', 'carte exercice' + ((jour[e.id] || []).length === Entrainement.cases(e) ? ' fait' : ''));
-        var t = el('div', 'exercice-titre');
-        t.appendChild(el('b', null, e.titre));
-        if (e.etat) t.appendChild(el('span', 'etat-' + e.etat, ETATS_ENTRAINEMENT[e.etat]));
-        c.appendChild(t);
-        var ul = el('ul');
-        e.consignes.forEach(function (x) { ul.appendChild(el('li', null, x)); });
-        c.appendChild(ul);
-        if (e.quiz) c.appendChild(quizEntrainement(e.quiz));
-        var coches = el('div', 'exercice-coches');
-        (e.variantes || ['Fait aujourd’hui']).forEach(function (v, k) {
-          var l = el('label', 'ligne-coche');
-          var cb = document.createElement('input');
-          cb.type = 'checkbox';
-          cb.checked = (jour[e.id] || []).indexOf(k) !== -1;
-          cb.onchange = function () { Store.cocherEntrainement(e.id, k, cb.checked); rendreEntrainement(); };
-          l.appendChild(cb);
-          l.appendChild(document.createTextNode(e.variantes ? (k + 1) + '. ' + v : v));
-          coches.appendChild(l);
-        });
-        c.appendChild(coches);
-        if (e.morceau && Morceaux.get(e.morceau)) {
-          var b = el('button', 'btn', '🎼 Tablature : ' + Morceaux.get(e.morceau).titre);
-          b.onclick = function () { ouvrirMorceau(e.morceau); };
-          c.appendChild(b);
-        }
-        h.appendChild(c);
-      });
-    });
-
-    // Notes de cours : ce que le professeur donne la semaine suivante.
-    var notes = el('div', 'carte');
-    notes.appendChild(el('h3', null, '📝 Mes notes de cours'));
-    var ta = document.createElement('textarea');
-    ta.className = 'notes-cours'; ta.rows = 6;
-    ta.placeholder = 'Recopie ici les consignes du prochain cours…';
-    ta.value = Store.notesCours();
-    ta.oninput = function () { Store.notesCours(ta.value); };
-    notes.appendChild(ta);
-    h.appendChild(notes);
-  }
-
-  // Révision « par cœur » : on montre la question, la réponse se dévoile.
-  function quizEntrainement(paires) {
-    var d = el('div', 'quiz');
-    var q = el('b', 'quiz-question'), r = el('span', 'quiz-reponse');
-    var bRep = el('button', 'btn', 'Réponse'), bSuiv = el('button', 'btn', 'Interroge-moi');
-    var k = -1;
-    function suivante() {
-      var n; do { n = Math.floor(Math.random() * paires.length); } while (paires.length > 1 && n === k);
-      k = n; q.textContent = paires[k][0] + ' = ?'; r.textContent = ''; bRep.disabled = false;
-    }
-    bSuiv.onclick = suivante;
-    bRep.onclick = function () { if (k >= 0) { r.textContent = paires[k][1]; bRep.disabled = true; } };
-    bRep.disabled = true;
-    q.textContent = 'Révise par cœur :';
-    d.appendChild(q); d.appendChild(r);
-    var a = el('div', 'actions'); a.appendChild(bSuiv); a.appendChild(bRep);
-    d.appendChild(a);
-    return d;
-  }
-
   // -------------------------------------------------------------- parcours
   function rendreParcours() {
     var faites = Store.progression().lecons;
@@ -605,7 +507,7 @@
 
   function boutonJouerAccord(a) {
     var b = el('button', 'btn large', '▶ Écouter l’accord');
-    b.onclick = function () { Audio5.jouerAccord(a.frettes, { timbre: Store.reglages().timbre }); envoyerCast(); };
+    b.onclick = function () { Audio5.jouerAccord(a.frettes, { timbre: Store.reglages().timbre }); };
     return b;
   }
 
@@ -731,7 +633,6 @@
     }
 
     aller('accord');
-    if (Cast.connecte()) Cast.afficherAccord(a.id);
   }
 
   // ------------------------------------------------------------- accordeur
@@ -769,7 +670,6 @@
       m.freq.toFixed(1) + ' Hz' + (juste ? ' — juste' : (c.cents > 0 ? ' — trop haut, détends' : ' — trop bas, tends'));
     if (juste) cordesJustes[c.corde] = true;
     rendreCordes(c.corde);
-    if (Cast.connecte()) Cast.afficherAccordeur({ corde: c.corde, cents: c.cents, freq: m.freq });
   }
 
   function basculerAccordeur() {
@@ -826,7 +726,6 @@
         metroTemps = temps;
         var pts = $('metroPoints').children;
         for (var i = 0; i < pts.length; i++) pts[i].classList.toggle('actif', i === temps);
-        if (Cast.connecte()) Cast.afficherMetronome(Audio5.tempoMetronome(parseInt($('metroSlider').value, 10)), temps, par);
       }
     });
     $('btnMetro').textContent = 'Arrêter';
@@ -855,7 +754,7 @@
                       [/[Tt]raditionnel|chant traditionnel/, 'Traditionnel']];
   function artisteDe(p) {
     if (p.artiste) return p.artiste;
-    if (p.categorie === 'accords' || p.categorie === 'entrainement' || p.categorie === 'pouce') return null;
+    if (p.categorie === 'accords' || p.categorie === 'pouce') return null;
     var st = p.sous_titre || '';
     // Mélodie jouée au pouce : l'artiste de la mélodie d'origine.
     var orig = /^pouce-/.test(p.id) && Morceaux.get(p.id.replace(/^pouce-/, ''));
@@ -899,15 +798,13 @@
     var tEnch = bloc.querySelector('h3');
     rubrique(tEnch.textContent).appendChild(bloc);
     tEnch.remove();
-    var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [], top20 = {};
+    var niveaux = {}, exercices = [], pouce = [], pouceMain = [];
     Morceaux.tous().forEach(function (p) {
       if (p.versionDe) return;   // version longue : proposée sur la fiche de la courte
       if (p.categorie === 'accords') exercices.push(p);
       else if (p.categorie === 'pouce') pouce.push(p);
       else if (p.categorie === 'pouce-main') pouceMain.push(p);
-      else if (p.categorie === 'tiktok') tiktok.push(p);
-      else if (p.categorie === 'top20') (top20[p.top] = top20[p.top] || []).push(p);
-      else if (p.categorie !== 'entrainement') (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
+      else (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
     });
     function ligne(p, droite) {
       var b = el('button', 'ligne-morceau');
@@ -925,7 +822,7 @@
        * vitesse : le tempo se règle sur chaque fiche. */
       var parNiv = {};
       Morceaux.tous().forEach(function (p) {
-        if (p.versionDe || p.categorie === 'entrainement') return;
+        if (p.versionDe) return;
         var d = Programme.difficulte(p);
         (parNiv[d.niveau] = parNiv[d.niveau] || []).push(p);
       });
@@ -984,29 +881,8 @@
       cible.appendChild(el('p', 'aide', 'L’étape suivante : toujours le pouce seul à droite, mais la main gauche appuie des cases — gamme dans les basses, basses sur des accords, mélodies au pouce, chansons en pom-tcha.'));
       pouceMain.forEach(function (p) { cible.appendChild(ligne(p, 'niv. ' + p.niveau)); });
     }
-    if (tiktok.length) {
-      cible = rubrique('📱 TikTok');
-      cible.appendChild(el('p', 'aide', 'Des morceaux relevés dans des vidéos TikTok, note par note. Quand la vidéo montrait le riff d’une chanson sous droits, l’app donne la grille d’accords de la chanson (ni mélodie ni paroles).'));
-      tiktok.filter(function (p) { return !p.chanson; }).forEach(function (p) { cible.appendChild(ligne(p, '♩ = ' + p.tempo)); });
-      var grillesTT = tiktok.filter(function (p) { return p.chanson; });
-      if (grillesTT.length) {
-        cible.appendChild(el('p', 'aide', 'Vu sur TikTok — grilles d’accords :'));
-        grillesTT.forEach(function (p) { cible.appendChild(ligne(p, 'grille')); });
-      }
-    }
-    /* Top 20 de la guitare acoustique, par niveau. Knockin' on Heaven's Door
-     * et House of the Rising Sun y figurent aussi, depuis leurs rubriques. */
-    var DEJA_TOP = { 'ch-knockin': 1, 'acc-rising-sun': 3 };
-    Object.keys(DEJA_TOP).forEach(function (id) { var m = Morceaux.get(id); if (m) (top20[DEJA_TOP[id]] = top20[DEJA_TOP[id]] || []).unshift(m); });
-    var NOMS_TOP = { 1: 'Débutant — accords ouverts, rythmiques de base', 2: 'Intermédiaire — premiers barrés, rythmiques syncopées',
-                     3: 'Confirmé — arpèges et picking', 4: 'Avancé — fingerstyle' };
-    [1, 2, 3, 4].forEach(function (n) {
-      if (!top20[n]) return;
-      cible = rubrique('⭐ Top 20 acoustique · ' + NOMS_TOP[n]);
-      top20[n].forEach(function (p) { cible.appendChild(ligne(p, p.chanson ? 'grille' : 'niv. ' + p.niveau)); });
-    });
     var NOMS_NIVEAUX = { 1: 'Niveau 1 — grand débutant', 2: 'Niveau 2 — premières mélodies', 3: 'Niveau 3 — premières pièces', 4: 'Niveau 4 — répertoire', 5: 'Niveau 5 — études',
-                         6: 'Chansons françaises — grands classiques (grilles d’accords)', 7: 'Hits récents (grilles d’accords)', 8: 'Chansons internationales (grilles d’accords)', 9: 'Rock et reggae — Offspring, Nirvana, Cranberries, Police, Marley' };
+                         6: 'Chansons (grilles d’accords)' };
     Object.keys(niveaux).sort().forEach(function (n) {
       cible = rubrique(NOMS_NIVEAUX[n] || 'Niveau ' + n);
       niveaux[n].forEach(function (p) { cible.appendChild(ligne(p, '♩ = ' + p.tempo)); });
@@ -2032,7 +1908,6 @@
       if (etat.manche) majManche(note.temps);
       guide.suivre(note.temps);
       suivreLigne();
-      if (window.CasqueVR) CasqueVR.note(note);
       pupitre.note(note);
     }
     function lancer(premier) {
@@ -2048,11 +1923,11 @@
         metronome: etat.clic,
         muet: etat.muet,
         timbre: Store.reglages().timbre,
-        surNote: function (n, i) { surligner(n); if (Cast.connecte()) Cast.afficherMorceau(p, i); },
+        surNote: function (n, i) { surligner(n); },
         surFin: function () {
           effacer();
           if (enListe && session && !etat.boucle && zone.isConnected) { suite(false); return; }
-          if (!etat.boucle || (ecranCourant !== 'morceau' && ecranCourant !== 'pupitre')) { if (window.CasqueVR) CasqueVR.fin(); return; }
+          if (!etat.boucle || (ecranCourant !== 'morceau' && ecranCourant !== 'pupitre')) return;
           if (etat.entraineur && etat.pct < 100) { etat.pct = Math.min(100, etat.pct + 5); majTempo(); pupitre.maj(); }
           lancer(false);
         }
@@ -2090,10 +1965,9 @@
     peStop.onclick = function () { bStop.onclick(); };
     peMoins.onclick = function () { moins.onclick(); };
     pePlus.onclick = function () { plus.onclick(); };
-    bStop.onclick = function () { Tablature.arreter(); effacer(); if (window.CasqueVR) CasqueVR.fin(); pupitre.maj(); };
+    bStop.onclick = function () { Tablature.arreter(); effacer(); pupitre.maj(); };
     bMetro.onclick = function () { reglerTempo(tempoEffectif()); aller('metronome'); demarrerMetro(); };
 
-    if (window.CasqueVR) CasqueVR.brancher(h, p, { jouer: function () { lancer(true); }, arreter: bStop.onclick });
 
     // Mode casque : la même lecture, vue en pupitre plein écran.
     var pupitre = construirePupitre(p, {
@@ -2109,7 +1983,7 @@
     Array.prototype.forEach.call(opts.children, function (b, i) {
       b.dataset.cle = ['boucle', 'entraineur', 'decompte', 'clic', 'muet', 'manche'][i];
     });
-    var bPupitre = el('button', 'btn ' + (casqueActif() ? 'primaire ' : '') + 'large', '🥽 Mode casque (pupitre)');
+    var bPupitre = el('button', 'btn ' + (casqueActif() ? 'primaire ' : '') + 'large', '📖 Pupitre plein écran');
     bPupitre.onclick = function () { pupitre.ouvrir(); };
     h.insertBefore(bPupitre, h.children[casqueActif() ? 2 : h.children.length]);
     pupitreCourant = pupitre;
@@ -2201,12 +2075,6 @@
       bouton('📈 Vitesse', function () { ctl.basculer('entraineur'); }, 'entraineur');
       bouton('🔇 Muette', function () { ctl.basculer('muet'); }, 'muet');
       bouton('🥁 Clic', function () { ctl.basculer('clic'); }, 'clic');
-      if (window.CasqueVR && CasqueVR.immersifPossible) {
-        CasqueVR.immersifPossible(p).then(function (libelle) {
-          if (!libelle || !barre) return;
-          bouton(libelle, function () { CasqueVR.immersif(p); });
-        });
-      }
       hote.appendChild(barre);
       rendreLignes(ligneDe((ctl.etat.de - 1) * ctl.parMesure));
       rendreManche(null);
@@ -2505,33 +2373,10 @@
     $('regInstrument').value = r.instrument || '';
     $('regObjectif').value = String(r.objectifMinutes);
     $('regTv').value = r.modeTv == null ? 'auto' : (r.modeTv ? 'oui' : 'non');
-    $('regCasque').value = r.modeCasque == null ? 'auto' : (r.modeCasque ? 'oui' : 'non');
     $('regEcran').value = r.ecranAllume === false ? 'non' : 'oui';
     $('regAides').value = r.aides ? 'oui' : 'non';
-    $('regCast').value = r.castAppId || '';
-    $('castUrl').textContent = urlRecepteur();
-    $('castAide').textContent = Cast.configure()
-      ? 'Récepteur configuré. Le bouton 📺 en haut à droite lance la diffusion.'
-      : 'Sans identifiant de récepteur, la diffusion Chromecast reste désactivée — mais l’app s’installe aussi directement sur une télé Android, et le mode télévision s’y active tout seul.';
     $('aproposVersion').textContent = 'Version ' + (window.APP_VERSION || '?') +
       ' · ' + Lecons.tous().length + ' leçons · ' + Accords.tous().length + ' accords · ' + Morceaux.tous().length + ' morceaux · ' + Gammes.TYPES.length + ' gammes.';
-    if (window.AutoBackup && AutoBackup.mount) AutoBackup.mount($('carteBackup'));
-    $('majVersion').textContent = 'v' + (window.APP_VERSION || '?');
-  }
-
-  /* « Vérifier les mises à jour » : update-check.js fait le travail (et
-   * affiche son bandeau) ; ici seulement le compte rendu. */
-  function verifierMaj() {
-    var b = $('btnVerifierMaj'), etat = $('majEtat');
-    var fini = function () { b.disabled = false; b.textContent = 'Vérifier les mises à jour'; };
-    if (typeof window.checkAppUpdate !== 'function') { etat.textContent = '⚠ Module de mise à jour absent'; return; }
-    b.disabled = true; b.textContent = '⏳ Vérification…'; etat.textContent = '';
-    window.checkAppUpdate(true).then(function (res) {
-      fini();
-      if (!res) etat.textContent = '⚠ Impossible de vérifier (pas de réseau ?)';
-      else if (!res.newer) etat.textContent = '✓ Déjà à jour (v' + window.APP_VERSION + ')';
-      else etat.textContent = '🔄 Version v' + res.latest + ' disponible — voir le bandeau en bas';
-    }).catch(function () { fini(); etat.textContent = '⚠ Erreur réseau'; });
   }
 
   /* Lien profond « ?morceau=<id> » (ou « #tab=<json> » pour une tablature
@@ -2553,24 +2398,6 @@
     } catch (e) { /* lien abîmé : on reste sur l'accueil */ }
   }
 
-  function urlRecepteur() {
-    // La page récepteur est publiée à côté de la PWA (GitHub Pages).
-    var base = location.origin + location.pathname.replace(/[^/]*$/, '');
-    return /^https?:/.test(base) && location.protocol !== 'file:'
-      ? base + 'recepteur.html'
-      : 'https://laurentsar.github.io/guitare/recepteur.html';
-  }
-
-  // ------------------------------------------------------------------ cast
-  function envoyerCast() { /* les écrans appellent Cast.afficher* directement */ }
-
-  function majBoutonCast(etat) {
-    var b = $('btnCast');
-    b.hidden = !Cast.configure();
-    b.classList.toggle('on', etat === 'connecte');
-    b.title = etat === 'connecte' ? 'Diffusion en cours' : 'Diffuser sur la télé';
-  }
-
   // ------------------------------------------------------------ démarrage
   function init() {
     Tv.appliquer();
@@ -2587,11 +2414,6 @@
     rendreAccueil();
 
     $('raccourciEditeur').onclick = function () { ouvrirEditeur(null); };
-    // Au casque : raccourci vers les morceaux, où se trouve la partition
-    // flottante (elle n'a de sens qu'avec quelque chose à lire).
-    if (window.CasqueVR) CasqueVR.appliquer();
-    $('raccourciVR').hidden = !casqueActif();
-    $('raccourciVR').onclick = function () { aller('morceaux'); };
 
     // Accordeur
     $('btnAccordeur').onclick = basculerAccordeur;
@@ -2637,7 +2459,6 @@
     };
 
     // Réglages
-    $('btnVerifierMaj').onclick = verifierMaj;
     $('regVolume').oninput = function () { Audio5.volume(this.value / 100); Store.reglage('volume', this.value / 100); };
     $('regTimbre').onchange = function () { Store.reglage('timbre', this.value); };
     $('regInstrument').onchange = function () {
@@ -2646,11 +2467,6 @@
       $('sousTitre').textContent = (i ? i + ' · ' : '') + 'guitare classique · débutant';
     };
     $('regObjectif').onchange = function () { Store.reglage('objectifMinutes', parseInt(this.value, 10)); };
-    $('regCasque').onchange = function () {
-      Store.reglage('modeCasque', this.value === 'auto' ? null : this.value === 'oui');
-      if (window.CasqueVR) CasqueVR.appliquer();
-      $('raccourciVR').hidden = !casqueActif();
-    };
     $('regAides').onchange = function () { Store.reglage('aides', this.value === 'oui'); };
     $('regEcran').onchange = function () {
       Store.reglage('ecranAllume', this.value === 'oui');
@@ -2660,19 +2476,6 @@
       Store.reglage('modeTv', this.value === 'auto' ? null : this.value === 'oui');
       Tv.appliquer();
     };
-    $('regCast').onchange = function () {
-      Store.reglage('castAppId', this.value.trim().toUpperCase());
-      Cast.chargerSdk();
-      majBoutonCast('pret');
-      rendreReglages();
-    };
-
-    // Cast
-    Cast.ecouter(majBoutonCast);
-    majBoutonCast('init');
-    if (Cast.configure()) Cast.chargerSdk();
-    $('btnCast').onclick = function () { Cast.connecter(); };
-
     ouvrirLienProfond();
 
     // Le service worker ne sert qu'à la version web (PWA) : dans l'APK, tout

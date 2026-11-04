@@ -27,11 +27,9 @@
     timbre: 'nylon',
     gaucher: false,
     modeTv: null,        // null = détection automatique
-    modeCasque: null,    // casque VR : null = détection automatique (vr.js)
-    castAppId: '',       // récepteur Chromecast personnalisé, voir cast.js
     objectifMinutes: 15,
     vuePartition: null,    // 'portee' | 'tablature' | 'deux' ; null = selon l'écran (app.js)
-    instrument: 'Prodipe Primera 4/4',
+    instrument: '',
     decompte: true,        // une mesure de clics avant de jouer un morceau
     clicLecture: false,    // métronome pendant la lecture
     ecranAllume: true,     // l'écran ne s'éteint pas pendant qu'on joue (ecran.js)
@@ -191,27 +189,10 @@
     return t[id];
   }
 
-  // Entraînement : cases cochées par jour { 'AAAA-MM-JJ': { exercice: [0, 1] } },
-  // et notes de cours libres.
-  function entrainementJour(jour) { return lire('entrainement', {})[jour || jourCourant()] || {}; }
-  function cocherEntrainement(id, k, fait, jour) {
-    var t = lire('entrainement', {}), j = jour || jourCourant();
-    var d = t[j] = t[j] || {};
-    var l = (d[id] || []).filter(function (x) { return x !== k; });
-    if (fait) l.push(k);
-    if (l.length) d[id] = l; else delete d[id];
-    if (!Object.keys(d).length) delete t[j];
-    ecrire('entrainement', t);
-  }
-  function joursEntrainement() { return Object.keys(lire('entrainement', {})).sort(); }
-  function notesCours(txt) { return txt == null ? lire('notesCours', '') : ecrire('notesCours', txt); }
-
   global.Store = {
     aimes: aimes, aime: aime, aimer: aimer,
     suivi: suivi, noterSuivi: noterSuivi, ressentis: ressentis, ajouterRessenti: ajouterRessenti,
     seanceProgramme: seanceProgramme, sauverSeanceProgramme: sauverSeanceProgramme,
-    entrainementJour: entrainementJour, cocherEntrainement: cocherEntrainement,
-    joursEntrainement: joursEntrainement, notesCours: notesCours,
     etapesFaites: etapesFaites, marquerEtape: marquerEtape,
     listes: listes, sauverListe: sauverListe, supprimerListe: supprimerListe,
     joues: joues, morceauJoue: morceauJoue, revision: revision, sauverRevision: sauverRevision,

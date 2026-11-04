@@ -32,14 +32,11 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'entrainement.js', 'programme.js', 'lecons.js',
- 'accordeur.js', 'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'repertoire.js', 'morceaux.js', 'programme.js', 'lecons.js',
+ 'accordeur.js', 'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
-// Les exercices d'entraînement s'ouvrent depuis leur écran, pas depuis la liste.
-const listables = () => w.Morceaux.tous().filter((p) => p.categorie !== 'entrainement' && !p.versionDe).length;
-// Knockin' et House of the Rising Sun figurent aussi dans le Top 20 : deux lignes chacun.
-const DOUBLONS_TOP = 2;
+const listables = () => w.Morceaux.tous().filter((p) => !p.versionDe).length;
 // Les aides débutant sont éteintes par défaut (v1.16) ; les blocs ci-dessous
 // les testent, on les allume. Le comportement par défaut a son propre bloc.
 w.Store.reglage('aides', true);
@@ -117,12 +114,12 @@ function verifie(nom, cond, detail) {
   console.log('\n— Morceaux —');
   w.AppGuitare.aller('morceaux');
   verifie('tous les morceaux sont listés',
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + DOUBLONS_TOP);
-  w.AppGuitare.ouvrirMorceau('ch-hey-jude');
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables());
+  w.AppGuitare.ouvrirMorceau('acc-g-em-c-d');
   {
     const d = $('detailMorceau');
     const ecouter = [...d.querySelectorAll('button')].find((b) => /▶ Écouter/.test(b.textContent));
-    const desc = [...d.querySelectorAll(':scope > p')].find((x) => /Grille d’accords de la chanson/.test(x.textContent));
+    const desc = [...d.querySelectorAll(':scope > p')].find((x) => /La même grille en Sol/.test(x.textContent));
     verifie('« ▶ Écouter » en haut de la fiche, avant la description et la tablature', ecouter && desc &&
             (ecouter.compareDocumentPosition(desc) & w.Node.DOCUMENT_POSITION_FOLLOWING) && (ecouter.compareDocumentPosition(d.querySelector('.tab-ligne')) & w.Node.DOCUMENT_POSITION_FOLLOWING));
   }
@@ -187,7 +184,7 @@ function verifie(nom, cond, detail) {
   verifie('enregistrée puis ouverte dans le lecteur', $('ecran-morceau').classList.contains('actif') && w.Store.tablatures().length === 1);
   w.AppGuitare.aller('morceaux');
   verifie('« Mes tablatures » la liste', /Mes tablatures/.test($('listeMorceaux').textContent) &&
-          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + DOUBLONS_TOP + 1);
+          $('listeMorceaux').querySelectorAll('.ligne-morceau').length === listables() + 1);
 
   console.log('\n— Gammes —');
   w.AppGuitare.aller('gammes');
@@ -196,16 +193,10 @@ function verifie(nom, cond, detail) {
   [...$('gammesContenu').querySelectorAll('.filtres button')].find((b) => b.textContent === 'Majeure').click();
   verifie('changer de type redessine', /La · Si · Do♯ · Ré · Mi · Fa♯ · Sol♯/.test($('gammesContenu').textContent));
 
-  console.log('\n— Casque VR —');
-  verifie('pas de mode casque sur un navigateur ordinaire', !w.document.documentElement.classList.contains('casque'));
-  verifie('raccourci casque masqué hors casque', $('raccourciVR').hidden === true);
-  w.CasqueVR._etat.piece = w.Morceaux.get('ode-joie');
-  verifie('module casque exposé', typeof w.CasqueVR.brancher === 'function' && typeof w.CasqueVR.note === 'function');
-
-  console.log('\n— Pupitre (mode casque) —');
+  console.log('\n— Pupitre plein écran —');
   w.AppGuitare.ouvrirMorceau('etude-lam');
-  const bPup = [...$('detailMorceau').querySelectorAll('button')].find((b) => /Mode casque/.test(b.textContent));
-  verifie('bouton « Mode casque » dans le morceau', !!bPup);
+  const bPup = [...$('detailMorceau').querySelectorAll('button')].find((b) => /Pupitre plein écran/.test(b.textContent));
+  verifie('bouton « Pupitre plein écran » dans le morceau', !!bPup);
   bPup.click();
   verifie('pupitre affiché, en-tête et onglets masqués',
           $('ecran-pupitre').classList.contains('actif') && w.document.documentElement.classList.contains('en-pupitre'));
@@ -227,16 +218,6 @@ function verifie(nom, cond, detail) {
   [...$('pupitreVue').querySelectorAll('button')].find((b) => /Quitter/.test(b.textContent)).click();
   verifie('quitter revient au morceau et rend l’en-tête', $('ecran-morceau').classList.contains('actif') && !w.document.documentElement.classList.contains('en-pupitre'));
 
-  w.AppGuitare.aller('reglages');
-  $('regCasque').value = 'oui'; $('regCasque').onchange();
-  verifie('réglage « Mode casque : toujours » = classe casque + raccourci', w.document.documentElement.classList.contains('casque') && !$('raccourciVR').hidden);
-  $('regCasque').value = 'auto'; $('regCasque').onchange();
-  verifie('réglage « automatique » = pas de casque sur ce navigateur', !w.document.documentElement.classList.contains('casque'));
-  const lien = w.CasqueVR.lienProfond(w.Store.tablatures()[0]);
-  verifie('lien profond d’une tablature perso : elle voyage dans l’URL', /#tab=/.test(lien) &&
-          JSON.parse(decodeURIComponent(lien.split('#tab=')[1])).notes.length === w.Store.tablatures()[0].notes.length);
-  verifie('lien profond d’un morceau intégré', w.CasqueVR.lienProfond(pieceL) === 'https://laurentsar.github.io/guitare/?morceau=etude-lam');
-
   console.log('\n— Répertoire Mutopia (interface) —');
   w.AppGuitare.aller('morceaux');
   verifie('niveaux du répertoire listés', /Niveau 4 — répertoire/.test($('listeMorceaux').textContent) && /Niveau 5 — études/.test($('listeMorceaux').textContent));
@@ -247,8 +228,8 @@ function verifie(nom, cond, detail) {
   w.AppGuitare.ouvrirMorceau('carcassi-60-1');
   verifie('Carcassi : toutes les notes dessinées', $('detailMorceau').querySelectorAll('.tab-note').length === w.Morceaux.get('carcassi-60-1').notes.length);
 
-  w.AppGuitare.ouvrirMorceau('zombie');
-  verifie('Zombie : position des mains, 4 accords dessinés avec la main',
+  w.AppGuitare.ouvrirMorceau('acc-g-em-c-d');
+  verifie('Sol, Mi mineur, Do, Ré : position des mains, 4 accords dessinés avec la main',
           $('detailMorceau').querySelectorAll('.main-accord').length === 4 &&
           $('detailMorceau').querySelectorAll('.main-accord .diagramme').length === 4 &&
           /Main droite/.test($('detailMorceau').textContent));
@@ -263,12 +244,13 @@ function verifie(nom, cond, detail) {
     verifie('manche : pastille colorée du doigt 3', !!$('detailMorceau').querySelector('.manche-point.doigt-3'));
     verifie('guide des mains : dessin des deux mains sur la guitare', !!g.querySelector('.guide-dessin svg') && /MAIN GAUCHE/.test(g.querySelector('.guide-dessin').textContent));
   }
-  w.AppGuitare.ouvrirMorceau('zombie');
+  w.AppGuitare.ouvrirMorceau('acc-g-em-c-d');
   {
     const g = $('detailMorceau').querySelector('.guide-mains');
-    for (let k = 0; k < 65; k++) [...g.querySelectorAll('button')].find((b) => /Suivante/.test(b.textContent)).click();
-    verifie('Zombie, refrain : « Garde l’accord Em posé » et les doigts tenus dessinés',
-            /Garde l’accord Em posé/.test(g.textContent) && /accord Em posé/.test(g.querySelector('.guide-dessin').textContent));
+    let vuEm = false;
+    for (let k = 0; k < 120 && !vuEm; k++) { [...g.querySelectorAll('button')].find((b) => /Suivante/.test(b.textContent)).click(); vuEm = /Garde l’accord Em posé/.test(g.textContent); }
+    verifie('accord tenu : « Garde l’accord Em posé » et les doigts tenus dessinés',
+            vuEm && /accord Em posé/.test(g.querySelector('.guide-dessin').textContent));
   }
 
   w.AppGuitare.ouvrirMorceau('mary-agneau');
@@ -300,15 +282,15 @@ function verifie(nom, cond, detail) {
   console.log('\n— Tablature d’abord, plein écran (v1.16) —');
   {
     w.Store.reglage('aides', false);
-    w.AppGuitare.ouvrirMorceau('zombie');
+    w.AppGuitare.ouvrirMorceau('acc-g-em-c-d');
     const d = $('detailMorceau');
     verifie('aides éteintes par défaut : ni mains, ni pas à pas, ni guide, ni légende',
             !d.querySelector('.mains-morceau') && !d.querySelector('.etapes-morceau') && !d.querySelector('.guide-mains') &&
             ![...d.querySelectorAll('summary')].some((x) => /Comment lire/.test(x.textContent)));
-    verifie('la tablature est dessinée en entier', d.querySelectorAll('.tab-note').length === w.Morceaux.get('zombie').notes.length);
+    verifie('la tablature est dessinée en entier', d.querySelectorAll('.tab-note').length === w.Morceaux.get('acc-g-em-c-d').notes.length);
     const css = fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8');
     verifie('plus de largeur minimale qui fait déborder tablature et portée', !/\.tab\s*\{[^}]*min-width:\s*420px/.test(css) && !/\.portee\s*\{[^}]*min-width:\s*420px/.test(css));
-    const z = w.Morceaux.get('zombie');
+    const z = w.Morceaux.get('acc-g-em-c-d');
     // Règle : le dessin n'est jamais réduit sous 80 % (sauf s'il ne reste qu'une
     // mesure par ligne), sur TOUT le répertoire, au téléphone comme en paysage.
     const tous = w.Morceaux.tous();
@@ -352,7 +334,7 @@ function verifie(nom, cond, detail) {
     w.AppGuitare.aller('reglages');
     verifie('réglage « Aides débutant » affiché sur Non', $('regAides').value === 'non');
     $('regAides').value = 'oui'; $('regAides').dispatchEvent(new w.Event('change'));
-    w.AppGuitare.ouvrirMorceau('zombie');
+    w.AppGuitare.ouvrirMorceau('acc-g-em-c-d');
     verifie('aides rallumées : le pas à pas revient', !!$('detailMorceau').querySelector('.etapes-morceau') && w.Store.reglages().aides === true);
   }
 
@@ -411,16 +393,16 @@ function verifie(nom, cond, detail) {
 
   console.log('\n— Longues tablatures sur téléphone (v1.29) —');
   {
-    w.AppGuitare.ouvrirMorceau('ch-knockin');
+    w.AppGuitare.ouvrirMorceau('acc-g-em-c-d');
     const d = $('detailMorceau');
     const nums = [...d.querySelectorAll('.tab-num')].map((t) => +t.textContent);
     verifie('numéro de mesure en début de chaque ligne', nums.length > 4 && nums[0] === 1 && nums.every((n, i) => i === 0 || n > nums[i - 1]), nums.slice(0, 6).join(','));
     const rep = [...d.querySelectorAll('.reperes .btn')].map((b) => b.textContent);
-    verifie('« Aller à » : un bouton par section de la chanson', rep.length === w.Morceaux.get('ch-knockin').sections.length, rep.join(' | '));
+    verifie('« Aller à » : un bouton par section', rep.length === w.Morceaux.get('acc-g-em-c-d').sections.length, rep.join(' | '));
     w.AppGuitare.ouvrirMorceau('carulli-valse-1');
     const rep2 = [...$('detailMorceau').querySelectorAll('.reperes .btn')].map((b) => b.textContent);
     verifie('pièce sans sections : un repère toutes les 8 mesures', rep2[0] === 'Mes. 1' && (rep2.length < 2 || rep2[1] === 'Mes. 9'), rep2.join(' | '));
-    w.AppGuitare.ouvrirMorceau('ch-knockin');
+    w.AppGuitare.ouvrirMorceau('acc-g-em-c-d');
     const pg = $('detailMorceau').querySelector('.pages-partition');
     verifie('boutons « ⬆ » et « ⬇ Suite » pour une tablature sur plusieurs écrans', !!pg && /Suite/.test(pg.textContent) &&
             pg.querySelectorAll('[aria-label="Écran suivant de la tablature"], [aria-label="Écran précédent de la tablature"]').length === 2);
@@ -452,21 +434,16 @@ function verifie(nom, cond, detail) {
     verifie('une rubrique ouverte le reste en revenant d’un morceau', ouvertes.length === 1 && /Travailler les accords/.test(ouvertes[0]), ouvertes.join(','));
     [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'artiste').click();
     const titresA = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux h3')].map((x) => x.textContent);
-    verifie('rangement par artiste : une rubrique par artiste, triées', titresA.includes('🎤 Nirvana') && titresA.includes('🎤 F. Sor') && titresA.includes('🎤 Traditionnel') &&
-            titresA.indexOf('🎤 Bob Marley') < titresA.indexOf('🎤 Nirvana'), titresA.slice(0, 8).join(' | '));
-    const nirvana = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => d.querySelector('h3').textContent === '🎤 Nirvana');
-    verifie('Nirvana : ses 5 chansons, sans version longue', nirvana && nirvana.querySelectorAll('.ligne-morceau').length === 5);
-    const cran = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => d.querySelector('h3').textContent === '🎤 The Cranberries');
-    verifie('« The » ignoré pour le tri, Zombie avec les Cranberries', cran && /Zombie/.test(cran.textContent) && titresA.indexOf('🎤 The Cranberries') < titresA.indexOf('🎤 Deep Purple'));
-    verifie('« Leonard Cohen » rangé à L, pas à « onard »', titresA.indexOf('🎤 Leonard Cohen') > titresA.indexOf('🎤 L. van Beethoven') && titresA.indexOf('🎤 Leonard Cohen') < titresA.indexOf('🎤 Louane'));
+    verifie('rangement par artiste : une rubrique par compositeur, triées', titresA.includes('🎤 F. Sor') && titresA.includes('🎤 Traditionnel') &&
+            titresA.indexOf('🎤 L. van Beethoven') < titresA.indexOf('🎤 Traditionnel'), titresA.slice(0, 8).join(' | '));
     verifie('rangement mémorisé', w.Store.reglages().rangementMorceaux === 'artiste');
     [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'difficulte').click();
     const titresD = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux h3')].map((x) => x.textContent).filter((t) => /^📊/.test(t));
     verifie('rangement par difficulté : 6 niveaux, du plus simple au plus exigeant', titresD.length === 6 && /1 · Premiers sons/.test(titresD[0]) && /6 · Expert/.test(titresD[5]), titresD.join(' | '));
     const n1 = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /1 · Premiers sons/.test(d.querySelector('h3').textContent));
-    verifie('niveau 1 : les cordes à vide au pouce', /Les basses au pouce/.test(n1.textContent) && !/Blackbird/.test(n1.textContent));
-    w.AppGuitare.ouvrirMorceau('ch-blackbird');
-    verifie('fiche : niveau de difficulté et ses raisons', /📊 Difficulté 6\/6 · Expert — .*barrés/.test($('detailMorceau').querySelector('.difficulte').textContent), $('detailMorceau').querySelector('.difficulte') && $('detailMorceau').querySelector('.difficulte').textContent);
+    verifie('niveau 1 : les cordes à vide au pouce', /Les basses au pouce/.test(n1.textContent) && !/Valse n° 3/.test(n1.textContent));
+    w.AppGuitare.ouvrirMorceau('brahms-valse-3');
+    verifie('fiche : niveau de difficulté et ses raisons', /📊 Difficulté 6\/6 · Expert — .*case 12/.test($('detailMorceau').querySelector('.difficulte').textContent), $('detailMorceau').querySelector('.difficulte') && $('detailMorceau').querySelector('.difficulte').textContent);
     w.AppGuitare.aller('morceaux');
     [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'rubrique').click();
     verifie('retour au rangement par rubrique', [...$('listeMorceaux').querySelectorAll('h3')].some((x) => /Travailler les accords/.test(x.textContent)));
@@ -482,21 +459,7 @@ function verifie(nom, cond, detail) {
     verifie('puis « Pouce + main gauche » juste après', titres[iP + 1] === '👍✋ Pouce + main gauche');
     verifie('section pouce : rythme, pom-tcha, contretemps, petit morceau listés', ['Le pouce en rythme', 'Pom-tcha à vide', 'Le contretemps (reggae)', 'Petit morceau à vide']
       .every((t) => $('listeMorceaux').textContent.indexOf(t) !== -1));
-    verifie('Morceaux : section « 📱 TikTok » avec le riff La – Ré', titres.indexOf('📱 TikTok') > iP && /Le riff La – Ré/.test($('listeMorceaux').textContent) &&
-            /Bella Ciao sur une corde/.test($('listeMorceaux').textContent) && /Bella Ciao — version facile/.test($('listeMorceaux').textContent) &&
-            /Vu sur TikTok — grilles d’accords/.test($('listeMorceaux').textContent) && /Smoke on the Water/.test($('listeMorceaux').textContent) &&
-            /Arpège La – Do♯m – Fa♯m – Ré/.test($('listeMorceaux').textContent) && /Arpège La m7 – Fa/.test($('listeMorceaux').textContent));
-    const titresT = [...$('listeMorceaux').querySelectorAll('h3')].map((x) => x.textContent).filter((t) => /Top 20/.test(t));
-    verifie('Top 20 : 4 rubriques par niveau', titresT.length === 4 && /Débutant/.test(titresT[0]) && /Avancé/.test(titresT[3]), titresT.join(' | '));
-    const top1 = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /Débutant/.test(d.querySelector('h3').textContent));
-    verifie('Top 20 débutant : Knockin’ (déjà dans l’app), Wonderwall, Le vent nous portera…', /Knockin/.test(top1.textContent) && /Wonderwall/.test(top1.textContent) && /Le vent nous portera/.test(top1.textContent));
-    verifie('versions longues absentes de la liste', !/version longue/.test($('listeMorceaux').textContent));
-    w.AppGuitare.ouvrirMorceau('ch-final-countdown');
-    const bL = $('detailMorceau').querySelector('.version-autre');
-    verifie('fiche courte : bouton « Version longue »', !!bL && /Version longue/.test(bL.textContent));
-    bL.click();
-    verifie('version longue ouverte, avec retour à la courte', /version longue/.test($('detailMorceau').querySelector('h2').textContent) &&
-            /Version courte/.test($('detailMorceau').querySelector('.version-autre').textContent));
+    verifie('ni TikTok, ni Top 20, ni chansons sous droits', !/TikTok|Top 20|grilles d’accords\)/.test($('listeMorceaux').textContent));
     w.AppGuitare.ouvrirMorceau('pouce-g-c-d');
     verifie('fiche : main droite « pom-tcha » au pouce', /pom-tcha/i.test($('detailMorceau').textContent));
   }
@@ -515,16 +478,16 @@ function verifie(nom, cond, detail) {
             pg.querySelectorAll('details.palier.ferme').length === 5);
 
     // ♥ depuis la fiche d'un morceau.
-    w.AppGuitare.ouvrirMorceau('pouce-ch-santiano');
+    w.AppGuitare.ouvrirMorceau('frere-jacques');
     const bAime = $('detailMorceau').querySelector('.ressenti .aime');
     verifie('fiche morceau : bouton « ♡ J’aime »', !!bAime && /♡ J’aime/.test(bAime.textContent));
     bAime.click();
-    verifie('♥ enregistré et bouton allumé', w.Store.aime('pouce-ch-santiano') && /♥ J’aime/.test($('detailMorceau').querySelector('.ressenti .aime').textContent));
+    verifie('♥ enregistré et bouton allumé', w.Store.aime('frere-jacques') && /♥ J’aime/.test($('detailMorceau').querySelector('.ressenti .aime').textContent));
     w.AppGuitare.aller('morceaux');
-    verifie('liste Morceaux : rubrique « ♥ Mes favoris »', /♥ Mes favoris/.test($('listeMorceaux').textContent) && /♥ Santiano au pouce/.test($('listeMorceaux').textContent));
+    verifie('liste Morceaux : rubrique « ♥ Mes favoris »', /♥ Mes favoris/.test($('listeMorceaux').textContent) && /♥ Frère Jacques/.test($('listeMorceaux').textContent));
     w.AppGuitare.aller('programme');
     verifie('programme : le favori du palier 2 proposé en défi lent', /Défi ♥/.test(pg.textContent) && /50 → 60 → 70 %/.test(pg.textContent));
-    verifie('programme : chemin vers le favori affiché', /♥ Santiano au pouce/.test(pg.textContent) && /encore 4 morceau\(x\) à acquérir/.test(pg.textContent));
+    verifie('programme : chemin vers le favori affiché', /♥ Frère Jacques/.test(pg.textContent) && /encore 4 morceau\(x\) à acquérir/.test(pg.textContent));
 
     // Ressenti → boîte de Leitner.
     w.AppGuitare.ouvrirMorceau('chromatique');
@@ -570,20 +533,12 @@ function verifie(nom, cond, detail) {
     w.AppGuitare.ouvrirMorceau('chromatique');
   }
 
-  console.log('\n— Chansons (v1.18) —');
-  w.AppGuitare.aller('morceaux');
-  verifie('listes « grands classiques » et « hits récents » affichées',
-          /grands classiques/.test($('listeMorceaux').textContent) && /Hits récents/.test($('listeMorceaux').textContent) &&
-          /Mistral gagnant/.test($('listeMorceaux').textContent) && /Popcorn salé/.test($('listeMorceaux').textContent));
-  w.AppGuitare.ouvrirMorceau('ch-mistral-gagnant');
-  verifie('chanson : noms des accords au-dessus de la tablature', [...$('detailMorceau').querySelectorAll('.tab-accord')].slice(0, 4).map((t) => t.textContent).join(' ') === 'Am Dm G C');
   {
     const css = fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8');
     verifie('plein écran : le bandeau d’enchaînement colle sous la barre, sans trou (v1.26)', /\.partition\.plein-ecran \.bandeau-liste \{ position: sticky; top: 0;/.test(css));
     verifie('téléphone en paysage : mise en page resserrée', /@media \(orientation: landscape\) and \(max-height: 520px\)/.test(css));
   }
   verifie('panneau « suivant » caché hors enchaînement (cadre vide v1.17)', fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8').includes('.suite-liste[hidden]'));
-  verifie('chanson : capodastre réglé d’office sur la case du disque (3)', /Capodastre\s*−\s*case 3/.test($('detailMorceau').textContent));
 
   console.log('\n— Écran allumé —');
   {
@@ -626,35 +581,6 @@ function verifie(nom, cond, detail) {
           $('detailMorceau').querySelectorAll('.main-accord').length === 2 && /Palier 1 : balayé au pouce/.test($('detailMorceau').textContent));
   w.AppGuitare.ouvrirAccord('Am');
   verifie('fiche d’accord : les exercices qui l’utilisent', /S’entraîner avec cet accord/.test($('detailAccord').textContent) && /Mi mineur ↔ La mineur/.test($('detailAccord').textContent));
-
-  console.log('\n— Entraînement —');
-  w.AppGuitare.aller('entrainement');
-  {
-    const page = $('pageEntrainement');
-    const txt = page.textContent;
-    verifie('écran : les exercices du cours, par thème', /Balayages/.test(txt) && /saute-mouton/.test(txt) && /Pouce buté : 4 fois/.test(txt) && /Ve position : 0 1 0 1/.test(txt) && /Partir de la pince/.test(txt));
-    verifie('états : NOUVEAU, à continuer, pas encore vu en cours', /NOUVEAU/.test(txt) && /à continuer/.test(txt) && /pas encore vu en cours/.test(txt));
-    const total = w.Entrainement.tous().reduce((t, e) => t + w.Entrainement.cases(e), 0);
-    verifie('compteur du jour à zéro', new RegExp('Aujourd’hui : 0 / ' + total).test(txt));
-    const carte = [...page.querySelectorAll('.exercice')].find((c) => /saute-mouton/.test(c.textContent));
-    verifie('saute-mouton : deux variantes (en regardant, yeux fermés)', carte.querySelectorAll('input[type=checkbox]').length === 2 && /yeux fermés/.test(carte.textContent));
-    carte.querySelector('input').click();
-    verifie('case cochée : compteur à 1 et mémorisée pour aujourd’hui',
-            new RegExp('Aujourd’hui : 1 / ' + total).test($('pageEntrainement').textContent) && w.Store.entrainementJour()['saute-mouton'].join() === '0');
-    const quiz = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Les noms par cœur/.test(c.textContent));
-    [...quiz.querySelectorAll('button')].find((b) => /Interroge-moi/.test(b.textContent)).click();
-    [...quiz.querySelectorAll('button')].find((b) => /Réponse/.test(b.textContent)).click();
-    verifie('quiz des noms d’accords : question puis réponse', /(Em|Cmaj7|G|D) = \?/.test(quiz.textContent) && /(Mi mineur|Do majeur 7|Sol majeur|Ré majeur)/.test(quiz.querySelector('.quiz-reponse').textContent));
-    const ta = $('pageEntrainement').querySelector('textarea');
-    ta.value = 'Mardi : retour du pouce'; ta.dispatchEvent(new w.Event('input'));
-    verifie('notes de cours mémorisées', w.Store.notesCours() === 'Mardi : retour du pouce');
-    const b = [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Tablature : Ve position : 0 3 0 3/.test(x.textContent));
-    b.click();
-    verifie('bouton tablature : ouvre l’exercice en Ve position', /Ve position : 0 3 0 3/.test($('detailMorceau').querySelector('h2').textContent));
-    w.Store.cocherEntrainement('saute-mouton', 0, false);
-    w.AppGuitare.aller('accueil');
-    verifie('accueil : rappel « Entraînement du jour »', /Entraînement du jour : 0 \//.test($('carteReprendre').textContent));
-  }
 
   w.AppGuitare.ouvrirMorceau('carulli-andantino');
   {
@@ -714,7 +640,7 @@ function verifie(nom, cond, detail) {
   }
 
   w.AppGuitare.aller('morceaux');
-  verifie('liste : rubrique « Chansons internationales »', /Chansons internationales/.test($('listeMorceaux').textContent) && /Knockin’ on Heaven’s Door/.test($('listeMorceaux').textContent));
+  verifie('liste : répertoire du domaine public (Greensleeves, Lettre à Élise)', /Greensleeves/.test($('listeMorceaux').textContent) && /Lettre à Élise/.test($('listeMorceaux').textContent));
 
   console.log('\n— Oreille —');
   w.AppGuitare.aller('oreille');
@@ -740,68 +666,17 @@ function verifie(nom, cond, detail) {
   w.Tv.appliquer();
   verifie('classe tv retirée', !w.document.documentElement.classList.contains('tv'));
 
-  console.log('\n— Diffusion —');
-  verifie('bouton Cast masqué sans identifiant', $('btnCast').hidden === true);
-  w.Store.reglage('castAppId', 'ABCD1234');
-  verifie('identifiant valide reconnu', w.Cast.configure() === true);
-  w.Store.reglage('castAppId', 'oups');
-  verifie('identifiant invalide refusé', w.Cast.configure() === false);
-
-  console.log('\n— Mise à jour automatique —');
+  console.log('\n— Version et produit —');
   {
-    const fs2 = require('fs'), path2 = require('path');
-    const lire = (f) => fs2.readFileSync(path2.join(__dirname, '..', 'www', f), 'utf8');
-    const html = lire('index.html');
+    const lire = (f) => fs.readFileSync(path.join(RACINE, f), 'utf8');
     const version = JSON.parse(lire('version.json')).version;
-    verifie('le dépôt à interroger est déclaré', /UPDATE_REPO = 'laurentsar\/guitare'/.test(html));
-    verifie('la version affichée est celle de version.json',
-            html.indexOf("APP_VERSION = '" + version + "'") !== -1, version);
-    verifie('le cache du service worker suit la version',
-            lire('sw.js').indexOf('guitare-v' + version) !== -1);
-    // Comparer les BALISES, pas le texte : les commentaires du fichier citent
-    // update-check.js bien avant la balise, et le test se trompait de position.
-    verifie('l’installateur d’APK est chargé avant la bannière',
-            html.indexOf('<script src="apk-update.js">') < html.indexOf('<script src="update-check.js">'));
-  }
-
-  console.log('\n— Mise à jour comme Recettes (v1.24) —');
-  {
-    let reponse = { tag_name: 'v9.9', body: '- Nouvelles chansons\n- Programme amélioré', html_url: 'https://x/rel',
-                    assets: [{ name: 'guitare-9.9.apk', browser_download_url: 'https://x/guitare-9.9.apk' }] };
-    const appels = [];
-    w.fetch = (url) => { appels.push(url); return Promise.resolve({ ok: true, json: () => Promise.resolve(reponse) }); };
-    w.localStorage.setItem('updPoll:laurentsar/guitare', String(Date.now()));   // pas de vérif auto au chargement
-    w.UPDATE_REPO = 'laurentsar/guitare';
-    charge('update-check.js');
-    verifie('checkAppUpdate exposé pour le bouton des réglages', typeof w.checkAppUpdate === 'function');
+    verifie('la version affichée est celle de version.json', html.indexOf("APP_VERSION = '" + version + "'") !== -1, version);
+    verifie('le cache du service worker suit la version', lire('sw.js').indexOf('guitare-v' + version) !== -1);
+    verifie('chaque fichier mis en cache existe', [...lire('sw.js').matchAll(/'\.\/([^']+)'/g)].every((m) => fs.existsSync(path.join(RACINE, m[1]))));
+    verifie('pas de mise à jour hors magasin, de diffusion ni de sauvegarde externe',
+            !/update-check|apk-update|cast\.js|autobackup|vr\.js|UPDATE_REPO/.test(html) && !w.Cast && !w.checkAppUpdate);
     w.AppGuitare.aller('reglages');
-    verifie('réglages : version installée affichée', $('majVersion').textContent === 'v1.0');
-    $('btnVerifierMaj').click();
-    await attendre(30);
-    const ban = w.document.getElementById('update-banner');
-    verifie('nouvelle release : bandeau avec version et nouveautés', !!ban && /Version 9\.9 prête/.test(ban.textContent) &&
-            ban.querySelectorAll('.ub-notes li').length === 2 && /Nouvelles chansons/.test(ban.textContent));
-    verifie('navigateur : « Mettre à jour » (recharge) plutôt qu’un APK', /Mettre à jour en v9\.9/.test(ban.querySelector('.ub-act').textContent));
-    verifie('réglages : compte rendu « disponible »', /v9\.9 disponible/.test($('majEtat').textContent));
-    verifie('API GitHub interrogée sur le bon dépôt', /api\.github\.com\/repos\/laurentsar\/guitare\/releases\/latest/.test(appels[0]));
-    ban.querySelector('.ub-skip').click();
-    verifie('« Plus tard » : bandeau fermé, version mémorisée', !w.document.getElementById('update-banner') &&
-            w.localStorage.getItem('updDismiss:laurentsar/guitare') === '9.9');
-    reponse = { tag_name: 'v1.0', assets: [] };
-    $('btnVerifierMaj').click();
-    await attendre(30);
-    verifie('à jour : « Déjà à jour »', /Déjà à jour/.test($('majEtat').textContent));
-    // API indisponible (quota) : repli sur le version.json de GitHub Pages
-    // (le flux Atom de github.com est bloqué par CORS dans un navigateur).
-    let urlRepli = '';
-    w.fetch = (url) => /api\.github/.test(url) ? Promise.resolve({ ok: false })
-      : (urlRepli = url, Promise.resolve({ ok: true, json: () => Promise.resolve({ version: '9.8' }) }));
-    const r = await w.checkAppUpdate(true);
-    verifie('repli sur GitHub Pages quand l’API refuse', r && r.latest === '9.8' && r.newer && /^https:\/\/laurentsar\.github\.io\/guitare\/version\.json/.test(urlRepli), urlRepli);
-    const bApk = w.document.getElementById('update-banner');
-    verifie('repli : bandeau proposé quand même', !!bApk);
-    const b2 = w.document.getElementById('update-banner');
-    if (b2) b2.remove();
+    verifie('réglages : carte « Confidentialité »', /Aucun compte, aucune publicité, aucune donnée collectée/.test($('ecran-reglages').textContent));
   }
 
   console.log('\n— Erreurs JS pendant le test —');

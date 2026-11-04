@@ -666,58 +666,6 @@
     return notes;
   }
 
-  /* Zombie : Mi mineur → Do maj7 → Sol → Ré, une mesure chacun, en boucle.
-   * Doigté choisi pour enchaîner sans lever toute la main :
-   *   Em    index case 2 corde 5, majeur case 2 corde 4
-   *   Cmaj7 le majeur RESTE (pivot), l'annulaire se pose case 3 corde 5
-   *   G     annulaire et majeur glissent d'une corde vers le grave,
-   *         l'auriculaire se pose case 3 corde 1
-   *   D     seul vrai changement : index, majeur, annulaire en triangle */
-  var ZOMBIE = {
-    Em:    { id: 'Em',    fr: 'Mi mineur',   frettes: [0, 0, 0, 2, 2, 0],   doigts: [0, 0, 0, 2, 1, 0], basse: 6, alt: 4,
-             consigne: 'Index case 2 sur la 5e corde, majeur case 2 sur la 4e, juste à côté. Pouce derrière le manche, en face du majeur. Le pouce droit joue la 6e corde à vide.' },
-    Cmaj7: { id: 'Cmaj7', fr: 'Do majeur 7', frettes: [0, 0, 0, 2, 3, -1],  doigts: [0, 0, 0, 2, 3, 0], basse: 5, alt: 4,
-             consigne: 'Le majeur ne bouge pas (case 2, 4e corde) : c’est le pivot. L’index se lève, l’annulaire se pose case 3 sur la 5e corde. 6e corde : on ne la joue pas.' },
-    G:     { id: 'G',     fr: 'Sol majeur',  frettes: [3, 0, 0, 0, 2, 3],   doigts: [4, 0, 0, 0, 2, 3], basse: 6, alt: 4,
-             consigne: 'Annulaire et majeur glissent ensemble d’une corde vers le grave, sans changer de case : annulaire case 3 sur la 6e, majeur case 2 sur la 5e. L’auriculaire se pose case 3 sur la 1re.' },
-    D:     { id: 'D',     fr: 'Ré majeur',   frettes: [2, 3, 2, 0, -1, -1], doigts: [2, 3, 1, 0, 0, 0], basse: 4, alt: 4,
-             consigne: 'Le seul vrai changement : index case 2 sur la 3e, annulaire case 3 sur la 2e, majeur case 2 sur la 1re — un petit triangle. Basse sur la 4e à vide ; 5e et 6e ne se jouent pas.' }
-  };
-
-  ajoute({
-    id: 'zombie',
-    titre: 'Zombie', artiste: 'The Cranberries',
-    sous_titre: 'The Cranberries · grille d’accords, accompagnement écrit pour cette app',
-    niveau: 3, tempo: 76, signature: [4, 4],
-    description: 'Quatre accords qui tournent du début à la fin : Mi mineur, Do maj7, Sol, Ré (♩ ≈ 84 sur le disque). Couplet en arpège pouce-index-majeur-annulaire, refrain en basse + accord plaqué, comme on l’accompagne à la guitare classique. Ni mélodie ni paroles : elles sont sous droits.',
-    sections: [
-      { titre: 'Couplet : l’arpège', de: 1, a: 4,
-        texte: 'Un tour de grille en arpège p-i-m-a-m-i-m-i (mesures 1 à 4 ; les mesures 5 à 8 sont identiques). Le pouce joue la basse de chaque accord, i m a restent chacun sur leur corde.' },
-      { titre: 'Refrain : basse et accord plaqué', de: 9, a: 12,
-        texte: 'Pouce sur la basse au 1er temps, i-m-a pincés ensemble au 2e, pouce sur la 4e corde au 3e, i-m-a au 4e (mesures 9 à 12 ; 13 à 16 identiques).' }
-    ],
-    mains: {
-      gauche: [ZOMBIE.Em, ZOMBIE.Cmaj7, ZOMBIE.G, ZOMBIE.D],
-      droite: [
-        'Couplet (8 mesures) : en croches, p-i-m-a-m-i-m-i. Le pouce (p) prend la basse de l’accord ; index (i) 3e corde, majeur (m) 2e, annulaire (a) 1re. Chaque doigt reste sur SA corde.',
-        'Refrain (8 mesures) : pouce sur la basse au 1er temps, i-m-a pincés ensemble au 2e, pouce sur la 4e corde au 3e, i-m-a au 4e.',
-        'Poignet droit au-dessus de la rosace, immobile : ce sont les doigts qui bougent, pas la main.'
-      ]
-    },
-    notes: accompagnement(ZOMBIE, [
-      { tours: 2, grille: ['Em', 'Cmaj7', 'G', 'D'], motif: [
-        { temps: 0,   duree: 0.5, cordes: ['basse'] }, { temps: 0.5, duree: 0.5, cordes: [3] },
-        { temps: 1,   duree: 0.5, cordes: [2] },       { temps: 1.5, duree: 0.5, cordes: [1] },
-        { temps: 2,   duree: 0.5, cordes: [2] },       { temps: 2.5, duree: 0.5, cordes: [3] },
-        { temps: 3,   duree: 0.5, cordes: [2] },       { temps: 3.5, duree: 0.5, cordes: [3] }
-      ] },
-      { tours: 2, grille: ['Em', 'Cmaj7', 'G', 'D'], motif: [
-        { temps: 0, duree: 1, cordes: ['basse'] }, { temps: 1, duree: 1, cordes: [3, 2, 1] },
-        { temps: 2, duree: 1, cordes: ['alt'] },   { temps: 3, duree: 1, cordes: [3, 2, 1] }
-      ] }
-    ])
-  });
-
   // --- Travailler les accords -----------------------------------------------
   /* Des tablatures faites pour une chose : poser les accords et passer de
    * l'un à l'autre en musique. Chaque exercice monte par paliers, sur la même
@@ -896,17 +844,6 @@
   });
 
   exerciceAccords({
-    id: 'ent-zombie-balaye', titre: 'Balayages sur les accords de Zombie', categorie: 'entrainement',
-    sous_titre: 'Entraînement · Em – Cmaj7 – G – D', niveau: 1, tempo: 56, accords: ZOMBIE,
-    description: 'Guitare posée sur la jambe droite. Le pouce passe d’un coup sec sur les cordes en faisant tourner l’avant-bras — pas le poignet — dans un mouvement ample, un « O » à l’envers, devant la guitare et pas sur le côté.',
-    paliers: [
-      { motif: 'balaye', grille: ['Em', 'Em', 'Cmaj7', 'Cmaj7', 'G', 'G', 'D', 'D'] },
-      { motif: 'balaye', grille: ['Em', 'Cmaj7', 'G', 'D'], tours: 2 },
-      { motif: 'balaye-noires', grille: ['Em', 'Cmaj7', 'G', 'D'], tours: 2 }
-    ]
-  });
-
-  exerciceAccords({
     id: 'acc-canon-pachelbel', titre: 'Canon de Pachelbel', sous_titre: 'Accords · la grille du Canon (domaine public)', niveau: 4, tempo: 60,
     description: 'Huit accords qui tournent, la grille la plus reprise de la musique : D A Bm F♯m G D G A. Deux barrés (Si mineur, Fa♯ mineur) au milieu de six accords ouverts.',
     paliers: [
@@ -917,7 +854,7 @@
 
   exerciceAccords({
     id: 'acc-rising-sun', titre: 'House of the Rising Sun', sous_titre: 'Accords · chanson traditionnelle américaine', niveau: 2, tempo: 72,
-    description: 'La grille de la chanson traditionnelle (Am C D F, Am C E). Le Fa est remplacé par Fa maj7, sans barré. Sur le disque des Animals, l’arpège est à 6/8 ; ici à 4 temps.',
+    description: 'La grille de la chanson traditionnelle (Am C D F, Am C E). Le Fa est remplacé par Fa maj7, sans barré. Arpège à 4 temps.',
     paliers: [
       { motif: 'balaye', grille: ['Am', 'C', 'D', 'Fmaj7', 'Am', 'C', 'E', 'E'] },
       { motif: 'arpege', grille: ['Am', 'C', 'D', 'Fmaj7', 'Am', 'C', 'E', 'E', 'Am', 'C', 'D', 'Fmaj7', 'Am', 'E', 'Am', 'E'] }
@@ -941,10 +878,9 @@
     ]
   });
 
-  // --- Entraînement : les exercices du cours ---------------------------------
-  /* Tablatures des devoirs donnés en cours (écran « Entraînement »,
-   * www/entrainement.js). Elles ne figurent pas dans la liste des morceaux :
-   * on y arrive depuis l'exercice qui les décrit. */
+  // --- Repères et pouce buté ------------------------------------------------
+  /* Exercices de base : le nom des cordes et le pouce buté (rubrique « Pouce
+   * seul »), puis la Ve position (rubrique « Pouce + main gauche »). */
   var ALLER_RETOUR = [6, 5, 4, 3, 2, 3, 4, 5];   // de la 6e à la 2e, et retour
 
   function cordesAVide(sequence, fois) {
@@ -974,37 +910,37 @@
   }
 
   ajoute({
-    id: 'ent-noms-cordes', titre: 'Le nom des 6 cordes', sous_titre: 'Entraînement · cordes à vide',
-    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'entrainement',
+    id: 'ent-noms-cordes', titre: 'Le nom des 6 cordes', sous_titre: 'Pouce seul · cordes à vide · repères',
+    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'pouce',
     description: 'Mi, La, Ré, Sol, Si, Mi : de la plus grosse (6e) à la plus fine (1re), puis retour. Dis le nom de chaque corde à voix haute en la jouant.',
     notes: cordesAVide([6, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 6], 2).map(function (n, i) { n.temps = i * 2; n.duree = 2; return n; })
   });
 
   ajoute({
-    id: 'ent-pouce-bute-1', titre: 'Pouce buté : 1 fois sur chaque corde', sous_titre: 'Entraînement · main droite',
-    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'entrainement',
+    id: 'ent-pouce-bute-1', titre: 'Pouce buté : 1 fois sur chaque corde', sous_titre: 'Pouce seul · cordes à vide · pouce buté',
+    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'pouce',
     description: 'Le pouce joue chaque corde une fois, de la 6e à la 2e puis retour, et vient se poser (buter) sur la corde suivante. i, m, a restent posés sur la 1re corde. Bien soulever le pouce à chaque attaque.',
     notes: cordesAVide(ALLER_RETOUR.concat(ALLER_RETOUR), 1).concat(
       [{ corde: 6, frette: 0, temps: 16, duree: 4, main: 'p', midi: Theorie.midiDeCase(6, 0) }])
   });
 
   ajoute({
-    id: 'ent-pouce-bute-4', titre: 'Pouce buté : 4 fois sur chaque corde', sous_titre: 'Entraînement · main droite',
-    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'entrainement',
+    id: 'ent-pouce-bute-4', titre: 'Pouce buté : 4 fois sur chaque corde', sous_titre: 'Pouce seul · cordes à vide · pouce buté',
+    niveau: 1, tempo: 60, signature: [4, 4], categorie: 'pouce',
     description: 'Quatre fois la même corde, puis la suivante : de la 6e à la 2e, et retour à la 6e. D’abord en regardant la main droite, puis les yeux fermés.',
     notes: cordesAVide(ALLER_RETOUR.concat([6]), 4)
   });
 
   ajoute({
-    id: 'ent-v-0303', titre: 'Ve position : 0 3 0 3', sous_titre: 'Entraînement · main gauche · pouce buté',
-    niveau: 2, tempo: 60, signature: [4, 4], categorie: 'entrainement', position: 5,
+    id: 'ent-v-0303', titre: 'Ve position : 0 3 0 3', sous_titre: 'Pouce + main gauche · Ve position · pouce buté',
+    niveau: 2, tempo: 60, signature: [4, 4], categorie: 'pouce-main', position: 5,
     description: 'En Ve position (index à la case V), le 3e doigt joue à la case VII : corde à vide, case VII, à vide, case VII, sur chaque corde de la 6e à la 2e puis retour. Le doigt enfonce la corde du bout de l’os, se pose droit le long de la barrette en tirant légèrement vers la droite, le plus près possible de la barrette.',
     notes: cinquiemePosition([0, 3, 0, 3])
   });
 
   ajoute({
-    id: 'ent-v-0101', titre: 'Ve position : 0 1 0 1', sous_titre: 'Entraînement · main gauche · pouce buté',
-    niveau: 2, tempo: 60, signature: [4, 4], categorie: 'entrainement', position: 5,
+    id: 'ent-v-0101', titre: 'Ve position : 0 1 0 1', sous_titre: 'Pouce + main gauche · Ve position · pouce buté',
+    niveau: 2, tempo: 60, signature: [4, 4], categorie: 'pouce-main', position: 5,
     description: 'Même chemin, avec le 1er doigt à la case V. Le 3e doigt reste au-dessus de sa case (VII) ; le 1er doigt s’écarte et se pose légèrement sur le côté gauche.',
     notes: cinquiemePosition([0, 1, 0, 1])
   });
@@ -1260,11 +1196,11 @@
         .concat(fois(2, [[6, 1], [AIGUES, 1], [5, 1], [AIGUES, 1], [4, 1], [AIGUES, 1], [5, 1], [AIGUES, 1]])).concat([[TOUT, 4]]) },
     { id: 'pouce-vide-reggae', titre: 'Le contretemps (reggae)', niveau: 2, tempo: 72,
       sous: 'balayé entre les temps',
-      description: 'La basse sur le 1er temps, puis le pouce balaie les cordes aiguës ENTRE les temps (« et ») : c’est le contretemps du reggae, comme chez Bob Marley. Compte « 1 et 2 et 3 et 4 et » : le balayé tombe sur chaque « et ».',
+      description: 'La basse sur le 1er temps, puis le pouce balaie les cordes aiguës ENTRE les temps (« et ») : c’est le contretemps du reggae. Compte « 1 et 2 et 3 et 4 et » : le balayé tombe sur chaque « et ».',
       suite: fois(8, [[6, 0.5], [AIGUES, 0.5], ['-', 0.5], [AIGUES, 0.5], [4, 0.5], [AIGUES, 0.5], ['-', 0.5], [AIGUES, 0.5]]).concat([[TOUT, 4]]) },
     { id: 'pouce-vide-rock', titre: 'Le rock à vide', niveau: 2, tempo: 90,
       sous: 'croches régulières sur les graves',
-      description: 'Le pouce martèle la 6e corde en croches, huit par mesure, puis les deux graves ensemble (6e et 5e), puis les trois (6e, 5e, 4e). Sec, régulier, toujours vers le bas : la base des Offspring et de Nirvana.',
+      description: 'Le pouce martèle la 6e corde en croches, huit par mesure, puis les deux graves ensemble (6e et 5e), puis les trois (6e, 5e, 4e). Sec, régulier, toujours vers le bas : la base du rock.',
       suite: fois(4, fois(8, [[6, 0.5]])).concat(fois(4, fois(8, [[[6, 5], 0.5]]))).concat(fois(4, fois(8, [[[6, 5, 4], 0.5]]))).concat([[[6, 5, 4], 4]]) },
     { id: 'pouce-vide-morceau', titre: 'Petit morceau à vide', niveau: 2, tempo: 72,
       sous: 'tout ce qu’on a appris, en musique',
@@ -1278,133 +1214,6 @@
       niveau: d.niveau, tempo: d.tempo, signature: [4, 4], categorie: 'pouce', description: d.description,
       notes: aVide(d.suite)
     });
-  });
-
-  /* TikTok : morceaux relevés dans des vidéos courtes. Celui-ci vient d'une
-   * vidéo de @maesstttro : les numéros de cordes s'affichent à l'écran au fur
-   * et à mesure (5 = La, 4 = Ré), joués au pouce sur les cordes à vide, à
-   * intervalles réguliers (~0,46 s, soit ♩ ≈ 130). 17 notes : quatre mesures
-   * de noires et une ronde pour finir. */
-  ajoute({
-    id: 'tiktok-la-re', titre: 'Le riff La – Ré (I – IV en La)', sous_titre: 'TikTok · @maesstttro · pouce seul, cordes 5 et 4 à vide · titre non indiqué',
-    niveau: 1, tempo: 130, signature: [4, 4], categorie: 'tiktok',
-    description: 'Relevé d’une vidéo TikTok (@maesstttro) : seulement deux cordes à vide, La (5e) et Ré (4e), toutes au pouce. La – Ré quatre fois, Ré quatre fois, puis La La Ré La… et La qu’on laisse sonner. Une note par temps, bien régulier : à la vidéo, ♩ ≈ 130 — commence plus lentement (−10) et remonte. Ce qu’on entend : La, la tonique, et Ré, sa quarte (degrés I et IV en La) — les deux basses de presque tous les blues et rocks en La. La vidéo ne donne pas le titre de la chanson.',
-    sections: [{ titre: 'La – Ré (×4)', de: 1, a: 2 }, { titre: 'Ré (×4)', de: 3, a: 3 }, { titre: 'Fin : La La Ré La… La', de: 4, a: 5 }],
-    notes: aVide([[5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1], [5, 1], [4, 1],
-                  [4, 1], [4, 1], [4, 1], [4, 1],
-                  [5, 1], [5, 1], [4, 1], [5, 1], [5, 4]])
-  });
-
-  /* Bella Ciao (chant traditionnel italien, domaine public), relevé d'une
-   * vidéo de @wiragustiii : toute la mélodie sur la 1re corde (Mi aigu),
-   * cases 0 à 13, avec un glissé 8 → 12. Hauteurs vérifiées sur le son (corde
-   * à vide = Mi4, 330 Hz), rythme mesuré : ♩ ≈ 120, croche = 0,25 s.
-   * [case, durée en noires] ; 9 mesures, la dernière note tenue. */
-  var BELLA_CIAO = [
-    [0, .5], [5, .5], [7, .5], [8, .5], [5, 2],
-    [0, .5], [5, .5], [7, .5], [8, .5], [5, 2],
-    [0, .5], [5, .5], [7, .5], [8, 1], [7, .5], [5, .5], [8, 1], [7, .5], [5, .5], [8, .5], [12, .5],
-    [12, 1], [12, .5], [12, .5], [10, .5], [12, .5], [13, .5], [13, 2],
-    [13, .5], [12, .5], [10, .5], [13, .5], [12, 2],
-    [12, .5], [10, .5], [8, .5], [7, 1], [12, 1], [8, 1], [7, .5], [5, 1], [0, 1.5], [5, 4.5]
-  ];
-  var GLISSE = 19;    // le Do (case 8) qui glisse jusqu'au Mi (case 12)
-  var SECTIONS_BELLA = [{ titre: 'Una mattina (×2)', de: 1, a: 2 }, { titre: 'O bella ciao', de: 3, a: 4 },
-                        { titre: 'Mi son alzato', de: 5, a: 6 }, { titre: 'L’invasor, et fin', de: 7, a: 9 }];
-  ajoute({
-    id: 'tiktok-bella-ciao', titre: 'Bella Ciao sur une corde', sous_titre: 'TikTok · @wiragustiii · chant traditionnel italien · 1re corde',
-    niveau: 3, tempo: 120, signature: [4, 4], categorie: 'tiktok', sections: SECTIONS_BELLA,
-    description: 'Relevé d’une vidéo TikTok (@wiragustiii) : toute la mélodie de Bella Ciao (chant traditionnel, domaine public) sur la seule 1re corde, le Mi aigu. La main gauche monte le long du manche : en Ve position (case 5 = index, 7 = annulaire, 8 = auriculaire), puis en Xe (case 10 = index, 12 = annulaire, 13 = auriculaire). « 8/12 » : l’annulaire glisse de la case 8 à la 12 sans quitter la corde. Main droite : index et majeur en alternance.',
-    notes: (function () {
-      var t = 0, k = 0;
-      return BELLA_CIAO.map(function (x, i) {
-        var f = x[0];
-        var n = { corde: 1, frette: f, temps: t, duree: x[1], midi: 64 + f, main: (k++ % 2) ? 'm' : 'i' };
-        if (f) n.doigt = i === GLISSE ? 3 : { 5: 1, 7: 3, 8: 4, 10: 1, 12: 3, 13: 4 }[f];
-        if (i === GLISSE) n.glisse = 12;
-        t += x[1];
-        return n;
-      });
-    })()
-  });
-  // La même, une octave plus bas : tout tient en première position.
-  ajoute({
-    id: 'tiktok-bella-ciao-facile', titre: 'Bella Ciao — version facile', sous_titre: 'TikTok · même mélodie en première position',
-    niveau: 2, tempo: 100, signature: [4, 4], categorie: 'tiktok', sections: SECTIONS_BELLA,
-    description: 'La mélodie de la vidéo, une octave plus bas : elle tient en première position, sans déplacer la main (cordes 4 à 1, cases 0 à 3, un doigt par case). Une fois sûre, passe à la version sur une corde.',
-    notes: melodie(BELLA_CIAO.map(function (x) {
-      return [{ 0: 'mi3', 5: 'la3', 7: 'si3', 8: 'do4', 10: 're4', 12: 'mi4', 13: 'fa4' }[x[0]], x[1]];
-    }), { alterne: true })
-  });
-
-  /* Bella Ciao, version longue : la chanson a plusieurs strophes sur la
-   * même mélodie ; trois strophes à la suite, la dernière note tenue
-   * seulement à la fin. */
-  ['tiktok-bella-ciao', 'tiktok-bella-ciao-facile'].forEach(function (id) {
-    var c = PIECES.filter(function (p) { return p.id === id; })[0];
-    var tour = Tablature.duree_totale(c), notes = [], sections = [];
-    for (var k = 0; k < 3; k++) {
-      c.notes.forEach(function (n) { var x = {}; Object.keys(n).forEach(function (cle) { x[cle] = n[cle]; }); x.temps += k * tour; notes.push(x); });
-      sections.push({ titre: 'Strophe ' + (k + 1), de: k * 9 + 1, a: k * 9 + 9 });
-    }
-    c.longue = id + '-longue';
-    ajoute({
-      id: id + '-longue', titre: c.titre + ' — version longue', sous_titre: c.sous_titre + ' · trois strophes',
-      niveau: c.niveau, tempo: c.tempo, signature: c.signature, categorie: 'tiktok', versionDe: id, sections: sections,
-      description: c.description + ' Version longue : trois strophes à la suite, comme dans la chanson (même mélodie à chaque strophe).',
-      notes: notes
-    });
-  });
-
-  /* Arpèges vus sur TikTok : des accords égrenés, pas une mélodie.
-   * `arpegeTT` lit, par mesure, l'accord et sa suite de [corde, case, doigt
-   * gauche, doigt droit, durée]. */
-  function arpegeTT(mesures) {
-    var notes = [], t = 0;
-    mesures.forEach(function (m) {
-      m.notes.forEach(function (x) {
-        var n = { corde: x[0], frette: x[1], temps: t, duree: x[4], main: x[3], accord: m.accord, midi: Theorie.midiDeCase(x[0], x[1]) };
-        if (x[1]) n.doigt = x[2];
-        notes.push(n);
-        t += x[4];
-      });
-    });
-    return notes;
-  }
-  function fois2(n, l) { var r = []; for (var k = 0; k < n; k++) r = r.concat(l); return r; }
-
-  /* @aka_11.03 : La – Do♯m – Fa♯m – Ré (I – iii – vi – IV) sur les trois
-   * cordes aiguës, avec les formes courtes montrées dans la vidéo ; deux
-   * mesures par accord, croches i-m-a-m. */
-  var FORMES_LA = {
-    'A':   [[3, 2, 2], [2, 2, 3], [1, 0, 0]],
-    'C#m': [[3, 1, 1], [2, 2, 2], [1, 0, 0]],
-    'F#m': [[3, 2, 1], [2, 2, 1], [1, 2, 1]],
-    'D':   [[3, 2, 1], [2, 3, 3], [1, 2, 2]]
-  };
-  function mesureLa(acc) {
-    var f = FORMES_LA[acc], c = function (k, main) { return [f[k][0], f[k][1], f[k][2], main, .5]; };
-    var debut = acc === 'D' ? [4, 0, 0, 'p', .5] : c(0, 'i');
-    return { accord: acc, notes: [debut, c(1, 'm'), c(2, 'a'), c(1, 'm'), c(0, 'i'), c(1, 'm'), c(2, 'a'), c(1, 'm')] };
-  }
-  ajoute({
-    id: 'tiktok-arpege-la', titre: 'Arpège La – Do♯m – Fa♯m – Ré (I – iii – vi – IV)', sous_titre: 'TikTok · @aka_11.03 · La majeur, trois cordes aiguës · titre non indiqué',
-    niveau: 2, tempo: 120, signature: [4, 4], categorie: 'tiktok',
-    sections: [{ titre: 'La', de: 1, a: 2 }, { titre: 'Do♯m', de: 3, a: 4 }, { titre: 'Fa♯m', de: 5, a: 6 }, { titre: 'Ré', de: 7, a: 8 }],
-    description: 'D’après une vidéo TikTok (@aka_11.03) : quatre accords égrenés sur les trois cordes aiguës, avec des formes de trois doigts au plus. La : cases 2 sur les cordes 3 et 2, Mi aigu à vide. Do♯m : case 1 sur la 3e, case 2 sur la 2e, Mi à vide. Fa♯m : petit barré de l’index case 2 sur les trois cordes. Ré : la forme habituelle, le pouce sur le Ré à vide. Deux mesures par accord, en croches index – majeur – annulaire – majeur. Les accords : en La majeur, I (La) – iii (Do♯m) – vi (Fa♯m) – IV (Ré). Le Mi aigu à vide sonne dans les trois premiers accords, et c’est lui qui donne cette couleur rêveuse. La vidéo ne donne pas le titre de la chanson. Le motif d’arpège est écrit pour l’app : le son de la vidéo ne permet pas de retrouver l’ordre exact des notes.',
-    notes: arpegeTT(fois2(2, ['A', 'A', 'C#m', 'C#m', 'F#m', 'F#m', 'D', 'D'].map(mesureLa)))
-  });
-
-  /* @maesstttro et @wiragustiii : La m7 – Fa, quatre notes égrenées puis on
-   * laisse sonner. La m7 (x 0 2 0 1 x) ; Fa joué 1 3 0 2 sur les cordes 6 à 3
-   * (Fa, Do, Ré, La). Rythme mesuré sur le son : croches, ♩ ≈ 86. */
-  var AM7 = { accord: 'Am7', notes: [[5, 0, 0, 'p', .5], [4, 2, 2, 'p', .5], [3, 0, 0, 'i', .5], [2, 1, 1, 'm', 2.5]] };
-  var F6 = { accord: 'F6', notes: [[6, 1, 1, 'p', .5], [5, 3, 3, 'p', .5], [4, 0, 0, 'p', .5], [3, 2, 2, 'i', 2.5]] };
-  ajoute({
-    id: 'tiktok-arpege-am-f', titre: 'Arpège La m7 – Fa (i – VI en La mineur)', sous_titre: 'TikTok · @maesstttro, @wiragustiii · quatre notes par accord · titre non indiqué',
-    niveau: 2, tempo: 86, signature: [4, 4], categorie: 'tiktok',
-    description: 'Vu dans deux vidéos TikTok (@maesstttro, @wiragustiii) : deux accords égrenés, quatre notes chacun, puis on laisse sonner. La m7 : La à vide (5e corde), case 2 sur la 4e (majeur), Sol à vide, case 1 sur la 2e (index). Fa : case 1 sur la 6e (index), case 3 sur la 5e (annulaire), Ré à vide, case 2 sur la 3e (majeur). Le pouce prend les cordes graves, l’index et le majeur les aiguës. Les accords : en La mineur, i (La m7 : La, Mi, Sol, Do) puis VI (Fa avec une sixte : Fa, Do, Ré, La). Les deux accords ont en commun le Do et le La : c’est ce qui fait ce balancement doux, sans tension. Le même motif revient dans plusieurs vidéos, sans titre de chanson.',
-    notes: arpegeTT(fois2(4, [AM7, F6]))
   });
 
   /* Le pouce avec la main gauche : l'étape suivante, une fois le pouce sûr
@@ -1428,7 +1237,7 @@
     { id: 'pouce-g-c-d', titre: 'Basses au pouce : Sol, Do, Ré', niveau: 2, tempo: 66, grille: ['G', 'C', 'D', 'D'],
       description: 'Sol : basse 6e corde. Do : 5e corde. Ré : 4e corde. Le pouce suit la basse de chaque accord : c’est elle qui fait entendre le changement.' },
     { id: 'pouce-a-d-e', titre: 'Basses au pouce : La, Ré, Mi', niveau: 2, tempo: 72, grille: ['A', 'D', 'E', 'E'],
-      description: 'Les trois accords du rock et du reggae (Three Little Birds, Stir It Up…). La : basse 5e corde. Ré : 4e. Mi : 6e.' },
+      description: 'Les trois accords du rock et du reggae. La : basse 5e corde. Ré : 4e. Mi : 6e.' },
     { id: 'pouce-blues', titre: 'Blues en La au pouce', niveau: 2, tempo: 80,
       grille: ['A7', 'A7', 'A7', 'A7', 'D7', 'D7', 'A7', 'A7', 'E7', 'D7', 'A7', 'E7'],
       description: 'La grille de blues en 12 mesures, avec les septièmes. Le pom-tcha du pouce suffit à faire tourner le blues.' }
@@ -1461,35 +1270,6 @@
     });
   });
 
-  // Chansons au pouce : même grille, accompagnement pom-tcha, rien d'autre
-  // que le pouce. (Le motif « rock » des chansons rock est déjà tout au pouce.)
-  var POUCE_CHANSON = { texte: 'Pom-tcha au pouce : la basse au 1er temps, l’accord balayé au 2e, la basse alternée au 3e, balayé au 4e.',
-    pas: MOTIFS['basse-balaye'].motif };
-  ['ch-santiano', 'ch-three-little-birds', 'ch-riptide', 'ch-knockin', 'ch-linger', 'ch-sweet-home-alabama'].forEach(function (cid) {
-    var c = (global.CHANSONS || []).filter(function (x) { return x.id === cid; })[0];
-    if (!c) return;
-    var dico = {}, ordre = [];
-    c.sections.forEach(function (s) { s.grille.forEach(function (g) { String(g).split('|').forEach(function (id) {
-      if (!dico[id]) { dico[id] = accordChanson(id); ordre.push(id); }
-    }); }); });
-    var mesure = 1, sections = [];
-    c.sections.forEach(function (s) {
-      var n = s.grille.length * (s.tours || 1);
-      sections.push({ titre: s.titre, de: mesure, a: mesure + n - 1, texte: s.grille.join(' · ').replace(/\|/g, ' / ') + ' — ' + POUCE_CHANSON.texte });
-      mesure += n;
-    });
-    ajoute({
-      id: 'pouce-' + cid, titre: c.titre + ' au pouce', chanson: true, categorie: 'pouce-main', artiste: c.artiste,
-      sous_titre: c.artiste + ' · pouce + main gauche' + (c.capo ? ' · capo case ' + c.capo : ''),
-      niveau: 2, tempo: Math.min(c.tempo, 90), signature: [4, 4], capo: c.capo || 0,
-      description: 'La grille de « ' + c.titre + ' » accompagnée au pouce seul (pom-tcha). Accompagnement écrit pour cette app : ni mélodie ni paroles, elles sont sous droits. ' +
-        (c.capo ? 'Capodastre case ' + c.capo + '. ' : '') + 'Accords : ' + ordre.join(', ') + '.',
-      sections: sections,
-      mains: { gauche: ordre.map(function (id) { return dico[id]; }), droite: [POUCE_CHANSON.texte] },
-      notes: accompagnement(dico, c.sections.map(function (s) { return { tours: s.tours || 1, grille: s.grille, motif: POUCE_CHANSON.pas }; }))
-    });
-  });
-
   // --- Répertoire du Mutopia Project ----------------------------------------
   /* Vraies pièces du répertoire (Sor, Giuliani, Carulli, Carcassi, Mertz…),
    * importées par tools/mutopia_import.py depuis les partitions libres du
@@ -1517,7 +1297,7 @@
    * action que le lecteur sait exécuter (mesures à boucler, tempo en %,
    * guitare muette…) : l'élève appuie, l'app règle tout.
    *
-   * Découpage : les `sections` du morceau s'il en a (Zombie), sinon des
+   * Découpage : les `sections` du morceau s'il en a, sinon des
    * phrases de 4 mesures. */
   function etapes(p, nbMesures) {
     var e = [];

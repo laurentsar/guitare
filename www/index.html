@@ -16,7 +16,6 @@
     <p id="sousTitre">Guitare classique · débutant</p>
   </div>
   <div class="entete-droite">
-    <button id="btnCast" class="btn-cast" hidden aria-label="Diffuser sur la télé">📺</button>
     <div class="compteur"><b id="statSerie">0</b><span>jours</span></div>
     <div class="compteur"><b id="statMinutes">0</b><span>min aujourd’hui</span></div>
   </div>
@@ -27,7 +26,6 @@
   <section id="ecran-accueil" class="ecran actif">
     <div class="carte accent" id="carteReprendre"></div>
     <div class="grille-raccourcis">
-      <button class="raccourci" data-aller="entrainement"><span>💪</span>Entraînement</button>
       <button class="raccourci" data-aller="programme"><span>🪜</span>Programme</button>
       <button class="raccourci" data-aller="accordeur"><span>🎯</span>Accorder</button>
       <button class="raccourci" data-aller="metronome"><span>🥁</span>Métronome</button>
@@ -37,7 +35,6 @@
       <button class="raccourci" data-aller="parcours"><span>📘</span>Parcours</button>
       <button class="raccourci" data-aller="gammes"><span>🎹</span>Gammes</button>
       <button class="raccourci" id="raccourciEditeur"><span>✏️</span>Écrire une tab</button>
-      <button class="raccourci" id="raccourciVR" hidden><span>🥽</span>Casque VR</button>
     </div>
     <div class="carte" id="carteProgression"></div>
     <div class="carte conseil" id="carteConseil"></div>
@@ -118,10 +115,6 @@
     </div>
   </section>
 
-  <section id="ecran-entrainement" class="ecran">
-    <div id="pageEntrainement"></div>
-  </section>
-
   <section id="ecran-morceaux" class="ecran">
     <div id="listeMorceaux"></div>
   </section>
@@ -159,7 +152,7 @@
       <h2>Réglages</h2>
       <label class="ligne">Volume <input id="regVolume" type="range" min="0" max="100" value="90"></label>
       <label class="ligne">Mon instrument
-        <input id="regInstrument" type="text" maxlength="40" placeholder="Prodipe Primera 4/4">
+        <input id="regInstrument" type="text" maxlength="40" placeholder="Ma guitare classique">
       </label>
       <label class="ligne">Timbre
         <select id="regTimbre">
@@ -187,13 +180,6 @@
           <option value="oui">Oui (mains, pas à pas, lecture)</option>
         </select>
       </label>
-      <label class="ligne">Mode casque VR
-        <select id="regCasque">
-          <option value="auto">Automatique</option>
-          <option value="oui">Toujours</option>
-          <option value="non">Jamais</option>
-        </select>
-      </label>
       <label class="ligne">Mode télévision
         <select id="regTv">
           <option value="auto">Automatique</option>
@@ -204,26 +190,13 @@
     </div>
 
     <div class="carte">
-      <h2>Diffusion sur la télé</h2>
-      <p class="aide" id="castAide"></p>
-      <label class="ligne">Identifiant du récepteur
-        <input id="regCast" type="text" maxlength="8" placeholder="ABCD1234" autocapitalize="characters">
-      </label>
-      <p class="aide">À créer une seule fois sur <b>cast.google.com/publish</b> (récepteur personnalisé), avec l’adresse de la page récepteur : <span id="castUrl" class="mono"></span></p>
-    </div>
-
-    <div class="carte" id="carteBackup"></div>
-
-    <div class="carte">
-      <h2>🔄 Mise à jour</h2>
-      <p class="aide">Version installée : <b id="majVersion"></b>. L’app vérifie toute seule toutes les 6 heures et affiche un bandeau quand une nouvelle version est publiée.</p>
-      <button id="btnVerifierMaj" class="btn large">Vérifier les mises à jour</button>
-      <p class="aide" id="majEtat"></p>
-    </div>
-
-    <div class="carte">
       <h2>À propos</h2>
-      <p class="aide">Mélodies du domaine public (traditionnel, Beethoven), études écrites pour l’app, et 22 pièces du répertoire classique issues du <b>Mutopia Project</b> (mutopiaproject.org) : domaine public ou licence Creative Commons Attribution, avec le nom de l’éditeur de chaque partition sur la fiche du morceau. Sons entièrement synthétisés : aucun enregistrement, aucune donnée envoyée nulle part. L’accordeur écoute le micro sur l’appareil, rien n’en sort.</p>
+      <p class="aide">Mélodies du domaine public (traditionnel, Beethoven, Mozart), exercices et études écrits pour l’app, et des pièces du répertoire classique issues du <b>Mutopia Project</b> (mutopiaproject.org) : domaine public ou licence Creative Commons Attribution, avec la licence et le nom de l’éditeur de chaque partition sur la fiche du morceau. Sons entièrement synthétisés : aucun enregistrement.</p>
+    </div>
+
+    <div class="carte">
+      <h2>🔒 Confidentialité</h2>
+      <p class="aide">Aucun compte, aucune publicité, aucune donnée collectée. Tes progrès restent sur l’appareil. L’accordeur écoute le micro seulement quand tu l’allumes, et le son est analysé sur place : rien n’est enregistré ni envoyé.</p>
       <p class="aide" id="aproposVersion"></p>
     </div>
   </section>
@@ -232,7 +205,7 @@
 
 <nav class="onglets" id="onglets">
   <button data-aller="accueil" class="actif"><span>🏠</span>Accueil</button>
-  <button data-aller="entrainement"><span>💪</span>Entraîn.</button>
+  <button data-aller="programme"><span>🪜</span>Programme</button>
   <button data-aller="parcours"><span>📘</span>Parcours</button>
   <button data-aller="accords"><span>🎸</span>Accords</button>
   <button data-aller="accordeur"><span>🎯</span>Accordeur</button>
@@ -243,12 +216,7 @@
 </nav>
 
 <script>
-  window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.36';
-  // Mise à jour automatique : update-check.js interroge la dernière release
-  // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
-  // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.
-  window.UPDATE_REPO = 'laurentsar/guitare';
+  window.APP_VERSION = '1.0';
 </script>
 <script src="theorie.js"></script>
 <script src="audio.js"></script>
@@ -259,9 +227,7 @@
 <script src="manche.js"></script>
 <script src="gammes.js"></script>
 <script src="repertoire.js"></script>
-<script src="chansons.js"></script>
 <script src="morceaux.js"></script>
-<script src="entrainement.js"></script>
 <script src="programme.js"></script>
 <script src="lecons.js"></script>
 <script src="accordeur.js"></script>
@@ -270,11 +236,6 @@
 <script src="ecran.js"></script>
 <script src="dpad-nav.js"></script>
 <script src="tv.js"></script>
-<script src="cast.js"></script>
-<script src="vr.js"></script>
-<script src="autobackup.js"></script>
-<script src="apk-update.js"></script>
-<script src="update-check.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -837,12 +837,13 @@ console.log('\n— Programme progressif —');
   const pals = Programme.paliers(tous);
   const ranges = pals.reduce((t, p) => t.concat(p.ids), []);
   verifie('chaque morceau est dans exactement un palier', ranges.length === tous.filter((p) => !p.versionDe).length && new Set(ranges).size === ranges.length);
-  verifie('7 paliers, aucun vide', pals.length === 7 && pals.every((p) => p.ids.length > 0));
+  verifie('6 paliers = les 6 niveaux de difficulté, aucun vide', pals.length === 6 && pals[0].nom === 'Premiers sons' && pals[5].nom === 'Expert' && pals.every((p) => p.ids.length > 0));
   verifie('palier 1 : pas de chanson ni de barré', pals[0].ids.every((id) => !Morceaux.get(id).chanson));
   const barre = (id) => (Morceaux.get(id).mains || { gauche: [] }).gauche.some((a) => a.barre);
-  verifie('les chansons avec barré sont au palier 5', tous.filter((p) => p.chanson && barre(p.id)).every((p) => Programme.palierDe(p) === 4));
-  verifie('les trois accords de Santiano : palier 2', Programme.palierDe(Morceaux.get('ch-santiano')) === 1);
-  verifie('les études (niveau 5) au dernier palier', tous.filter((p) => p.niveau === 5 && !p.categorie).every((p) => Programme.palierDe(p) === 6));
+  verifie('les chansons avec barré : palier 4 ou plus', tous.filter((p) => p.chanson && barre(p.id)).every((p) => Programme.palierDe(p) >= 3));
+  verifie('palier = niveau de difficulté (Santiano au pouce : 2, Valse n° 3 de Brahms : 6)', Programme.palierDe(Morceaux.get('pouce-ch-santiano')) === 1 && Programme.palierDe(Morceaux.get('brahms-valse-3')) === 5 &&
+          tous.every((p) => Programme.palierDe(p) === Programme.difficulte(p).niveau - 1));
+  verifie('les études (niveau 5) : palier 4 ou plus', tous.filter((p) => p.niveau === 5 && !p.categorie).every((p) => Programme.palierDe(p) >= 3));
   verifie('dans un palier, la technique avant la musique', Morceaux.get(pals[0].ids[0]).categorie === 'entrainement');
 
   const T = Date.UTC(2026, 9, 1, 12);
@@ -884,8 +885,8 @@ console.log('\n— Programme progressif —');
   verifie('beaucoup en cours → une seule nouveauté au plus', s4.items.filter((x) => x.raison === 'nouveau' || x.raison === 'favori').length <= 1);
 
   // Un favori du palier suivant : proposé en défi, lentement.
-  const defi = Programme.seance(tous, {}, ['ch-linger'], T).items.find((x) => x.raison === 'defi');
-  verifie('favori du palier suivant : défi à 50 → 70 %', defi && defi.id === 'ch-linger' && defi.passages.join() === '50,60,70');
+  const defi = Programme.seance(tous, {}, ['pouce-ch-santiano'], T).items.find((x) => x.raison === 'defi');
+  verifie('favori du palier suivant : défi à 50 → 70 %', defi && defi.id === 'pouce-ch-santiano' && defi.passages.join() === '50,60,70');
 }
 
 console.log(`\n=== ${ok} réussis, ${ko} échoués ===`);

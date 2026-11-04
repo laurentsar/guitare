@@ -508,23 +508,23 @@ function verifie(nom, cond, detail) {
     verifie('accueil : bouton « Programme du jour »', /Programme du jour : 0 \/ \d · palier 1/.test($('carteReprendre').textContent));
     w.AppGuitare.aller('programme');
     const pg = $('pageProgramme');
-    verifie('programme : séance du jour au palier 1', /Séance du jour/.test(pg.textContent) && /Palier 1 — Premiers pas/.test(pg.textContent));
+    verifie('programme : séance du jour au palier 1', /Séance du jour/.test(pg.textContent) && /Palier 1 — Premiers sons/.test(pg.textContent));
     verifie('programme : échauffement puis morceaux nouveaux, 3 passages 60 → 80 → 100 %',
             /Échauffement/.test(pg.textContent) && /Nouveau/.test(pg.textContent) && /60 → 80 → 100 %/.test(pg.textContent));
-    verifie('programme : 7 paliers, seul le premier ouvert', pg.querySelectorAll('details.palier').length === 7 &&
-            pg.querySelectorAll('details.palier.ferme').length === 6);
+    verifie('programme : 6 paliers (les niveaux de difficulté), seul le premier ouvert', pg.querySelectorAll('details.palier').length === 6 &&
+            pg.querySelectorAll('details.palier.ferme').length === 5);
 
     // ♥ depuis la fiche d'un morceau.
-    w.AppGuitare.ouvrirMorceau('ch-linger');
+    w.AppGuitare.ouvrirMorceau('pouce-ch-santiano');
     const bAime = $('detailMorceau').querySelector('.ressenti .aime');
     verifie('fiche morceau : bouton « ♡ J’aime »', !!bAime && /♡ J’aime/.test(bAime.textContent));
     bAime.click();
-    verifie('♥ enregistré et bouton allumé', w.Store.aime('ch-linger') && /♥ J’aime/.test($('detailMorceau').querySelector('.ressenti .aime').textContent));
+    verifie('♥ enregistré et bouton allumé', w.Store.aime('pouce-ch-santiano') && /♥ J’aime/.test($('detailMorceau').querySelector('.ressenti .aime').textContent));
     w.AppGuitare.aller('morceaux');
-    verifie('liste Morceaux : rubrique « ♥ Mes favoris »', /♥ Mes favoris/.test($('listeMorceaux').textContent) && /♥ Linger/.test($('listeMorceaux').textContent));
+    verifie('liste Morceaux : rubrique « ♥ Mes favoris »', /♥ Mes favoris/.test($('listeMorceaux').textContent) && /♥ Santiano au pouce/.test($('listeMorceaux').textContent));
     w.AppGuitare.aller('programme');
     verifie('programme : le favori du palier 2 proposé en défi lent', /Défi ♥/.test(pg.textContent) && /50 → 60 → 70 %/.test(pg.textContent));
-    verifie('programme : chemin vers le favori affiché', /♥ Linger/.test(pg.textContent) && /encore 4 morceau\(x\) à acquérir/.test(pg.textContent));
+    verifie('programme : chemin vers le favori affiché', /♥ Santiano au pouce/.test(pg.textContent) && /encore 4 morceau\(x\) à acquérir/.test(pg.textContent));
 
     // Ressenti → boîte de Leitner.
     w.AppGuitare.ouvrirMorceau('chromatique');

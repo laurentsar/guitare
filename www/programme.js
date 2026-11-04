@@ -2,7 +2,7 @@
  * les revoir.
  *
  * Trois idées, rien de plus :
- *  - des paliers, du plus simple au plus dur. Un palier s'ouvre quand on a
+ *  - des paliers, les six niveaux de difficulté d'exécution. Un palier s'ouvre quand on a
  *    acquis quelques morceaux du précédent : on ne saute pas aux barrés avant
  *    de savoir changer d'accord ;
  *  - la répétition espacée (boîtes de Leitner) : après chaque morceau, on dit
@@ -24,50 +24,18 @@
   var ACQUIS = 3;      // boîte à partir de laquelle un morceau compte comme acquis
   var MAITRISE = 5;
 
-  var PALIERS = [
-    { nom: 'Premiers pas', but: 'Cordes à vide, premières notes, deux accords de base.' },
-    { nom: 'Premiers accords', but: 'Changer d’accord en rythme, petites mélodies, chansons à trois ou quatre accords.' },
-    { nom: 'Chansons sans barré', but: 'Plus d’accords par chanson, des septièmes, des tempos plus vifs.' },
-    { nom: 'Premières pièces', but: 'Lire une pièce à deux voix : la basse au pouce, la mélodie aux doigts.' },
-    { nom: 'Barrés et power chords', but: 'Le Fa barré, les accords qui se déplacent sur le manche, le rock.' },
-    { nom: 'Répertoire', but: 'Des pièces plus longues, plus de positions sur le manche.' },
-    { nom: 'Études', but: 'Les études de Carcassi, Mertz, Giuliani : la technique en musique.' }
-  ];
-
-  /* Difficulté d'une grille d'accords : un point par accord différent, trois
-   * par barré, deux si la main monte au-delà de la case 4, un si c'est vif. */
-  function difficulteChanson(p) {
-    var g = (p.mains && p.mains.gauche) || [];
-    var barres = g.filter(function (a) { return a.barre; }).length;
-    var haut = (p.notes || []).some(function (n) { return n.frette > 4; });
-    return g.length + 3 * barres + (haut ? 2 : 0) + (p.tempo > 105 ? 1 : 0);
-  }
-
-  function palierDe(p) {
-    if (p.chanson) {
-      var g = (p.mains && p.mains.gauche) || [];
-      var d = difficulteChanson(p);
-      if (g.some(function (a) { return a.barre; }) || (p.notes || []).some(function (n) { return n.frette > 4; })) return 4;
-      return d <= 4 ? 1 : 2;
-    }
-    if (p.categorie === 'accords') return [0, 0, 1, 2, 4][p.niveau] != null ? [0, 0, 1, 2, 4][p.niveau] : 4;
-    var n = p.niveau || 1;
-    if (n <= 1) return 0;
-    if (n === 2) return 1;
-    if (n === 3) return 3;
-    if (n === 4) return 5;
-    return 6;
-  }
+  /* Les paliers suivent les six niveaux de difficulté d'exécution
+   * (difficulte(), plus bas) : ce que demandent les notes, pas la vitesse. */
+  function palierDe(p) { return difficulte(p).niveau - 1; }
 
   // Ordre dans un palier : technique d'abord, puis du plus simple au plus dur.
   function cleTri(p) {
-    var rang = p.categorie === 'entrainement' || (/^pouce/.test(p.categorie || '') && !p.chanson) ? 0 : p.categorie === 'accords' ? 1 : p.chanson ? 3 : 2;
-    var d = p.chanson ? difficulteChanson(p) : (p.niveau || 1) * 10;
-    return rang * 1000 + d;
+    var rang = p.categorie === 'entrainement' || (/^pouce/.test(p.categorie || '') && !p.chanson) ? 0 : p.categorie === 'accords' ? 1 : 2;
+    return rang * 1000 + difficulte(p).score * 10;
   }
 
   function paliers(tous) {
-    var out = PALIERS.map(function (x, k) { return { num: k + 1, nom: x.nom, but: x.but, ids: [] }; });
+    var out = NIVEAUX_DIFF.map(function (x, k) { return { num: k + 1, nom: x.nom, but: x.but.charAt(0).toUpperCase() + x.but.slice(1) + '.', ids: [] }; });
     // Les versions longues se travaillent depuis la fiche de la courte.
     var tries = tous.filter(function (p) { return !p.versionDe; }).sort(function (a, b) { return cleTri(a) - cleTri(b); });
     tries.forEach(function (p) { out[palierDe(p)].ids.push(p.id); });
@@ -238,8 +206,8 @@
 
   global.Programme = {
     NIVEAUX_DIFF: NIVEAUX_DIFF, difficulte: difficulte,
-    PALIERS: PALIERS, INTERVALLES: INTERVALLES, ACQUIS: ACQUIS, MAITRISE: MAITRISE,
-    difficulteChanson: difficulteChanson, palierDe: palierDe, paliers: paliers, etat: etat,
+    INTERVALLES: INTERVALLES, ACQUIS: ACQUIS, MAITRISE: MAITRISE,
+    palierDe: palierDe, paliers: paliers, etat: etat,
     noter: noter, aRevoir: aRevoir, joursAvant: joursAvant, acquis: acquis,
     passages: passages, seance: seance
   };

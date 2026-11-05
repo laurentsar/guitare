@@ -6,7 +6,7 @@
  * lire un manuel.
  *
  * `exercice.type` dit à l'app quoi afficher :
- *   accordeur    l'accordeur au micro
+ *   reference    les six cordes à vide jouées par l'app (accorder à l'oreille)
  *   metronome    le métronome, avec une consigne
  *   accord       un diagramme d'accord à tenir et faire sonner
  *   changements  chronomètre de changements entre deux accords
@@ -32,11 +32,11 @@
       validation: 'Je tiens la position sans crisper l’épaule droite.'
     },
     {
-      id: 'accorder', chapitre: 'Prendre la guitare', titre: 'Accorder au micro', minutes: 10,
+      id: 'accorder', chapitre: 'Prendre la guitare', titre: 'Accorder à l’oreille', minutes: 10,
       images: ['tete', 'accordage'],
-      texte: 'Une guitare fausse rend tout faux — y compris ton oreille, qui apprend ce qu’elle entend. Accorde AVANT chaque séance.\n\nDe la plus grave à la plus aiguë : Mi (6), La (5), Ré (4), Sol (3), Si (2), Mi (1). Tourne toujours en MONTANT vers la note : une corde détendue puis tendue tient mieux l’accord. Va doucement sur la 1re et la 3e, ce sont celles qui cassent.',
-      exercice: { type: 'accordeur', consigne: 'Accorde les six cordes. Vise le vert : à moins de 5 centièmes, c’est juste.' },
-      validation: 'Mes six cordes sont vertes.'
+      texte: 'Une guitare fausse rend tout faux — y compris ton oreille, qui apprend ce qu’elle entend. Accorde AVANT chaque séance.\n\nDe la plus grave à la plus aiguë : Mi (6), La (5), Ré (4), Sol (3), Si (2), Mi (1). Tourne toujours en MONTANT vers la note : une corde détendue puis tendue tient mieux l’accord. Va doucement sur la 1re et la 3e, ce sont celles qui cassent.\n\nL’app joue les six cordes de référence : écoute la note, puis tourne la clé jusqu’à ce que ta corde sonne pareil, sans « vague » entre les deux. Ensuite, vérifie chaque corde avec la case 5 de la corde du dessous (case 4 pour le Si), comme sur le dessin. Un accordeur à pince, si tu en as un, fait la même chose plus vite.',
+      exercice: { type: 'reference', consigne: 'Joue chaque corde de référence, puis la tienne, et ajuste jusqu’à ce qu’elles sonnent pareil. Termine par la vérification case 5.' },
+      validation: 'Mes six cordes sonnent comme la référence.'
     },
     {
       id: 'main-droite', chapitre: 'Prendre la guitare', titre: 'La main droite : p i m a', minutes: 15,

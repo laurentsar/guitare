@@ -29,7 +29,6 @@
     <div class="grille-raccourcis">
       <button class="raccourci" data-aller="entrainement"><span>💪</span>Entraînement</button>
       <button class="raccourci" data-aller="programme"><span>🪜</span>Programme</button>
-      <button class="raccourci" data-aller="accordeur"><span>🎯</span>Accorder</button>
       <button class="raccourci" data-aller="metronome"><span>🥁</span>Métronome</button>
       <button class="raccourci" data-aller="accords"><span>🎸</span>Accords</button>
       <button class="raccourci" data-aller="morceaux"><span>🎼</span>Morceaux</button>
@@ -64,25 +63,6 @@
   <section id="ecran-accord" class="ecran">
     <button class="retour" data-aller="accords">‹ Accords</button>
     <div id="detailAccord"></div>
-  </section>
-
-  <section id="ecran-accordeur" class="ecran">
-    <div class="carte accordeur">
-      <div id="accordeurEtat" class="accordeur-etat">Appuie sur « Écouter » et joue une corde à vide.</div>
-      <div class="aiguille-boite">
-        <div class="aiguille-graduation"></div>
-        <div id="aiguille" class="aiguille"></div>
-        <div class="aiguille-centre"></div>
-      </div>
-      <div id="accordeurNote" class="accordeur-note">—</div>
-      <div id="accordeurCents" class="accordeur-cents"></div>
-      <div class="cordes-etat" id="cordesEtat"></div>
-      <div class="actions">
-        <button id="btnAccordeur" class="btn primaire">Écouter</button>
-        <button id="btnRef" class="btn">Jouer la référence</button>
-      </div>
-      <p class="aide">Les six cordes, de la plus grave à la plus aiguë : Mi La Ré Sol Si Mi. Monte toujours vers la note plutôt que de descendre.</p>
-    </div>
   </section>
 
   <section id="ecran-metronome" class="ecran">
@@ -223,7 +203,7 @@
 
     <div class="carte">
       <h2>À propos</h2>
-      <p class="aide">Mélodies du domaine public (traditionnel, Beethoven), études écrites pour l’app, et 22 pièces du répertoire classique issues du <b>Mutopia Project</b> (mutopiaproject.org) : domaine public ou licence Creative Commons Attribution, avec le nom de l’éditeur de chaque partition sur la fiche du morceau. Sons entièrement synthétisés : aucun enregistrement, aucune donnée envoyée nulle part. L’accordeur écoute le micro sur l’appareil, rien n’en sort.</p>
+      <p class="aide">Mélodies du domaine public (traditionnel, Beethoven), études écrites pour l’app, et 22 pièces du répertoire classique issues du <b>Mutopia Project</b> (mutopiaproject.org) : domaine public ou licence Creative Commons Attribution, avec le nom de l’éditeur de chaque partition sur la fiche du morceau. Sons entièrement synthétisés : aucun enregistrement, aucune donnée envoyée nulle part.</p>
       <p class="aide" id="aproposVersion"></p>
     </div>
   </section>
@@ -235,7 +215,6 @@
   <button data-aller="entrainement"><span>💪</span>Entraîn.</button>
   <button data-aller="parcours"><span>📘</span>Parcours</button>
   <button data-aller="accords"><span>🎸</span>Accords</button>
-  <button data-aller="accordeur"><span>🎯</span>Accordeur</button>
   <button data-aller="metronome"><span>🥁</span>Tempo</button>
   <button data-aller="morceaux"><span>🎼</span>Morceaux</button>
   <button data-aller="oreille"><span>👂</span>Oreille</button>
@@ -244,7 +223,7 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.38';
+  window.APP_VERSION = '1.39';
   // Mise à jour automatique : update-check.js interroge la dernière release
   // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
   // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.
@@ -264,7 +243,6 @@
 <script src="entrainement.js"></script>
 <script src="programme.js"></script>
 <script src="lecons.js"></script>
-<script src="accordeur.js"></script>
 <script src="oreille.js"></script>
 <script src="store.js"></script>
 <script src="ecran.js"></script>

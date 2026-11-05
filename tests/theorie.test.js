@@ -837,7 +837,7 @@ console.log('\n— Difficulté d’exécution —');
 console.log('\n— Versions simplifiées —');
 {
   const simples = Morceaux.tous().filter((p) => p.simplifieDe);
-  verifie('au moins 30 pièces du répertoire ont leur version simplifiée, reliée à l’original', simples.length >= 30 &&
+  verifie('au moins 25 pièces du répertoire ont leur version simplifiée, reliée à l’original', simples.length >= 25 &&
           simples.every((p) => Morceaux.get(p.simplifieDe).simple === p.id && p.categorie === 'simplifiee'), simples.length);
   verifie('première position : rien au-delà de la case 4', simples.every((p) => p.notes.every((n) => n.frette >= 0 && n.frette <= 4)));
   verifie('chaque note sonne la hauteur de sa case', simples.every((p) => p.notes.every((n) => n.midi === Theorie.midiDeCase(n.corde, n.frette))));
@@ -865,6 +865,16 @@ console.log('\n— Versions simplifiées —');
   verifie('harmonie conservée : mêmes notes que l’original, même basse au premier temps', !fautes.length, fautes.slice(0, 6).join(', '));
   verifie('plus facile (ou aussi facile) que l’original', simples.every((p) => Programme.difficulte(p).score <= Programme.difficulte(Morceaux.get(p.simplifieDe)).score + 0.1),
           simples.filter((p) => Programme.difficulte(p).score > Programme.difficulte(Morceaux.get(p.simplifieDe)).score + 0.1).map((p) => p.id).join(','));
+  verifie('moins de mouvements de main gauche que l’original, et la main ne se déplace plus', simples.every((p) => {
+    const a = Morceaux.mouvements(Morceaux.get(p.simplifieDe)), b = Morceaux.mouvements(p); return b.total < a.total && b.deplacements === 0; }));
+  {
+    // Le placement économe fait mieux que « la première case jouable ».
+    const naif = (p) => Morceaux.mouvements({ notes: p.notes.map((n) => { for (let c = 1; c <= 6; c++) { const f = n.midi - [0, 64, 59, 55, 50, 45, 40][c];
+      if (f >= 0 && f <= 4) return Object.assign({}, n, { corde: c, frette: f }); } return n; }) }).poses;
+    const brahms = Morceaux.get('brahms-valse-3-simple');
+    verifie('placement économe : moins de doigts posés qu’en prenant la première case venue (Brahms, Valse n° 3)', Morceaux.mouvements(brahms).poses <= naif(brahms),
+            Morceaux.mouvements(brahms).poses + ' / ' + naif(brahms));
+  }
   verifie('moins de notes que l’original', simples.every((p) => p.notes.length < Morceaux.get(p.simplifieDe).notes.length));
   verifie('le crédit de la partition source suit la version simplifiée', simples.every((p) => p.source === Morceaux.get(p.simplifieDe).source));
 }

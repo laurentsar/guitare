@@ -987,9 +987,12 @@
     }
     if (simplifiees.length) {
       cible = rubrique('🪶 Versions simplifiées');
-      cible.appendChild(el('p', 'aide', 'Les pièces du répertoire, allégées par l’app : la mélodie et la basse au premier temps, qui gardent l’harmonie du morceau ; les voix intérieures tombent, et tout se joue en première position. Pour apprendre l’air avant la version complète.'));
+      cible.appendChild(el('p', 'aide', 'Les pièces du répertoire, allégées par l’app : la mélodie et la basse au premier temps, qui gardent l’harmonie du morceau ; les voix intérieures tombent, et tout se joue en première position. Les cases sont choisies pour bouger le moins possible : cordes à vide d’abord, même corde ou corde voisine, pas d’auriculaire si on peut l’éviter. ✋ = mouvements de la main gauche en moins (doigts posés, déplacements le long du manche).'));
       simplifiees.sort(function (a, b) { return Programme.difficulte(a).score - Programme.difficulte(b).score; })
-        .forEach(function (p) { cible.appendChild(ligne(p, Programme.difficulte(Morceaux.get(p.simplifieDe)).niveau + ' → ' + Programme.difficulte(p).niveau + '/6')); });
+        .forEach(function (p) {
+          var mo = Morceaux.mouvements(Morceaux.get(p.simplifieDe)).total, ms = Morceaux.mouvements(p).total;
+          cible.appendChild(ligne(p, Programme.difficulte(Morceaux.get(p.simplifieDe)).niveau + ' → ' + Programme.difficulte(p).niveau + '/6 · ✋ −' + Math.round((1 - ms / mo) * 100) + ' %'));
+        });
     }
     if (tiktok.length) {
       cible = rubrique('📱 TikTok');
@@ -1495,6 +1498,13 @@
         : '🎼 Version originale (' + Programme.difficulte(autreS).niveau + '/6)');
       bS.onclick = function () { ouvrirMorceau(autreS.id); };
       h.appendChild(bS);
+      if (p.simplifieDe) {
+        var mvO = Morceaux.mouvements(autreS), mvS = Morceaux.mouvements(p);
+        h.appendChild(el('p', 'difficulte', '✋ Mouvements des doigts : ' + mvS.total + ' au lieu de ' + mvO.total + ' — ' +
+          mvS.poses + ' doigts posés (' + mvO.poses + '), ' +
+          (mvS.deplacements ? mvS.deplacements + ' déplacements de la main' : 'aucun déplacement de la main') + ' (' + mvO.deplacements + '), ' +
+          mvS.auriculaire + ' notes à l’auriculaire (' + mvO.auriculaire + '), ' + mvS.sauts + ' sauts de corde (' + mvO.sauts + ').'));
+      }
     }
     // Barre de lecture en haut de la fiche, avant la description : Écouter,
     // Arrêter et le tempo sont ce qu'on touche en premier (remplie plus bas).

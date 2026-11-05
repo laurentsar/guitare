@@ -1407,6 +1407,29 @@
     notes: arpegeTT(fois2(4, [AM7, F6]))
   });
 
+  /* Grilles vues sur TikTok, titre non indiqué : les accords seuls, pas la
+   * mélodie de la vidéo (on ne sait pas si elle est sous droits). */
+  exerciceAccords({
+    id: 'tiktok-grille-em-c-am-d', titre: 'Grille Mi m – Do – La m – Ré (i – VI – iv – VII)', categorie: 'tiktok',
+    sous_titre: 'TikTok · @wiragustiii · grille d’accords · titre non indiqué', niveau: 2, tempo: 90,
+    description: 'Les quatre accords affichés dans une vidéo TikTok (@wiragustiii), une mesure chacun. La vidéo joue une mélodie sur la 1re corde par-dessus ; titre non indiqué, donc ici la grille seule, ni mélodie ni paroles. Balayé, puis arpège.',
+    paliers: [
+      { motif: 'balaye', grille: ['Em', 'C', 'Am', 'D'], tours: 2 },
+      { motif: 'arpege', grille: ['Em', 'C', 'Am', 'D'], tours: 2 }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'tiktok-grille-c-g-am-f', titre: 'Grille Do – Sol – La m – Fa (I – V – vi – IV)', categorie: 'tiktok',
+    sous_titre: 'TikTok · @dr_guitarap, @wiragustiii · grille d’accords · titre non indiqué', niveau: 3, tempo: 80,
+    description: 'La grille de deux vidéos TikTok (@dr_guitarap, @wiragustiii), deux mesures par accord, et Sol pour finir. Les vidéos jouent une mélodie en fingerstyle par-dessus ; titre non indiqué, donc ici la grille seule, ni mélodie ni paroles. Fa est barré.',
+    paliers: [
+      { motif: 'balaye', grille: ['C', 'C', 'G', 'G', 'Am', 'Am', 'F', 'F'] },
+      { motif: 'arpege', grille: ['C', 'C', 'G', 'G', 'Am', 'Am', 'F', 'F'] },
+      { motif: 'arpege', grille: ['C', 'C', 'G', 'G', 'Am', 'Am', 'F', 'G'] }
+    ]
+  });
+
   /* Le pouce avec la main gauche : l'étape suivante, une fois le pouce sûr
    * de lui sur les cordes à vide (rubrique à part dans la liste). */
   ajoute({
@@ -1566,11 +1589,223 @@
 
   PIECES.forEach(function (p) { completerDoigtes(p.notes); });
 
+  /* Versions simplifiées, calculées à partir de la tablature d'origine.
+   * L'harmonie reste celle du morceau :
+   *  - la mélodie : la note la plus haute de chaque attaque ; dans un temps
+   *    très chargé (arpège en doubles croches), seulement la plus haute du
+   *    temps, posée sur le temps ;
+   *  - la basse : la plus grave au premier temps de chaque mesure (et au
+   *    3e temps d'une mesure à 4 temps si l'accord change), ramenée sur les
+   *    cordes 6 à 4, cases 0 à 4 ;
+   *  - tout en première position : une note trop haute descend d'une octave
+   *    (même nom de note, donc même accord). Les voix intérieures tombent.
+   * Proposée sur la fiche de l'original et dans « Versions simplifiées ». */
+  var VIDE = { 1: 64, 2: 59, 3: 55, 4: 50, 5: 45, 6: 40 };
+  function placerMelodie(m, interdites) {
+    for (var c = 1; c <= 6; c++) {
+      if (interdites.indexOf(c) !== -1) continue;
+      var f = m - VIDE[c];
+      if (f >= 0 && f <= 4) return { corde: c, frette: f };
+    }
+    return null;
+  }
+  function placerBasse(m) {
+    while (m > 52) m -= 12;
+    while (m < 40) m += 12;
+    var mieux = null;
+    [6, 5, 4].forEach(function (c) {
+      var f = m - VIDE[c];
+      if (f >= 0 && f <= 4 && (!mieux || f < mieux.frette)) mieux = { corde: c, frette: f, midi: m };
+    });
+    return mieux;
+  }
+  function simplifier(p) {
+    var sig = p.signature || [4, 4], parMesure = sig[0] * 4 / sig[1];
+    var fin = p.notes.reduce(function (t, n) { return Math.max(t, n.temps + n.duree); }, 0);
+    var attaques = {};
+    p.notes.forEach(function (n) { (attaques[n.temps] = attaques[n.temps] || []).push(n); });
+    var temps = Object.keys(attaques).map(Number).sort(function (a, b) { return a - b; });
+    // Mélodie : la plus haute de chaque attaque, puis allègement temps par temps.
+    var haut = temps.map(function (t) {
+      return { temps: t, midi: Math.max.apply(null, attaques[t].map(function (n) { return n.midi; })) };
+    });
+    var unite = parMesure % 1 ? 0.5 : 1, mel = [];
+    for (var b = 0; b < fin; b += unite) {
+      var dans = haut.filter(function (x) { return x.temps >= b - 1e-9 && x.temps < b + unite - 1e-9; });
+      if (dans.length <= 2) mel = mel.concat(dans);
+      else mel.push({ temps: b, midi: Math.max.apply(null, dans.map(function (x) { return x.midi; })) });
+    }
+    // Notes de passage rapides (double croche hors du temps et du demi-temps) :
+    // elles tombent, la note d'avant dure jusqu'à la suivante.
+    mel = mel.filter(function (x, i) {
+      var suiv = i + 1 < mel.length ? mel[i + 1].temps : fin;
+      return suiv - x.temps >= 0.5 - 1e-9 || Math.abs(x.temps * 2 - Math.round(x.temps * 2)) < 1e-9;
+    });
+    // Une seule octave pour tout le morceau quand c'est possible.
+    var hors = function (k) { return mel.filter(function (x) { return x.midi + k > 68 || x.midi + k < 40; }).length; };
+    // (on garde l'octave d'origine tant que peu de notes en sortent).
+    var decal = hors(0) <= mel.length * 0.2 ? 0 : [0, -12, 12].sort(function (a, b) { return hors(a) - hors(b); })[0];
+    // Basse : premier temps (et milieu de mesure à 4 temps si elle change).
+    var basses = [];
+    for (var t = 0; t < fin; t += parMesure) {
+      [0].concat(parMesure === 4 ? [2] : []).forEach(function (d) {
+        var g = p.notes.filter(function (n) { return n.temps >= t + d - 1e-9 && n.temps < t + d + 0.5 - 1e-9; });
+        if (!g.length) return;
+        var bas = g.reduce(function (a, n) { return n.midi < a.midi ? n : a; });
+        if (d && basses.length && basses[basses.length - 1].orig % 12 === bas.midi % 12) return;
+        var pl = placerBasse(bas.midi);
+        if (pl) basses.push({ temps: t + d, corde: pl.corde, frette: pl.frette, midi: pl.midi, orig: bas.midi });
+      });
+    }
+    basses.forEach(function (x, i) {
+      var suiv = i + 1 < basses.length ? basses[i + 1].temps : fin;
+      x.duree = Math.min(suiv, x.temps + parMesure) - x.temps;
+    });
+    // 1. Hauteur de chaque note de mélodie (octave), et la basse qui sonne dessous.
+    var etapes = [];
+    mel.forEach(function (x, i) {
+      var m = x.midi + decal;
+      while (m > 68) m -= 12;
+      while (m < 40) m += 12;
+      var sonne = basses.filter(function (bb) { return bb.temps <= x.temps + 1e-9 && x.temps < bb.temps + bb.duree - 1e-9; })[0];
+      // Passage à une voix : la note grave EST la basse, on ne la double pas.
+      if (sonne && sonne.temps === x.temps && x.midi === sonne.orig) return;
+      var interdites = sonne ? [sonne.corde] : [];
+      if (!placerMelodie(m, interdites) && m + 12 <= 68) m += 12;
+      if (sonne && sonne.midi >= m && m + 12 <= 68 && placerMelodie(m + 12, interdites)) m += 12;   // au-dessus de la basse
+      var cands = [];
+      [m, m - 12, m + 12].forEach(function (h, o) {
+        if (h > 68 || h < 40 || (o && sonne && h <= sonne.midi)) return;
+        for (var c = 1; c <= 6; c++) {
+          var f = h - VIDE[c];
+          if (f >= 0 && f <= 4 && interdites.indexOf(c) === -1) cands.push({ corde: c, frette: f, midi: h, octave: o ? 1 : 0 });
+        }
+      });
+      if (!cands.length) return;
+      if (sonne && sonne.midi >= m) sonne.sacrifiee = sonne.temps === x.temps || sonne.sacrifiee;
+      var suiv = i + 1 < mel.length ? mel[i + 1].temps : fin;
+      etapes.push({ temps: x.temps, midi: m, duree: Math.max(0.25, suiv - x.temps), cands: cands, sonne: sonne });
+    });
+    /* 2. Le placement le plus économe en mouvements, sur tout le morceau
+     * (programmation dynamique) : corde à vide plutôt qu'un doigt, pas
+     * d'auriculaire (case 4) si on peut l'éviter, rester sur la même corde
+     * ou la voisine, peu de cases d'écart d'une note à l'autre, et jamais
+     * d'écart de plus de 3 cases avec la basse tenue. */
+    function coutCase(e, k) {
+      var c = e.cands[k], v = 0;
+      if (c.frette === 4) v += 1.5;
+      if (c.octave) v += 2.5;            // changer d'octave : seulement si ça évite vraiment des mouvements
+      var b = e.sonne && !e.sonne.sacrifiee ? e.sonne : null;
+      if (b && b.frette && c.frette && Math.abs(b.frette - c.frette) > 3) v += 4;
+      return v;
+    }
+    function coutPassage(a, b) {
+      var v = Math.max(0, Math.abs(a.corde - b.corde) - 1) * 1.2 + Math.min(1, Math.abs(a.corde - b.corde)) * 0.3;
+      if (b.frette && !(a.corde === b.corde && a.frette === b.frette)) v += 1;   // un doigt de plus à poser
+      if (a.frette && b.frette && a.frette !== b.frette) v += Math.abs(a.frette - b.frette) * 0.8;
+      return v;
+    }
+    var meilleur = [], depuis = [];
+    etapes.forEach(function (e, i) {
+      meilleur[i] = []; depuis[i] = [];
+      e.cands.forEach(function (c, k) {
+        var base = coutCase(e, k);
+        if (!i) { meilleur[i][k] = base; return; }
+        var best = Infinity, arg = 0;
+        etapes[i - 1].cands.forEach(function (c0, k0) {
+          var v = meilleur[i - 1][k0] + coutPassage(c0, c);
+          if (v < best) { best = v; arg = k0; }
+        });
+        meilleur[i][k] = best + base; depuis[i][k] = arg;
+      });
+    });
+    var notes = [];
+    if (etapes.length) {
+      var dern = etapes.length - 1, kk = 0;
+      meilleur[dern].forEach(function (v, k) { if (v < meilleur[dern][kk]) kk = k; });
+      for (var ie = dern; ie >= 0; ie--) {
+        var e = etapes[ie], c = e.cands[kk];
+        notes.unshift({ temps: e.temps, corde: c.corde, frette: c.frette, midi: c.midi, duree: e.duree });
+        // Basse tenue trop loin de la main : elle tombe, la mélodie passe avant.
+        if (e.sonne && e.sonne.frette && c.frette && Math.abs(e.sonne.frette - c.frette) > 3 && e.sonne.temps === e.temps) e.sonne.sacrifiee = true;
+        if (ie) kk = depuis[ie][kk];
+      }
+    }
+    basses.forEach(function (x) {
+      if (x.sacrifiee) return;
+      if (notes.some(function (n) { return n.temps === x.temps && n.midi === x.midi; })) return;
+      notes.push({ temps: x.temps, corde: x.corde, frette: x.frette, midi: x.midi, duree: x.duree });
+    });
+    notes.sort(function (a, b) { return a.temps - b.temps || b.corde - a.corde; });
+    // Une corde ne sonne qu'une note : la précédente s'arrête quand la suivante attaque.
+    notes.forEach(function (n, i) {
+      for (var k = i + 1; k < notes.length; k++) {
+        if (notes[k].corde === n.corde && notes[k].temps > n.temps) { n.duree = Math.min(n.duree, notes[k].temps - n.temps); break; }
+      }
+    });
+    return notes;
+  }
+  /* Mouvements des doigts : à gauche, chaque doigt qui se pose sur une case
+   * qu'il ne tenait pas déjà, chaque déplacement de la main le long du manche
+   * (elle couvre quatre cases) et chaque note à l'auriculaire ; à droite,
+   * chaque saut de corde de la mélodie (au-delà de la corde voisine). */
+  function mouvements(p) {
+    var parT = {}, temps = [];
+    p.notes.forEach(function (n) { if (!parT[n.temps]) { parT[n.temps] = []; temps.push(n.temps); } parT[n.temps].push(n); });
+    temps.sort(function (a, b) { return a - b; });
+    var poses = 0, deplacements = 0, auriculaire = 0, sauts = 0, tenus = {}, pos = 1, hautPrec = null;
+    temps.forEach(function (t) {
+      var encore = {};
+      p.notes.forEach(function (n) { if (n.frette && n.temps < t && t < n.temps + n.duree - 1e-9) encore[n.corde + ':' + n.frette] = 1; });
+      parT[t].forEach(function (n) {
+        if (!n.frette) return;
+        var cle = n.corde + ':' + n.frette;
+        if (!tenus[cle] || !encore[cle]) poses++;
+        encore[cle] = 1;
+        if (n.frette < pos || n.frette > pos + 3) { deplacements++; pos = n.frette > 4 ? n.frette - 3 : 1; }
+      });
+      tenus = encore;
+      // Main droite : saut de corde de la voix du dessus (au-delà de la voisine).
+      var h = Math.min.apply(null, parT[t].map(function (n) { return n.corde; }));
+      if (hautPrec !== null && Math.abs(h - hautPrec) > 1) sauts++;
+      hautPrec = h;
+      auriculaire += parT[t].filter(function (n) { return n.doigt === 4; }).length;
+    });
+    return { poses: poses, deplacements: deplacements, auriculaire: auriculaire, sauts: sauts,
+             total: poses + 2 * deplacements + auriculaire + sauts };
+  }
+
+  var SIMPLIFIABLES = PIECES.filter(function (p) {
+    if (p.chanson || p.artiste || p.categorie || p.versionDe || !p.notes.length) return false;
+    var parT = {};
+    p.notes.forEach(function (n) { parT[n.temps] = (parT[n.temps] || 0) + 1; });
+    var poly = Object.keys(parT).some(function (t) { return parT[t] >= 2; });
+    return p.source ? true : poly && p.niveau >= 3;
+  });
+  SIMPLIFIABLES.forEach(function (p) {
+    var notes = completerDoigtes(simplifier(p));
+    var mvS = mouvements({ notes: notes }), mvO = mouvements(p);
+    if (mvS.total > mvO.total * 0.85 || mvS.sauts > mvO.sauts * 1.5 + 3) return;   // pas assez de mouvements en moins
+    var hautOrig = Math.max.apply(null, p.notes.map(function (n) { return n.frette; }));
+    if (notes.length >= p.notes.length * 0.85 && hautOrig <= 5) return;   // rien à gagner
+    var id = p.id + '-simple';
+    p.simple = id;
+    ajoute({
+      id: id, titre: p.titre + ' — version simplifiée',
+      sous_titre: p.sous_titre + ' · simplifiée, première position',
+      niveau: Math.max(1, p.niveau - 1), tempo: p.tempo, tempoOriginal: p.tempoOriginal, signature: p.signature,
+      categorie: 'simplifiee', simplifieDe: p.id, source: p.source,
+      description: 'Version simplifiée de « ' + p.titre + ' », calculée par l’app à partir de la tablature d’origine : la mélodie (la note la plus haute) et la basse au premier temps, qui gardent l’harmonie du morceau ; les voix intérieures tombent et tout se joue en première position (une note trop haute descend d’une octave : même nom de note, donc même accord). ' +
+        p.notes.length + ' notes dans l’original, ' + notes.length + ' ici. Les cases sont choisies pour bouger le moins possible : cordes à vide d’abord, même corde ou corde voisine, pas d’auriculaire quand on peut l’éviter.',
+      notes: notes
+    });
+  });
+
   function tous() { return PIECES.slice(); }
   function get(id) { for (var i = 0; i < PIECES.length; i++) if (PIECES[i].id === id) return PIECES[i]; return null; }
 
   global.Morceaux = {
-    tous: tous, get: get, melodie: melodie, arpeges: arpeges, etapes: etapes, completerDoigtes: completerDoigtes,
+    tous: tous, get: get, simplifier: simplifier, mouvements: mouvements, melodie: melodie, arpeges: arpeges, etapes: etapes, completerDoigtes: completerDoigtes,
     caseEnPremierePosition: caseEnPremierePosition, midiDeNom: midiDeNom
   };
 })(typeof window !== 'undefined' ? window : globalThis);

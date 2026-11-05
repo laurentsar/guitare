@@ -899,13 +899,14 @@
     var tEnch = bloc.querySelector('h3');
     rubrique(tEnch.textContent).appendChild(bloc);
     tEnch.remove();
-    var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [], top20 = {};
+    var niveaux = {}, exercices = [], pouce = [], pouceMain = [], tiktok = [], top20 = {}, simplifiees = [];
     Morceaux.tous().forEach(function (p) {
       if (p.versionDe) return;   // version longue : proposée sur la fiche de la courte
       if (p.categorie === 'accords') exercices.push(p);
       else if (p.categorie === 'pouce') pouce.push(p);
       else if (p.categorie === 'pouce-main') pouceMain.push(p);
       else if (p.categorie === 'tiktok') tiktok.push(p);
+      else if (p.categorie === 'simplifiee') simplifiees.push(p);
       else if (p.categorie === 'top20') (top20[p.top] = top20[p.top] || []).push(p);
       else if (p.categorie !== 'entrainement') (niveaux[p.niveau] = niveaux[p.niveau] || []).push(p);
     });
@@ -925,7 +926,7 @@
        * vitesse : le tempo se règle sur chaque fiche. */
       var parNiv = {};
       Morceaux.tous().forEach(function (p) {
-        if (p.versionDe || p.categorie === 'entrainement') return;
+        if (p.versionDe || p.simplifieDe || p.categorie === 'entrainement') return;
         var d = Programme.difficulte(p);
         (parNiv[d.niveau] = parNiv[d.niveau] || []).push(p);
       });
@@ -943,7 +944,7 @@
     if (parArtiste) {
       var artistes = {};
       Morceaux.tous().forEach(function (p) {
-        if (p.versionDe) return;
+        if (p.versionDe || p.simplifieDe) return;   // versions simplifiées : seulement dans leur rubrique
         var a = artisteDe(p);
         if (a) (artistes[a] = artistes[a] || []).push(p);
       });
@@ -983,6 +984,15 @@
       cible = rubrique('👍✋ Pouce + main gauche');
       cible.appendChild(el('p', 'aide', 'L’étape suivante : toujours le pouce seul à droite, mais la main gauche appuie des cases — gamme dans les basses, basses sur des accords, mélodies au pouce, chansons en pom-tcha.'));
       pouceMain.forEach(function (p) { cible.appendChild(ligne(p, 'niv. ' + p.niveau)); });
+    }
+    if (simplifiees.length) {
+      cible = rubrique('🪶 Versions simplifiées');
+      cible.appendChild(el('p', 'aide', 'Les pièces du répertoire, allégées par l’app : la mélodie et la basse au premier temps, qui gardent l’harmonie du morceau ; les voix intérieures tombent, et tout se joue en première position. Les cases sont choisies pour bouger le moins possible : cordes à vide d’abord, même corde ou corde voisine, pas d’auriculaire si on peut l’éviter. ✋ = mouvements de la main gauche en moins (doigts posés, déplacements le long du manche).'));
+      simplifiees.sort(function (a, b) { return Programme.difficulte(a).score - Programme.difficulte(b).score; })
+        .forEach(function (p) {
+          var mo = Morceaux.mouvements(Morceaux.get(p.simplifieDe)).total, ms = Morceaux.mouvements(p).total;
+          cible.appendChild(ligne(p, Programme.difficulte(Morceaux.get(p.simplifieDe)).niveau + ' → ' + Programme.difficulte(p).niveau + '/6 · ✋ −' + Math.round((1 - ms / mo) * 100) + ' %'));
+        });
     }
     if (tiktok.length) {
       cible = rubrique('📱 TikTok');
@@ -1243,7 +1253,7 @@
     var r = Store.revision();
     if (r && r.jour === jour && r.ids.every(trouverMorceau)) return r.ids;
     var joues = Store.joues();
-    var tous = Morceaux.tous().filter(function (m) { return !m.versionDe; });
+    var tous = Morceaux.tous().filter(function (m) { return !m.versionDe && !m.simplifieDe; });
     var debut = new Date(); debut.setHours(0, 0, 0, 0);
     // Déjà joués (pas aujourd'hui), du plus ancien au plus récent : à revoir.
     var anciens = tous.filter(function (m) { return joues[m.id] && joues[m.id].t < debut.getTime(); })
@@ -1479,6 +1489,22 @@
         : '⏱ Version courte (' + nbAutre + ' mesures)');
       bAutre.onclick = function () { ouvrirMorceau(autre.id); };
       h.appendChild(bAutre);
+    }
+    // Version simplifiée / originale d'une pièce du répertoire.
+    var autreS = p.simple ? trouverMorceau(p.simple) : p.simplifieDe ? trouverMorceau(p.simplifieDe) : null;
+    if (autreS) {
+      var bS = el('button', 'btn large version-simple', p.simple
+        ? '🪶 Version simplifiée : mélodie et basse, première position (' + Programme.difficulte(autreS).niveau + '/6)'
+        : '🎼 Version originale (' + Programme.difficulte(autreS).niveau + '/6)');
+      bS.onclick = function () { ouvrirMorceau(autreS.id); };
+      h.appendChild(bS);
+      if (p.simplifieDe) {
+        var mvO = Morceaux.mouvements(autreS), mvS = Morceaux.mouvements(p);
+        h.appendChild(el('p', 'difficulte', '✋ Mouvements des doigts : ' + mvS.total + ' au lieu de ' + mvO.total + ' — ' +
+          mvS.poses + ' doigts posés (' + mvO.poses + '), ' +
+          (mvS.deplacements ? mvS.deplacements + ' déplacements de la main' : 'aucun déplacement de la main') + ' (' + mvO.deplacements + '), ' +
+          mvS.auriculaire + ' notes à l’auriculaire (' + mvO.auriculaire + '), ' + mvS.sauts + ' sauts de corde (' + mvO.sauts + ').'));
+      }
     }
     // Barre de lecture en haut de la fiche, avant la description : Écouter,
     // Arrêter et le tempo sont ce qu'on touche en premier (remplie plus bas).

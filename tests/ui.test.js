@@ -459,10 +459,12 @@ function verifie(nom, cond, detail) {
     const cran = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => d.querySelector('h3').textContent === '🎤 The Cranberries');
     verifie('« The » ignoré pour le tri, Zombie avec les Cranberries', cran && /Zombie/.test(cran.textContent) && titresA.indexOf('🎤 The Cranberries') < titresA.indexOf('🎤 Deep Purple'));
     verifie('« Leonard Cohen » rangé à L, pas à « onard »', titresA.indexOf('🎤 Leonard Cohen') > titresA.indexOf('🎤 L. van Beethoven') && titresA.indexOf('🎤 Leonard Cohen') < titresA.indexOf('🎤 Louane'));
+    verifie('rangement par artiste : sans les versions simplifiées', !/version simplifiée/.test($('listeMorceaux').textContent));
     verifie('rangement mémorisé', w.Store.reglages().rangementMorceaux === 'artiste');
     [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'difficulte').click();
     const titresD = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux h3')].map((x) => x.textContent).filter((t) => /^📊/.test(t));
     verifie('rangement par difficulté : 6 niveaux, du plus simple au plus exigeant', titresD.length === 6 && /1 · Premiers sons/.test(titresD[0]) && /6 · Expert/.test(titresD[5]), titresD.join(' | '));
+    verifie('rangement par difficulté : sans les versions simplifiées', !/version simplifiée/.test($('listeMorceaux').textContent));
     const n1 = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /1 · Premiers sons/.test(d.querySelector('h3').textContent));
     verifie('niveau 1 : les cordes à vide au pouce', /Les basses au pouce/.test(n1.textContent) && !/Blackbird/.test(n1.textContent));
     w.AppGuitare.ouvrirMorceau('ch-blackbird');
@@ -490,6 +492,18 @@ function verifie(nom, cond, detail) {
     verifie('Top 20 : 4 rubriques par niveau', titresT.length === 4 && /Débutant/.test(titresT[0]) && /Avancé/.test(titresT[3]), titresT.join(' | '));
     const top1 = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /Débutant/.test(d.querySelector('h3').textContent));
     verifie('Top 20 débutant : Knockin’ (déjà dans l’app), Wonderwall, Le vent nous portera…', /Knockin/.test(top1.textContent) && /Wonderwall/.test(top1.textContent) && /Le vent nous portera/.test(top1.textContent));
+    const rubS = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /🪶 Versions simplifiées/.test(d.querySelector('h3').textContent));
+    verifie('Morceaux : rubrique « 🪶 Versions simplifiées », avec le niveau avant → après', rubS && rubS.querySelectorAll('.ligne-morceau').length >= 25 &&
+            /\d → \d\/6 · ✋ −\d+ %/.test(rubS.textContent), rubS && rubS.querySelectorAll('.ligne-morceau').length);
+    w.AppGuitare.ouvrirMorceau('brahms-valse-3');
+    const bSimple = $('detailMorceau').querySelector('.version-simple');
+    verifie('fiche d’une pièce : bouton « Version simplifiée »', bSimple && /Version simplifiée/.test(bSimple.textContent));
+    bSimple.click();
+    verifie('version simplifiée ouverte, toute en première position, avec retour à l’original',
+            /version simplifiée/.test($('detailMorceau').querySelector('h2').textContent) && /Version originale/.test($('detailMorceau').querySelector('.version-simple').textContent) &&
+            [...$('detailMorceau').querySelectorAll('.tab-note text, .tab-note')].length > 0 && /Mutopia/.test($('detailMorceau').textContent) &&
+            /✋ Mouvements des doigts : \d+ au lieu de \d+ — \d+ doigts posés \(\d+\), aucun déplacement de la main/.test($('detailMorceau').textContent));
+    w.AppGuitare.aller('morceaux');
     verifie('versions longues absentes de la liste', !/version longue/.test($('listeMorceaux').textContent));
     w.AppGuitare.ouvrirMorceau('ch-final-countdown');
     const bL = $('detailMorceau').querySelector('.version-autre');

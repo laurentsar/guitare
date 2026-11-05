@@ -1589,11 +1589,134 @@
 
   PIECES.forEach(function (p) { completerDoigtes(p.notes); });
 
+  /* Versions simplifiées, calculées à partir de la tablature d'origine.
+   * L'harmonie reste celle du morceau :
+   *  - la mélodie : la note la plus haute de chaque attaque ; dans un temps
+   *    très chargé (arpège en doubles croches), seulement la plus haute du
+   *    temps, posée sur le temps ;
+   *  - la basse : la plus grave au premier temps de chaque mesure (et au
+   *    3e temps d'une mesure à 4 temps si l'accord change), ramenée sur les
+   *    cordes 6 à 4, cases 0 à 4 ;
+   *  - tout en première position : une note trop haute descend d'une octave
+   *    (même nom de note, donc même accord). Les voix intérieures tombent.
+   * Proposée sur la fiche de l'original et dans « Versions simplifiées ». */
+  var VIDE = { 1: 64, 2: 59, 3: 55, 4: 50, 5: 45, 6: 40 };
+  function placerMelodie(m, interdites) {
+    for (var c = 1; c <= 6; c++) {
+      if (interdites.indexOf(c) !== -1) continue;
+      var f = m - VIDE[c];
+      if (f >= 0 && f <= 4) return { corde: c, frette: f };
+    }
+    return null;
+  }
+  function placerBasse(m) {
+    while (m > 52) m -= 12;
+    while (m < 40) m += 12;
+    var mieux = null;
+    [6, 5, 4].forEach(function (c) {
+      var f = m - VIDE[c];
+      if (f >= 0 && f <= 4 && (!mieux || f < mieux.frette)) mieux = { corde: c, frette: f, midi: m };
+    });
+    return mieux;
+  }
+  function simplifier(p) {
+    var sig = p.signature || [4, 4], parMesure = sig[0] * 4 / sig[1];
+    var fin = p.notes.reduce(function (t, n) { return Math.max(t, n.temps + n.duree); }, 0);
+    var attaques = {};
+    p.notes.forEach(function (n) { (attaques[n.temps] = attaques[n.temps] || []).push(n); });
+    var temps = Object.keys(attaques).map(Number).sort(function (a, b) { return a - b; });
+    // Mélodie : la plus haute de chaque attaque, puis allègement temps par temps.
+    var haut = temps.map(function (t) {
+      return { temps: t, midi: Math.max.apply(null, attaques[t].map(function (n) { return n.midi; })) };
+    });
+    var unite = parMesure % 1 ? 0.5 : 1, mel = [];
+    for (var b = 0; b < fin; b += unite) {
+      var dans = haut.filter(function (x) { return x.temps >= b - 1e-9 && x.temps < b + unite - 1e-9; });
+      if (dans.length <= 2) mel = mel.concat(dans);
+      else mel.push({ temps: b, midi: Math.max.apply(null, dans.map(function (x) { return x.midi; })) });
+    }
+    // Une seule octave pour tout le morceau quand c'est possible.
+    var hors = function (k) { return mel.filter(function (x) { return x.midi + k > 68 || x.midi + k < 40; }).length; };
+    // (on garde l'octave d'origine tant que peu de notes en sortent).
+    var decal = hors(0) <= mel.length * 0.2 ? 0 : [0, -12, 12].sort(function (a, b) { return hors(a) - hors(b); })[0];
+    // Basse : premier temps (et milieu de mesure à 4 temps si elle change).
+    var basses = [];
+    for (var t = 0; t < fin; t += parMesure) {
+      [0].concat(parMesure === 4 ? [2] : []).forEach(function (d) {
+        var g = p.notes.filter(function (n) { return n.temps >= t + d - 1e-9 && n.temps < t + d + 0.5 - 1e-9; });
+        if (!g.length) return;
+        var bas = g.reduce(function (a, n) { return n.midi < a.midi ? n : a; });
+        if (d && basses.length && basses[basses.length - 1].orig % 12 === bas.midi % 12) return;
+        var pl = placerBasse(bas.midi);
+        if (pl) basses.push({ temps: t + d, corde: pl.corde, frette: pl.frette, midi: pl.midi, orig: bas.midi });
+      });
+    }
+    basses.forEach(function (x, i) {
+      var suiv = i + 1 < basses.length ? basses[i + 1].temps : fin;
+      x.duree = Math.min(suiv, x.temps + parMesure) - x.temps;
+    });
+    var notes = [];
+    mel.forEach(function (x, i) {
+      var m = x.midi + decal;
+      while (m > 68) m -= 12;
+      while (m < 40) m += 12;
+      var sonne = basses.filter(function (bb) { return bb.temps <= x.temps + 1e-9 && x.temps < bb.temps + bb.duree - 1e-9; })[0];
+      // Passage à une voix : la note grave EST la basse, on ne la double pas.
+      if (sonne && sonne.temps === x.temps && x.midi === sonne.orig) return;
+      var pl = placerMelodie(m, sonne ? [sonne.corde] : []);
+      if (!pl && m + 12 <= 68) { m += 12; pl = placerMelodie(m, sonne ? [sonne.corde] : []); }
+      if (pl && sonne && sonne.midi >= m && m + 12 <= 68) {   // la mélodie reste au-dessus de la basse
+        var pl2 = placerMelodie(m + 12, [sonne.corde]);
+        if (pl2) { m += 12; pl = pl2; }
+      }
+      if (!pl) return;
+      if (sonne && sonne.midi >= m) sonne.sacrifiee = sonne.temps === x.temps || sonne.sacrifiee;
+      var suiv = i + 1 < mel.length ? mel[i + 1].temps : fin;
+      notes.push({ temps: x.temps, corde: pl.corde, frette: pl.frette, midi: m, duree: Math.max(0.25, suiv - x.temps) });
+    });
+    basses.forEach(function (x) {
+      if (x.sacrifiee) return;
+      if (notes.some(function (n) { return n.temps === x.temps && n.midi === x.midi; })) return;
+      notes.push({ temps: x.temps, corde: x.corde, frette: x.frette, midi: x.midi, duree: x.duree });
+    });
+    notes.sort(function (a, b) { return a.temps - b.temps || b.corde - a.corde; });
+    // Une corde ne sonne qu'une note : la précédente s'arrête quand la suivante attaque.
+    notes.forEach(function (n, i) {
+      for (var k = i + 1; k < notes.length; k++) {
+        if (notes[k].corde === n.corde && notes[k].temps > n.temps) { n.duree = Math.min(n.duree, notes[k].temps - n.temps); break; }
+      }
+    });
+    return notes;
+  }
+  var SIMPLIFIABLES = PIECES.filter(function (p) {
+    if (p.chanson || p.artiste || p.categorie || p.versionDe || !p.notes.length) return false;
+    var parT = {};
+    p.notes.forEach(function (n) { parT[n.temps] = (parT[n.temps] || 0) + 1; });
+    var poly = Object.keys(parT).some(function (t) { return parT[t] >= 2; });
+    return p.source ? true : poly && p.niveau >= 3;
+  });
+  SIMPLIFIABLES.forEach(function (p) {
+    var notes = simplifier(p);
+    var hautOrig = Math.max.apply(null, p.notes.map(function (n) { return n.frette; }));
+    if (notes.length >= p.notes.length * 0.85 && hautOrig <= 5) return;   // rien à gagner
+    var id = p.id + '-simple';
+    p.simple = id;
+    ajoute({
+      id: id, titre: p.titre + ' — version simplifiée',
+      sous_titre: p.sous_titre + ' · simplifiée, première position',
+      niveau: Math.max(1, p.niveau - 1), tempo: p.tempo, tempoOriginal: p.tempoOriginal, signature: p.signature,
+      categorie: 'simplifiee', simplifieDe: p.id, source: p.source,
+      description: 'Version simplifiée de « ' + p.titre + ' », calculée par l’app à partir de la tablature d’origine : la mélodie (la note la plus haute) et la basse au premier temps, qui gardent l’harmonie du morceau ; les voix intérieures tombent et tout se joue en première position (une note trop haute descend d’une octave : même nom de note, donc même accord). ' +
+        p.notes.length + ' notes dans l’original, ' + notes.length + ' ici.',
+      notes: completerDoigtes(notes)
+    });
+  });
+
   function tous() { return PIECES.slice(); }
   function get(id) { for (var i = 0; i < PIECES.length; i++) if (PIECES[i].id === id) return PIECES[i]; return null; }
 
   global.Morceaux = {
-    tous: tous, get: get, melodie: melodie, arpeges: arpeges, etapes: etapes, completerDoigtes: completerDoigtes,
+    tous: tous, get: get, simplifier: simplifier, melodie: melodie, arpeges: arpeges, etapes: etapes, completerDoigtes: completerDoigtes,
     caseEnPremierePosition: caseEnPremierePosition, midiDeNom: midiDeNom
   };
 })(typeof window !== 'undefined' ? window : globalThis);

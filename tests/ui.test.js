@@ -490,6 +490,17 @@ function verifie(nom, cond, detail) {
     verifie('Top 20 : 4 rubriques par niveau', titresT.length === 4 && /Débutant/.test(titresT[0]) && /Avancé/.test(titresT[3]), titresT.join(' | '));
     const top1 = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /Débutant/.test(d.querySelector('h3').textContent));
     verifie('Top 20 débutant : Knockin’ (déjà dans l’app), Wonderwall, Le vent nous portera…', /Knockin/.test(top1.textContent) && /Wonderwall/.test(top1.textContent) && /Le vent nous portera/.test(top1.textContent));
+    const rubS = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /🪶 Versions simplifiées/.test(d.querySelector('h3').textContent));
+    verifie('Morceaux : rubrique « 🪶 Versions simplifiées », avec le niveau avant → après', rubS && rubS.querySelectorAll('.ligne-morceau').length >= 30 &&
+            /\d → \d\/6/.test(rubS.textContent), rubS && rubS.querySelectorAll('.ligne-morceau').length);
+    w.AppGuitare.ouvrirMorceau('brahms-valse-3');
+    const bSimple = $('detailMorceau').querySelector('.version-simple');
+    verifie('fiche d’une pièce : bouton « Version simplifiée »', bSimple && /Version simplifiée/.test(bSimple.textContent));
+    bSimple.click();
+    verifie('version simplifiée ouverte, toute en première position, avec retour à l’original',
+            /version simplifiée/.test($('detailMorceau').querySelector('h2').textContent) && /Version originale/.test($('detailMorceau').querySelector('.version-simple').textContent) &&
+            [...$('detailMorceau').querySelectorAll('.tab-note text, .tab-note')].length > 0 && /Mutopia/.test($('detailMorceau').textContent));
+    w.AppGuitare.aller('morceaux');
     verifie('versions longues absentes de la liste', !/version longue/.test($('listeMorceaux').textContent));
     w.AppGuitare.ouvrirMorceau('ch-final-countdown');
     const bL = $('detailMorceau').querySelector('.version-autre');

@@ -611,7 +611,7 @@ console.log('\n— Lecteur —');
 
 console.log('\n— Répertoire Mutopia —');
 {
-  const rep = Morceaux.tous().filter((p) => p.source);
+  const rep = Morceaux.tous().filter((p) => p.source && !p.simplifieDe);
   verifie('46 pièces importées', rep.length === 46, rep.length);
   verifie('identifiants uniques', new Set(Morceaux.tous().map((p) => p.id)).size === Morceaux.tous().length);
   verifie('licences : domaine public ou CC-BY seulement (pas de ShareAlike)',
@@ -832,6 +832,41 @@ console.log('\n— Difficulté d’exécution —');
   const parNiv = [1, 2, 3, 4, 5, 6].map((n) => tous.filter((m) => Programme.difficulte(m).niveau === n).length);
   verifie('six niveaux, aucun vide', parNiv.every((n) => n > 0), parNiv.join(','));
   verifie('chaque morceau a une raison lisible', tous.every((m) => Programme.difficulte(m).raisons.length > 0));
+}
+
+console.log('\n— Versions simplifiées —');
+{
+  const simples = Morceaux.tous().filter((p) => p.simplifieDe);
+  verifie('au moins 30 pièces du répertoire ont leur version simplifiée, reliée à l’original', simples.length >= 30 &&
+          simples.every((p) => Morceaux.get(p.simplifieDe).simple === p.id && p.categorie === 'simplifiee'), simples.length);
+  verifie('première position : rien au-delà de la case 4', simples.every((p) => p.notes.every((n) => n.frette >= 0 && n.frette <= 4)));
+  verifie('chaque note sonne la hauteur de sa case', simples.every((p) => p.notes.every((n) => n.midi === Theorie.midiDeCase(n.corde, n.frette))));
+  verifie('une corde ne sonne jamais deux notes à la fois', simples.every((p) => [...new Set(p.notes.map((n) => n.temps))].every((t) => {
+    const c = p.notes.filter((n) => n.temps <= t && t < n.temps + n.duree - 1e-6).map((n) => n.corde);
+    return new Set(c).size === c.length; })));
+  // L'harmonie : chaque note est une note (au même nom) de ce que l'original
+  // fait sonner à cet endroit, et chaque basse de premier temps est la basse de l'original.
+  const fautes = [];
+  simples.forEach((p) => {
+    const o = Morceaux.get(p.simplifieDe), m = Tablature.noiresParMesure(o), u = m % 1 ? 0.5 : 1;
+    p.notes.forEach((n) => {
+      const b = Math.floor(n.temps / u + 1e-9) * u;
+      const ici = o.notes.filter((x) => (x.temps >= b - 1e-9 && x.temps < b + u - 1e-9) || (x.temps <= n.temps && n.temps < x.temps + x.duree - 1e-9));
+      if (!ici.some((x) => x.midi % 12 === n.midi % 12)) fautes.push(p.id + ' @' + n.temps);
+    });
+    for (let t = 0; t < Tablature.duree_totale(o); t += m) {
+      const g = o.notes.filter((x) => x.temps >= t - 1e-9 && x.temps < t + 0.5 - 1e-9);
+      const bs = p.notes.filter((x) => Math.abs(x.temps - t) < 1e-9);
+      if (!g.length || !bs.length) continue;
+      const basO = Math.min(...g.map((x) => x.midi)), basS = Math.min(...bs.map((x) => x.midi));
+      if (basO % 12 !== basS % 12) fautes.push(p.id + ' basse @' + t);
+    }
+  });
+  verifie('harmonie conservée : mêmes notes que l’original, même basse au premier temps', !fautes.length, fautes.slice(0, 6).join(', '));
+  verifie('plus facile (ou aussi facile) que l’original', simples.every((p) => Programme.difficulte(p).score <= Programme.difficulte(Morceaux.get(p.simplifieDe)).score + 0.1),
+          simples.filter((p) => Programme.difficulte(p).score > Programme.difficulte(Morceaux.get(p.simplifieDe)).score + 0.1).map((p) => p.id).join(','));
+  verifie('moins de notes que l’original', simples.every((p) => p.notes.length < Morceaux.get(p.simplifieDe).notes.length));
+  verifie('le crédit de la partition source suit la version simplifiée', simples.every((p) => p.source === Morceaux.get(p.simplifieDe).source));
 }
 
 console.log('\n— Programme progressif —');

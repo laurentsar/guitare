@@ -464,6 +464,14 @@
         { titre: 'Intro et refrain', motif: 'plaque', tours: 2, grille: ['Em', 'Em', 'C', 'C', 'Am', 'Am', 'D', 'D'] },
         { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['Em', 'C', 'Am', 'D'] }
       ] },
+    { id: 'ch-californication', titre: 'Californication', artiste: 'Red Hot Chili Peppers', annee: 1999,
+      capo: 0, tempo: 96, groupe: 'tiktok',
+      structure: ['Couplet:Intro:1', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Couplet:Solo', 'Refrain', 'Couplet:Fin:1'],
+      note: 'En La mineur, sans capo. Couplet La m – Fa (le riff de la vidéo s’égrène sur ces deux accords), refrain Do – Sol – Ré – La m.',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', tours: 2, grille: ['Am', 'Am', 'F', 'F'] },
+        { titre: 'Refrain', motif: 'balade', tours: 2, grille: ['C', 'G', 'D', 'Am'] }
+      ] },
     /* Top 20 de la guitare acoustique, par niveau (top : 1 débutant, 2
      * intermédiaire, 3 confirmé, 4 avancé). Grilles d'après Hooktheory,
      * simplifiées et transposées au capo vers des formes ouvertes. */

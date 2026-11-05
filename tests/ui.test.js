@@ -436,10 +436,12 @@ function verifie(nom, cond, detail) {
     const titresA = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux h3')].map((x) => x.textContent);
     verifie('rangement par artiste : une rubrique par compositeur, triées', titresA.includes('🎤 F. Sor') && titresA.includes('🎤 Traditionnel') &&
             titresA.indexOf('🎤 L. van Beethoven') < titresA.indexOf('🎤 Traditionnel'), titresA.slice(0, 8).join(' | '));
+    verifie('rangement par artiste : sans les versions simplifiées', !/version simplifiée/.test($('listeMorceaux').textContent));
     verifie('rangement mémorisé', w.Store.reglages().rangementMorceaux === 'artiste');
     [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'difficulte').click();
     const titresD = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux h3')].map((x) => x.textContent).filter((t) => /^📊/.test(t));
     verifie('rangement par difficulté : 6 niveaux, du plus simple au plus exigeant', titresD.length === 6 && /1 · Premiers sons/.test(titresD[0]) && /6 · Expert/.test(titresD[5]), titresD.join(' | '));
+    verifie('rangement par difficulté : sans les versions simplifiées', !/version simplifiée/.test($('listeMorceaux').textContent));
     const n1 = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /1 · Premiers sons/.test(d.querySelector('h3').textContent));
     verifie('niveau 1 : les cordes à vide au pouce', /Les basses au pouce/.test(n1.textContent) && !/Valse n° 3/.test(n1.textContent));
     w.AppGuitare.ouvrirMorceau('brahms-valse-3');
@@ -460,6 +462,18 @@ function verifie(nom, cond, detail) {
     verifie('section pouce : rythme, pom-tcha, contretemps, petit morceau listés', ['Le pouce en rythme', 'Pom-tcha à vide', 'Le contretemps (reggae)', 'Petit morceau à vide']
       .every((t) => $('listeMorceaux').textContent.indexOf(t) !== -1));
     verifie('ni TikTok, ni Top 20, ni chansons sous droits', !/TikTok|Top 20|grilles d’accords\)/.test($('listeMorceaux').textContent));
+    const rubS = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /🪶 Versions simplifiées/.test(d.querySelector('h3').textContent));
+    verifie('Morceaux : rubrique « 🪶 Versions simplifiées », avec le niveau avant → après', rubS && rubS.querySelectorAll('.ligne-morceau').length >= 25 &&
+            /\d → \d\/6 · ✋ −\d+ %/.test(rubS.textContent), rubS && rubS.querySelectorAll('.ligne-morceau').length);
+    w.AppGuitare.ouvrirMorceau('brahms-valse-3');
+    const bSimple = $('detailMorceau').querySelector('.version-simple');
+    verifie('fiche d’une pièce : bouton « Version simplifiée »', bSimple && /Version simplifiée/.test(bSimple.textContent));
+    bSimple.click();
+    verifie('version simplifiée ouverte, toute en première position, avec retour à l’original',
+            /version simplifiée/.test($('detailMorceau').querySelector('h2').textContent) && /Version originale/.test($('detailMorceau').querySelector('.version-simple').textContent) &&
+            [...$('detailMorceau').querySelectorAll('.tab-note text, .tab-note')].length > 0 && /Mutopia/.test($('detailMorceau').textContent) &&
+            /✋ Mouvements des doigts : \d+ au lieu de \d+ — \d+ doigts posés \(\d+\), aucun déplacement de la main/.test($('detailMorceau').textContent));
+    w.AppGuitare.aller('morceaux');
     w.AppGuitare.ouvrirMorceau('pouce-g-c-d');
     verifie('fiche : main droite « pom-tcha » au pouce', /pom-tcha/i.test($('detailMorceau').textContent));
   }

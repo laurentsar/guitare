@@ -12,7 +12,7 @@
 
 <header class="entete">
   <div class="titre-bloc">
-    <h1>Ma Guitare <span id="chipVersion" class="chip">v1.1</span></h1>
+    <h1>Ma Guitare <span id="chipVersion" class="chip">v1.2</span></h1>
     <p id="sousTitre">Guitare classique · débutant</p>
   </div>
   <div class="entete-droite">
@@ -27,7 +27,6 @@
     <div class="carte accent" id="carteReprendre"></div>
     <div class="grille-raccourcis">
       <button class="raccourci" data-aller="programme"><span>🪜</span>Programme</button>
-      <button class="raccourci" data-aller="accordeur"><span>🎯</span>Accorder</button>
       <button class="raccourci" data-aller="metronome"><span>🥁</span>Métronome</button>
       <button class="raccourci" data-aller="accords"><span>🎸</span>Accords</button>
       <button class="raccourci" data-aller="morceaux"><span>🎼</span>Morceaux</button>
@@ -61,25 +60,6 @@
   <section id="ecran-accord" class="ecran">
     <button class="retour" data-aller="accords">‹ Accords</button>
     <div id="detailAccord"></div>
-  </section>
-
-  <section id="ecran-accordeur" class="ecran">
-    <div class="carte accordeur">
-      <div id="accordeurEtat" class="accordeur-etat">Appuie sur « Écouter » et joue une corde à vide.</div>
-      <div class="aiguille-boite">
-        <div class="aiguille-graduation"></div>
-        <div id="aiguille" class="aiguille"></div>
-        <div class="aiguille-centre"></div>
-      </div>
-      <div id="accordeurNote" class="accordeur-note">—</div>
-      <div id="accordeurCents" class="accordeur-cents"></div>
-      <div class="cordes-etat" id="cordesEtat"></div>
-      <div class="actions">
-        <button id="btnAccordeur" class="btn primaire">Écouter</button>
-        <button id="btnRef" class="btn">Jouer la référence</button>
-      </div>
-      <p class="aide">Les six cordes, de la plus grave à la plus aiguë : Mi La Ré Sol Si Mi. Monte toujours vers la note plutôt que de descendre.</p>
-    </div>
   </section>
 
   <section id="ecran-metronome" class="ecran">
@@ -196,7 +176,7 @@
 
     <div class="carte">
       <h2>🔒 Confidentialité</h2>
-      <p class="aide">Aucun compte, aucune publicité, aucune donnée collectée. Tes progrès restent sur l’appareil. L’accordeur écoute le micro seulement quand tu l’allumes, et le son est analysé sur place : rien n’est enregistré ni envoyé.</p>
+      <p class="aide">Aucun compte, aucune publicité, aucune donnée collectée. Tes progrès restent sur l’appareil. L’app n’utilise pas le micro.</p>
       <p class="aide" id="aproposVersion"></p>
     </div>
   </section>
@@ -208,7 +188,6 @@
   <button data-aller="programme"><span>🪜</span>Programme</button>
   <button data-aller="parcours"><span>📘</span>Parcours</button>
   <button data-aller="accords"><span>🎸</span>Accords</button>
-  <button data-aller="accordeur"><span>🎯</span>Accordeur</button>
   <button data-aller="metronome"><span>🥁</span>Tempo</button>
   <button data-aller="morceaux"><span>🎼</span>Morceaux</button>
   <button data-aller="oreille"><span>👂</span>Oreille</button>
@@ -216,7 +195,7 @@
 </nav>
 
 <script>
-  window.APP_VERSION = '1.1';
+  window.APP_VERSION = '1.2';
 </script>
 <script src="theorie.js"></script>
 <script src="audio.js"></script>
@@ -230,7 +209,6 @@
 <script src="morceaux.js"></script>
 <script src="programme.js"></script>
 <script src="lecons.js"></script>
-<script src="accordeur.js"></script>
 <script src="oreille.js"></script>
 <script src="store.js"></script>
 <script src="ecran.js"></script>

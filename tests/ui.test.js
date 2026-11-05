@@ -33,7 +33,7 @@ function charge(f) {
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
 ['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'repertoire.js', 'morceaux.js', 'programme.js', 'lecons.js',
- 'accordeur.js', 'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'app.js'].forEach(charge);
+ 'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
 const listables = () => w.Morceaux.tous().filter((p) => !p.versionDe).length;
@@ -58,7 +58,7 @@ function verifie(nom, cond, detail) {
   verifie('première leçon proposée', /S’asseoir|S'asseoir/.test($('carteReprendre').textContent), $('carteReprendre').textContent.slice(0, 60));
 
   console.log('\n— Navigation —');
-  ['parcours', 'accords', 'accordeur', 'metronome', 'morceaux', 'oreille', 'gammes', 'reglages', 'accueil'].forEach((nom) => {
+  ['parcours', 'accords', 'metronome', 'morceaux', 'oreille', 'gammes', 'reglages', 'accueil'].forEach((nom) => {
     w.AppGuitare.aller(nom);
     verifie('écran ' + nom + ' affiché', $('ecran-' + nom).classList.contains('actif'));
   });
@@ -87,12 +87,11 @@ function verifie(nom, cond, detail) {
           'n=' + $('detailLecon').querySelectorAll('svg.schema').length);
   verifie('le schéma est placé avant le texte',
           $('detailLecon').querySelector('svg.schema').compareDocumentPosition($('detailLecon').querySelector('.lecon-texte')) & 4);
-  w.AppGuitare.aller('accordeur');
-  verifie('l’accordeur montre la tête et la méthode sans micro',
-          $('ecran-accordeur').querySelectorAll('svg.schema').length === 2,
-          'n=' + $('ecran-accordeur').querySelectorAll('svg.schema').length);
-  verifie('la méthode de la 5e case est repliée par défaut',
-          $('ecran-accordeur').querySelector('details') && !$('ecran-accordeur').querySelector('details').open);
+  verifie('plus d’accordeur : ni écran, ni onglet, ni raccourci', !$('ecran-accordeur') && !w.document.querySelector('[data-aller="accordeur"]'));
+  w.AppGuitare.ouvrirLecon('accorder');
+  const ref = [...$('detailLecon').querySelectorAll('button')].find((b) => /Jouer les six cordes/.test(b.textContent));
+  verifie('leçon « Accorder à l’oreille » : cordes de référence (six boutons + les six à la suite)', !!ref && $('detailLecon').querySelectorAll('.cordes-etat button').length === 6);
+  ref.click();
 
   console.log('\n— Accords —');
   w.AppGuitare.aller('accords');

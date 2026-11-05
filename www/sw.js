@@ -5,11 +5,11 @@
  * le réseau en priorité, le cache dès qu'il n'y a plus de réseau. Le nom du
  * cache porte la version : l'ancien est effacé à l'activation.
  */
-const CACHE = 'guitare-v1.1';
+const CACHE = 'guitare-v1.2';
 const FICHIERS = [
   './', './index.html', './styles.css', './app.js',
   './theorie.js', './audio.js', './accords.js', './illustrations.js', './tablature.js', './portee.js', './manche.js', './gammes.js', './repertoire.js', './morceaux.js', './programme.js',
-  './lecons.js', './accordeur.js', './oreille.js', './store.js', './ecran.js', './dpad-nav.js',
+  './lecons.js', './oreille.js', './store.js', './ecran.js', './dpad-nav.js',
   './tv.js', './manifest.webmanifest', './version.json'
 ];
 

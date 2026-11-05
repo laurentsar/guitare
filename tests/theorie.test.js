@@ -55,7 +55,7 @@ ctx.AudioContext = function () {
   this.resume = () => {};
 };
 
-['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'accordeur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js']
+['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'morceaux.js', 'lecons.js', 'oreille.js', '../tests/detecteur-hauteur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
 const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes, Programme } = ctx;
@@ -214,8 +214,8 @@ console.log('\n— Apprendre pas à pas —');
 {
   const nb = (p) => Math.ceil(Tablature.duree_totale(p) / Tablature.noiresParMesure(p));
   const mary = Morceaux.get('mary-agneau'), em = Morceaux.etapes(mary, nb(mary));
-  verifie('Mary : accordeur, écoute, note par note, 2 × 4 mesures, tout lent, vitesse, seul',
-          em.map((e) => e.action.type).join(',') === 'accordeur,section,guide,section,section,section,section,section', em.map((e) => e.titre).join(' | '));
+  verifie('Mary : cordes de référence, écoute, note par note, 2 × 4 mesures, tout lent, vitesse, seul',
+          em.map((e) => e.action.type).join(',') === 'reference,section,guide,section,section,section,section,section', em.map((e) => e.titre).join(' | '));
   verifie('Mary : les phrases couvrent les mesures 1-4 et 5-8', em[3].action.de === 1 && em[3].action.a === 4 && em[4].action.de === 5 && em[4].action.a === 8);
   verifie('étapes de travail : 60 % en boucle', em[3].action.pct === 60 && em[3].action.boucle);
   verifie('dernière étape : guitare muette, clic, 100 %', em[em.length - 1].action.muet && em[em.length - 1].action.clic && em[em.length - 1].action.pct === 100);

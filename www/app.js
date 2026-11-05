@@ -1,7 +1,7 @@
 /* Ma Guitare — assemblage de l'interface.
  *
  * Les modules font le travail (théorie, son, accords, tablature, leçons,
- * accordeur, oreille) ; ce fichier ne fait que les afficher et enchaîner les
+ * oreille) ; ce fichier ne fait que les afficher et enchaîner les
  * écrans. Quand quelque chose de musical est faux, c'est dans un module —
  * et c'est testé là-bas.
  */
@@ -38,7 +38,6 @@
     }
     // Quitter un écran coupe ce qu'il faisait : rien de pire qu'un métronome
     // qui continue pendant qu'on lit une leçon.
-    if (ecranCourant === 'accordeur' && nom !== 'accordeur') arreterAccordeur();
     // Morceau ↔ pupitre : même lecture, deux vues — on ne coupe pas.
     var lecteur = ['morceau', 'pupitre'];
     if (ecranCourant === 'editeur' && nom !== 'editeur') Tablature.arreter();
@@ -138,7 +137,7 @@
   // Ne tourne que sur les écrans où l'on joue réellement, et s'arrête quand
   // l'app passe en arrière-plan : un compteur qui gonfle tout seul ne veut
   // plus rien dire.
-  var ECRANS_PRATIQUE = ['lecon', 'accordeur', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur', 'pupitre'];
+  var ECRANS_PRATIQUE = ['lecon', 'metronome', 'morceau', 'accords', 'accord', 'oreille', 'gammes', 'editeur', 'pupitre'];
   setInterval(function () {
     if (document.hidden) return;
     if (ECRANS_PRATIQUE.indexOf(ecranCourant) === -1) return;
@@ -426,7 +425,7 @@
     // `ex.ref.join(...)` quand `ref` est une simple chaîne : c'est la panne
     // qu'avait attrapée le test d'interface.
     switch (ex.type) {
-      case 'accordeur': return 'accordeur';
+      case 'reference': return 'cordes de référence';
       case 'metronome': return 'métronome';
       case 'accord': return 'accord ' + ex.ref;
       case 'changements': return 'changements ' + ex.ref.join(' ↔ ');
@@ -489,10 +488,8 @@
       boite.appendChild(b);
     } else if (ex.type === 'changements') {
       boite.appendChild(widgetChangements(ex));
-    } else if (ex.type === 'accordeur') {
-      var ba = el('button', 'btn primaire large', 'Ouvrir l’accordeur');
-      ba.onclick = function () { aller('accordeur'); };
-      boite.appendChild(ba);
+    } else if (ex.type === 'reference') {
+      boite.appendChild(cordesReference());
     } else if (ex.type === 'metronome') {
       var bm = el('button', 'btn primaire large', 'Ouvrir le métronome');
       bm.onclick = function () { if (ex.tempo) reglerTempo(ex.tempo); aller('metronome'); };
@@ -635,63 +632,29 @@
     aller('accord');
   }
 
-  // ------------------------------------------------------------- accordeur
-  var accordeurActif = false;
-  var cordesJustes = {};
-
-  function rendreCordes(cible) {
-    var h = vide($('cordesEtat'));
+  // ------------------------------------------------- cordes de référence
+  /* Pas d'accordeur au micro : l'app joue les six cordes à vide, et on
+   * accorde à l'oreille (méthode dans la leçon « Accorder »). */
+  function jouerReference() {
+    for (var n = 6, i = 0; n >= 1; n--, i++) {
+      Audio5.jouerCase(n, 0, { retard: i * 0.9, duree: 2.4, timbre: Store.reglages().timbre });
+    }
+  }
+  function cordesReference() {
+    var d = el('div');
+    var h = el('div', 'cordes-etat');
     for (var n = 6; n >= 1; n--) {
       (function (num) {
-        var b = el('button', (cordesJustes[num] ? 'ok ' : '') + (cible === num ? 'vise' : ''),
-          num + ' ' + Theorie.CORDES[num].court);
+        var b = el('button', null, num + ' ' + Theorie.CORDES[num].court);
         b.onclick = function () { Audio5.jouerCase(num, 0, { duree: 3, timbre: Store.reglages().timbre }); };
         h.appendChild(b);
       })(n);
     }
-  }
-
-  function majAccordeur(m) {
-    var aiguille = $('aiguille');
-    if (!m || !m.cible) {
-      $('accordeurNote').textContent = '—';
-      $('accordeurCents').textContent = '';
-      aiguille.style.left = '50%';
-      aiguille.style.background = 'var(--faux)';
-      return;
-    }
-    var c = m.cible;
-    var cents = Math.max(-50, Math.min(50, c.cents));
-    aiguille.style.left = (50 + cents) + '%';
-    var juste = Math.abs(c.cents) < 5;
-    aiguille.style.background = juste ? 'var(--ok)' : (Math.abs(c.cents) < 15 ? 'var(--presque)' : 'var(--faux)');
-    $('accordeurNote').textContent = Theorie.CORDES[c.corde].court + ' (corde ' + c.corde + ')';
-    $('accordeurCents').textContent = (c.cents > 0 ? '+' : '') + c.cents.toFixed(0) + ' centièmes · ' +
-      m.freq.toFixed(1) + ' Hz' + (juste ? ' — juste' : (c.cents > 0 ? ' — trop haut, détends' : ' — trop bas, tends'));
-    if (juste) cordesJustes[c.corde] = true;
-    rendreCordes(c.corde);
-  }
-
-  function basculerAccordeur() {
-    if (accordeurActif) { arreterAccordeur(); return; }
-    $('accordeurEtat').textContent = 'Autorisation du micro…';
-    Accordeur.demarrer(majAccordeur, function (msg) {
-      $('accordeurEtat').textContent = msg;
-      accordeurActif = false;
-      $('btnAccordeur').textContent = 'Écouter';
-    }).then(function (ok) {
-      if (!ok) return;
-      accordeurActif = true;
-      $('btnAccordeur').textContent = 'Arrêter';
-      $('accordeurEtat').textContent = 'Joue une corde à vide, laisse-la sonner.';
-    });
-  }
-
-  function arreterAccordeur() {
-    Accordeur.arreter();
-    accordeurActif = false;
-    var b = $('btnAccordeur');
-    if (b) b.textContent = 'Écouter';
+    d.appendChild(h);
+    var tout = el('button', 'btn primaire large', '🎵 Jouer les six cordes');
+    tout.onclick = jouerReference;
+    d.appendChild(tout);
+    return d;
   }
 
   // ------------------------------------------------------------- métronome
@@ -1962,7 +1925,7 @@
     /* Une étape du parcours règle le lecteur comme un professeur le ferait :
      * section, tempo, boucle, guitare muette — puis lance la lecture. */
     function appliquerEtape(action) {
-      if (action.type === 'accordeur') { aller('accordeur'); return; }
+      if (action.type === 'reference') { jouerReference(); return; }
       if (action.type === 'accords') {
         var bloc = h.querySelector('.mains-morceau');
         if (bloc) { bloc.open = true; defiler(bloc); }
@@ -2440,27 +2403,6 @@
     rendreAccueil();
 
     $('raccourciEditeur').onclick = function () { ouvrirEditeur(null); };
-
-    // Accordeur
-    $('btnAccordeur').onclick = basculerAccordeur;
-    $('btnRef').onclick = function () {
-      // Les six cordes à vide, du grave à l'aigu : référence à l'oreille quand
-      // le micro n'est pas utilisable (pièce bruyante, micro refusé).
-      for (var n = 6, i = 0; n >= 1; n--, i++) {
-        Audio5.jouerCase(n, 0, { retard: i * 0.9, duree: 2.4, timbre: Store.reglages().timbre });
-      }
-    };
-    rendreCordes(null);
-    var schemaTete = document.createElement('div');
-    schemaTete.innerHTML = Illustrations.rendre('tete');
-    $('ecran-accordeur').querySelector('.carte').appendChild(schemaTete);
-    // Accorder sans micro : replié, parce que ça ne sert qu'en dépannage —
-    // mais indispensable quand le micro est refusé ou la pièce bruyante.
-    var oreilleTuning = document.createElement('details');
-    oreilleTuning.innerHTML = '<summary>Accorder à l’oreille, sans micro</summary>' +
-      Illustrations.rendre('accordage') +
-      '<p class="aide">Appuie sur la case indiquée et compare avec la corde du dessus jouée à vide : les deux doivent sonner pareil. Les boutons ronds ci-dessus jouent chaque corde à vide comme référence.</p>';
-    $('ecran-accordeur').querySelector('.carte').appendChild(oreilleTuning);
 
     // Métronome
     $('btnMetro').onclick = function () { Audio5.metronomeActif() ? arreterMetro() : demarrerMetro(); };

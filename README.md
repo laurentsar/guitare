@@ -14,7 +14,6 @@ le téléviseur.
 | | |
 |---|---|
 | **Parcours** | 18 leçons en 6 chapitres, de la tenue de l'instrument au barré. Une idée neuve par leçon, un exercice mesurable, une case à cocher. |
-| **Accordeur** | Détection de hauteur au micro (autocorrélation), affichage en centièmes, six cordes suivies une par une. |
 | **Métronome** | Tempo, mesure, subdivisions, battement du tempo à la main, accent sur le premier temps. |
 | **Programme** | Un parcours progressif dans les tablatures : 6 paliers, les six niveaux de difficulté d'exécution (premiers sons, débutant, premiers accords, intermédiaire, avancé, expert — voir « Par difficulté »), chacun s'ouvrant quand quelques morceaux du précédent sont acquis ; dans un palier, la technique d'abord, puis du plus simple au plus exigeant. **Adapté au ressenti** : deux « dur » de suite au palier le plus haut, et la séance consolide un palier en dessous (nouveautés plus simples, pas de défi) ; trois « ça va » ou « facile » de suite, et elle remonte ; un ressenti mitigé ne change rien. Séance du jour : un échauffement, les révisions dues et une ou deux nouveautés, chaque morceau joué en plusieurs passages du lent au tempo normal (60 → 80 → 100 %). Après chaque morceau, on note « dur / ça va / facile » : répétition espacée (1, 2, 4, 8, 16 jours). Les morceaux aimés (♥ sous le titre) passent en premier, et un favori du palier suivant est proposé en défi lent. Logique dans `www/programme.js`. |
 | **Travailler les accords** | 11 tablatures par paliers (balayé au pouce, basse et accord plaqué, arpège) : Em ↔ Am, Am ↔ E, D ↔ A, G-C-D, Am-Dm-E7, C-Am-F-G, G-Em-C-D, blues en La, septièmes qui résolvent, premiers barrés, revue des 23 accords, et les grilles du Canon de Pachelbel, de House of the Rising Sun et de La Bamba. Doigtés de la bibliothèque, un palier = une étape du pas à pas ; chaque fiche d'accord renvoie aux exercices qui l'utilisent. |
@@ -63,8 +62,8 @@ dans `tools/mutopia_selection.json`), l'ajouter à `PIECES` dans le script, puis
 
 Tous les sons sont **synthétisés** (Karplus-Strong pour la corde pincée,
 oscillateur pour le métronome) : pas un octet d'échantillon audio, donc pas de
-licence à traîner et une APK légère. L'accordeur analyse le micro **sur
-l'appareil** ; aucun flux ne sort. Les morceaux sont du domaine public
+licence à traîner et une APK légère. L'app n'utilise pas le micro
+(pas d'accordeur : on accorde à l'oreille avec les cordes de référence). Les morceaux sont du domaine public
 (traditionnel, Beethoven, Mozart), écrits pour cette app, ou issus du Mutopia
 Project (domaine public / CC-BY, crédités). Aucun compte, aucune publicité,
 aucune donnée collectée : la carte « Confidentialité » des réglages le dit.
@@ -86,5 +85,5 @@ un mauvais doigté est pire qu'une app qui ne démarre pas.
 L'APK est construite par GitHub Actions (workflow partagé `laurentsar/app-kit`),
 signée avec la clé de `~/app-kit/keys/guitare.p12` restaurée depuis les secrets
 du dépôt. `android/` n'est pas versionné : il est régénéré à chaque build, puis
-corrigé par les scripts `ci/` (micro, veille, visibilité sur Google TV, icônes,
+corrigé par les scripts `ci/` (pas de micro, veille, visibilité sur Google TV, icônes,
 version).

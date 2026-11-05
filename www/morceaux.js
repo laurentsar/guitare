@@ -1407,6 +1407,29 @@
     notes: arpegeTT(fois2(4, [AM7, F6]))
   });
 
+  /* Grilles vues sur TikTok, titre non indiqué : les accords seuls, pas la
+   * mélodie de la vidéo (on ne sait pas si elle est sous droits). */
+  exerciceAccords({
+    id: 'tiktok-grille-em-c-am-d', titre: 'Grille Mi m – Do – La m – Ré (i – VI – iv – VII)', categorie: 'tiktok',
+    sous_titre: 'TikTok · @wiragustiii · grille d’accords · titre non indiqué', niveau: 2, tempo: 90,
+    description: 'Les quatre accords affichés dans une vidéo TikTok (@wiragustiii), une mesure chacun. La vidéo joue une mélodie sur la 1re corde par-dessus ; titre non indiqué, donc ici la grille seule, ni mélodie ni paroles. Balayé, puis arpège.',
+    paliers: [
+      { motif: 'balaye', grille: ['Em', 'C', 'Am', 'D'], tours: 2 },
+      { motif: 'arpege', grille: ['Em', 'C', 'Am', 'D'], tours: 2 }
+    ]
+  });
+
+  exerciceAccords({
+    id: 'tiktok-grille-c-g-am-f', titre: 'Grille Do – Sol – La m – Fa (I – V – vi – IV)', categorie: 'tiktok',
+    sous_titre: 'TikTok · @dr_guitarap, @wiragustiii · grille d’accords · titre non indiqué', niveau: 3, tempo: 80,
+    description: 'La grille de deux vidéos TikTok (@dr_guitarap, @wiragustiii), deux mesures par accord, et Sol pour finir. Les vidéos jouent une mélodie en fingerstyle par-dessus ; titre non indiqué, donc ici la grille seule, ni mélodie ni paroles. Fa est barré.',
+    paliers: [
+      { motif: 'balaye', grille: ['C', 'C', 'G', 'G', 'Am', 'Am', 'F', 'F'] },
+      { motif: 'arpege', grille: ['C', 'C', 'G', 'G', 'Am', 'Am', 'F', 'F'] },
+      { motif: 'arpege', grille: ['C', 'C', 'G', 'G', 'Am', 'Am', 'F', 'G'] }
+    ]
+  });
+
   /* Le pouce avec la main gauche : l'étape suivante, une fois le pouce sûr
    * de lui sur les cordes à vide (rubrique à part dans la liste). */
   ajoute({

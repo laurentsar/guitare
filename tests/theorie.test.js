@@ -752,6 +752,9 @@ console.log('\n— TikTok —');
 
 {
   const tt = Morceaux.tous().filter((p) => p.chanson && p.categorie === 'tiktok' && !p.versionDe);
+  verifie('TikTok, titre non indiqué : grilles Em C Am D et C G Am F, sans mélodie', ['tiktok-grille-em-c-am-d', 'tiktok-grille-c-g-am-f'].every((id) => {
+    const g = Morceaux.get(id); return g && g.categorie === 'tiktok' && /ni mélodie ni paroles/.test(g.description) && g.notes.every((n) => n.accord); }) &&
+    Morceaux.get('tiktok-grille-c-g-am-f').mains.gauche.map((a) => a.id).join(' ') === 'C G Am F');
   verifie('vu sur TikTok : 8 grilles d’accords, ni mélodie ni paroles', tt.length === 8 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
           tt.map((p) => p.id).join(','));
   verifie('capos : Feel Good 6, Do I Wanna Know 3, Dance Monkey 2, Where Is My Mind 4, Hit the Road Jack 4',

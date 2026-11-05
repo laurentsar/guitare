@@ -459,10 +459,12 @@ function verifie(nom, cond, detail) {
     const cran = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => d.querySelector('h3').textContent === '🎤 The Cranberries');
     verifie('« The » ignoré pour le tri, Zombie avec les Cranberries', cran && /Zombie/.test(cran.textContent) && titresA.indexOf('🎤 The Cranberries') < titresA.indexOf('🎤 Deep Purple'));
     verifie('« Leonard Cohen » rangé à L, pas à « onard »', titresA.indexOf('🎤 Leonard Cohen') > titresA.indexOf('🎤 L. van Beethoven') && titresA.indexOf('🎤 Leonard Cohen') < titresA.indexOf('🎤 Louane'));
+    verifie('rangement par artiste : sans les versions simplifiées', !/version simplifiée/.test($('listeMorceaux').textContent));
     verifie('rangement mémorisé', w.Store.reglages().rangementMorceaux === 'artiste');
     [...$('listeMorceaux').querySelectorAll('.rangement button')].find((b) => b.dataset.rangement === 'difficulte').click();
     const titresD = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux h3')].map((x) => x.textContent).filter((t) => /^📊/.test(t));
     verifie('rangement par difficulté : 6 niveaux, du plus simple au plus exigeant', titresD.length === 6 && /1 · Premiers sons/.test(titresD[0]) && /6 · Expert/.test(titresD[5]), titresD.join(' | '));
+    verifie('rangement par difficulté : sans les versions simplifiées', !/version simplifiée/.test($('listeMorceaux').textContent));
     const n1 = [...$('listeMorceaux').querySelectorAll('details.rubrique-morceaux')].find((d) => /1 · Premiers sons/.test(d.querySelector('h3').textContent));
     verifie('niveau 1 : les cordes à vide au pouce', /Les basses au pouce/.test(n1.textContent) && !/Blackbird/.test(n1.textContent));
     w.AppGuitare.ouvrirMorceau('ch-blackbird');

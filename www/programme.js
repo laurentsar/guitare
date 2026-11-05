@@ -37,7 +37,7 @@
   function paliers(tous) {
     var out = NIVEAUX_DIFF.map(function (x, k) { return { num: k + 1, nom: x.nom, but: x.but.charAt(0).toUpperCase() + x.but.slice(1) + '.', ids: [] }; });
     // Les versions longues se travaillent depuis la fiche de la courte.
-    var tries = tous.filter(function (p) { return !p.versionDe; }).sort(function (a, b) { return cleTri(a) - cleTri(b); });
+    var tries = tous.filter(function (p) { return !p.versionDe && !p.simplifieDe; }).sort(function (a, b) { return cleTri(a) - cleTri(b); });
     tries.forEach(function (p) { out[palierDe(p)].ids.push(p.id); });
     return out;
   }
@@ -120,7 +120,7 @@
     var et = etat(pals, suivi);
     var ouverts = et.filter(function (p) { return p.ouvert; });
     var haut = ouverts[ouverts.length - 1];
-    var travail = palierTravail(tous.filter(function (p) { return !p.versionDe; }), historique, haut.num - 1);
+    var travail = palierTravail(tous.filter(function (p) { return !p.versionDe && !p.simplifieDe; }), historique, haut.num - 1);
     var courant = et[travail.niveau];
     var palierId = {};
     pals.forEach(function (p, k) { p.ids.forEach(function (id) { palierId[id] = k; }); });

@@ -926,7 +926,7 @@
        * vitesse : le tempo se règle sur chaque fiche. */
       var parNiv = {};
       Morceaux.tous().forEach(function (p) {
-        if (p.versionDe || p.categorie === 'entrainement') return;
+        if (p.versionDe || p.simplifieDe || p.categorie === 'entrainement') return;
         var d = Programme.difficulte(p);
         (parNiv[d.niveau] = parNiv[d.niveau] || []).push(p);
       });
@@ -944,7 +944,7 @@
     if (parArtiste) {
       var artistes = {};
       Morceaux.tous().forEach(function (p) {
-        if (p.versionDe) return;
+        if (p.versionDe || p.simplifieDe) return;   // versions simplifiées : seulement dans leur rubrique
         var a = artisteDe(p);
         if (a) (artistes[a] = artistes[a] || []).push(p);
       });
@@ -1253,7 +1253,7 @@
     var r = Store.revision();
     if (r && r.jour === jour && r.ids.every(trouverMorceau)) return r.ids;
     var joues = Store.joues();
-    var tous = Morceaux.tous().filter(function (m) { return !m.versionDe; });
+    var tous = Morceaux.tous().filter(function (m) { return !m.versionDe && !m.simplifieDe; });
     var debut = new Date(); debut.setHours(0, 0, 0, 0);
     // Déjà joués (pas aujourd'hui), du plus ancien au plus récent : à revoir.
     var anciens = tous.filter(function (m) { return joues[m.id] && joues[m.id].t < debut.getTime(); })

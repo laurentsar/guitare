@@ -1545,8 +1545,8 @@
   function etapes(p, nbMesures) {
     var e = [];
     e.push({ titre: 'Accorde ta guitare',
-             texte: 'Une guitare fausse rend tout plus dur à entendre. Accorde les six cordes, une par une, jusqu’à ce que l’aiguille soit au centre.',
-             bouton: '🎚 Ouvrir l’accordeur', action: { type: 'accordeur' } });
+             texte: 'Une guitare fausse rend tout plus dur à entendre. Écoute les six cordes de référence et accorde les tiennes à l’oreille, une par une, jusqu’à ce qu’elles sonnent pareil.',
+             bouton: '🎵 Cordes de référence', action: { type: 'reference' } });
     e.push({ titre: 'Écoute le morceau en entier',
              texte: 'Une fois, sans jouer, en suivant la partition des yeux. Tu sauras où tu vas.',
              bouton: '▶ Écouter', action: { type: 'section', de: 1, a: nbMesures, pct: 100 } });

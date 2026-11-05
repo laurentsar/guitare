@@ -1,4 +1,5 @@
-/* Accordeur : détection de hauteur au micro.
+/* Détection de hauteur, pour les tests seulement : elle vérifie que la
+ * synthèse des cordes sonne juste (l'app n'a plus d'accordeur au micro).
  *
  * Méthode : autocorrélation sur le signal temporel, pas de FFT. Une FFT de
  * 2048 points à 44,1 kHz a des cases de 21 Hz : entre Mi2 (82,41) et Fa2

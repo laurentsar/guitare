@@ -140,25 +140,7 @@ h3 { font-size: 15px; margin: 18px 0 8px; color: var(--bois); }
 .diagramme .diag-frette { fill: var(--texte-2); font-size: 11px; }
 .grand-diagramme { max-width: 280px; margin: 0 auto; }
 
-/* -------------------------------------------------------------- accordeur */
-.accordeur { text-align: center; }
-.accordeur-etat { color: var(--texte-2); font-size: 13px; min-height: 20px; }
-.aiguille-boite {
-  position: relative; height: 92px; margin: 14px auto 6px; max-width: 420px;
-  background: var(--fond-3); border-radius: 12px; overflow: hidden;
-}
-.aiguille-graduation {
-  position: absolute; inset: 0;
-  background: repeating-linear-gradient(90deg, #2A3344 0 1px, transparent 1px 10%);
-}
-.aiguille-centre { position: absolute; left: 50%; top: 8px; bottom: 8px; width: 2px; background: var(--ok); transform: translateX(-1px); }
-.aiguille {
-  position: absolute; top: 10px; bottom: 10px; width: 6px; border-radius: 3px;
-  background: var(--faux); left: 50%; transform: translateX(-3px);
-  transition: left .12s linear, background .2s;
-}
-.accordeur-note { font-size: 42px; font-weight: 700; line-height: 1.1; }
-.accordeur-cents { color: var(--texte-2); min-height: 22px; }
+/* ------------------------------------------------ cordes de référence */
 .cordes-etat { display: flex; justify-content: center; gap: 8px; margin: 12px 0 4px; flex-wrap: wrap; }
 .cordes-etat button {
   width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--trait);
@@ -247,8 +229,6 @@ html.tv .grille-accords { grid-template-columns: repeat(auto-fill, minmax(190px,
 html.tv .grand-diagramme { max-width: 460px; }
 html.tv .metro-tempo { font-size: 92px; }
 html.tv .metro-points i { width: 34px; height: 34px; }
-html.tv .accordeur-note { font-size: 76px; }
-html.tv .aiguille-boite { height: 140px; max-width: 760px; }
 html.tv .tab { min-width: 0; }
 html.tv .cordes-etat button { width: 70px; height: 70px; font-size: 17px; }
 html.tv :focus-visible { outline: 4px solid var(--accent) !important; outline-offset: 3px; }

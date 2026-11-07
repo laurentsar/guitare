@@ -750,6 +750,15 @@ console.log('\n— TikTok —');
 }
 
 {
+  const u = Morceaux.get('tiktok-une-corde-re'), f = Morceaux.get('tiktok-une-corde-re-facile');
+  verifie('Une corde en Ré mineur : 1re corde, cases de la vidéo (premier groupe deux fois)', u && u.notes.every((n) => n.corde === 1) &&
+          u.notes.map((n) => n.frette).join(' ') === '13 13 13 13 13 13 13 13 13 13 12 10 12 12 12 12 12 12 12 10 8 10 10 10 10 10 12 10 9 5 7 9 9 10 12 13');
+  verifie('Une corde en Ré mineur : 8 mesures, doigts de 1 à 4', Tablature.duree_totale(u) === 32 && u.notes.every((n) => n.doigt >= 1 && n.doigt <= 4));
+  verifie('Une corde en Ré mineur facile : même rythme, une octave plus bas, première position', f.notes.length === u.notes.length &&
+          f.notes.every((n, i) => n.midi === u.notes[i].midi - 12 && n.temps === u.notes[i].temps && n.frette <= 4));
+}
+
+{
   const b = Morceaux.get('tiktok-bella-ciao'), f = Morceaux.get('tiktok-bella-ciao-facile');
   verifie('Bella Ciao : tout sur la 1re corde, cases de la vidéo', b.notes.every((n) => n.corde === 1) &&
           b.notes.map((n) => n.frette).join(' ') === '0 5 7 8 5 0 5 7 8 5 0 5 7 8 7 5 8 7 5 8 12 12 12 12 10 12 13 13 13 12 10 13 12 12 10 8 7 12 8 7 5 0 5');

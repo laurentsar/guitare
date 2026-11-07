@@ -369,6 +369,14 @@ function verifie(nom, cond, detail) {
     const rev = w.Store.revision();
     verifie('révision du jour : 5 morceaux, figée pour la journée', rev && rev.ids.length === 5 && rev.jour === w.Store.jourCourant());
     verifie('révision du jour : le plus anciennement joué d’abord, puis du neuf', rev.ids[0] === ids[7] && rev.ids[1] === ids[3] && !j[rev.ids[2]], rev.ids.join(','));
+    // Assez de morceaux joués : la révision n'est faite que d'eux.
+    const j2 = {}; ids.slice(10, 17).forEach((id, k) => { j2[id] = { n: 1, t: jadis + k * 1000 }; });
+    w.localStorage.setItem('guitare:joues', JSON.stringify(j2));
+    w.Store.sauverRevision(null);
+    w.AppGuitare.aller('accueil'); w.AppGuitare.aller('morceaux');
+    const rev2 = w.Store.revision();
+    verifie('révision du jour : que des morceaux déjà joués quand il y en a assez', rev2 && rev2.ids.length === 5 && rev2.ids.every((id) => j2[id]), rev2 && rev2.ids.join(','));
+    w.localStorage.setItem('guitare:joues', JSON.stringify(j));
 
     // Éditeur : nouvelle liste, ajout, réordonnancement, tempo commun.
     [...blocE.querySelectorAll('button')].find((b) => /Nouvelle liste/.test(b.textContent)).click();
@@ -526,6 +534,24 @@ function verifie(nom, cond, detail) {
             /Échauffement/.test(pg.textContent) && /Nouveau/.test(pg.textContent) && /60 → 80 → 100 %/.test(pg.textContent));
     verifie('programme : 6 paliers (les niveaux de difficulté), seul le premier ouvert', pg.querySelectorAll('details.palier').length === 6 &&
             pg.querySelectorAll('details.palier.ferme').length === 5);
+
+    // Morceau déjà joué : proposé « à continuer », avec l'étape suivante du pas à pas.
+    {
+      const jouesAvant = w.localStorage.getItem('guitare:joues');
+      const id = w.Programme.paliers(w.Morceaux.tous())[2].ids.filter((x) => w.Morceaux.get(x).chanson)[0];
+      w.localStorage.setItem('guitare:joues', JSON.stringify({ [id]: { n: 2, t: Date.now() - 86400000 } }));
+      w.Store.marquerEtape(id, 0, true); w.Store.marquerEtape(id, 1, true);
+      w.localStorage.removeItem('guitare:seance');
+      w.AppGuitare.aller('programme');
+      const ligne = [...pg.querySelectorAll('.liste-ligne')].find((l) => l.textContent.includes(w.Morceaux.get(id).titre));
+      verifie('programme : morceau déjà joué proposé « à continuer », avant les nouveautés', !!ligne && /Déjà commencé, à continuer/.test(ligne.textContent) &&
+              !/Nouveau/.test([...pg.querySelectorAll('.liste-ligne')].slice(0, [...pg.querySelectorAll('.liste-ligne')].indexOf(ligne)).map((l) => l.textContent).join('')));
+      verifie('programme : étape suivante du pas à pas affichée', !!ligne && /Pas à pas : étape 3\/\d+/.test(ligne.textContent), ligne && ligne.textContent);
+      w.Store.marquerEtape(id, 0, false); w.Store.marquerEtape(id, 1, false);
+      if (jouesAvant) w.localStorage.setItem('guitare:joues', jouesAvant); else w.localStorage.removeItem('guitare:joues');
+      w.localStorage.removeItem('guitare:seance');
+      w.AppGuitare.aller('programme');
+    }
 
     // ♥ depuis la fiche d'un morceau.
     w.AppGuitare.ouvrirMorceau('pouce-ch-santiano');

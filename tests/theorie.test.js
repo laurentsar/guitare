@@ -967,6 +967,23 @@ console.log('\n— Programme progressif —');
   verifie('séance en consolidation : nouveautés du palier 1 seulement, pas de défi', sc.travail.descendu &&
           sc.items.every((x) => pals[0].ids.includes(x.id) || x.raison === 'revision') && !sc.items.some((x) => x.raison === 'defi'));
 
+  // Déjà joués : avant les nouveautés, même pas « dus », même pas notés.
+  const pasDu = pals[0].ids.filter((id) => Morceaux.get(id).chanson || !Morceaux.get(id).categorie)[0];
+  const lance = pals[2].ids.filter((id) => Morceaux.get(id).chanson)[0];
+  const suiviC = { [pasDu]: { b: 2, t: T, n: 3 } };
+  const sj = Programme.seance(tous, suiviC, [], T + 0.5 * J, [], { [lance]: { n: 2, t: T } });
+  const pos = (id) => sj.items.findIndex((x) => x.id === id);
+  verifie('déjà joués : commencés proposés « à continuer », même pas dus ou hors palier', sj.items.some((x) => x.id === pasDu && x.raison === 'continuer') &&
+          sj.items.some((x) => x.id === lance && x.raison === 'continuer'));
+  verifie('déjà joués : avant toute nouveauté', sj.items.filter((x) => x.raison === 'nouveau').every((x) => pos(x.id) > pos(pasDu) && pos(x.id) > pos(lance)));
+  verifie('un morceau lancé n’est jamais proposé comme « nouveau »', !Programme.seance(tous, {}, [], T, [], { [pals[0].ids[3]]: { n: 1, t: T } }).items
+          .some((x) => x.id === pals[0].ids[3] && x.raison === 'nouveau'));
+  const plein = {};
+  pals[0].ids.slice(0, 8).forEach((id, k) => { plein[id] = { n: 1, t: T - k * 1000 }; });
+  const sp = Programme.seance(tous, {}, [], T, [], plein);
+  verifie('beaucoup de morceaux commencés : pas de nouveauté, 5 au plus', sp.items.length <= 5 && !sp.items.some((x) => x.raison === 'nouveau'));
+  verifie('acquis et pas dû : pas reproposé', !Programme.seance(tous, { [pasDu]: { b: 3, t: T, n: 4 } }, [], T + J, [], { [pasDu]: { n: 4, t: T } }).items.some((x) => x.id === pasDu));
+
   // Un favori du palier suivant : proposé en défi, lentement.
   const defi = Programme.seance(tous, {}, ['pouce-ch-santiano'], T).items.find((x) => x.raison === 'defi');
   verifie('favori du palier suivant : défi à 50 → 70 %', defi && defi.id === 'pouce-ch-santiano' && defi.passages.join() === '50,60,70');

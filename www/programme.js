@@ -84,8 +84,11 @@
   }
 
   /* La séance du jour : un échauffement technique, les révisions dues (♥
-   * d'abord), puis un ou deux morceaux nouveaux — moins si beaucoup sont en
-   * cours : mieux vaut consolider que s'éparpiller. */
+   * d'abord), puis les morceaux déjà commencés et pas encore acquis (joués
+   * ou notés, même s'ils ne sont pas « dus ») : on finit d'apprendre ce
+   * qu'on a entamé. Les nouveautés ne prennent que les places qui restent —
+   * aucune si beaucoup sont en cours : mieux vaut consolider que
+   * s'éparpiller. */
   /* Palier de travail, d'après le ressenti : le plus haut palier ouvert,
    * sauf si les derniers morceaux étaient trop durs. Deux « dur » de suite
    * sur des morceaux de ce palier (ou plus haut) : on redescend d'un palier
@@ -113,7 +116,9 @@
              pourRemonter: BIEN_POUR_REMONTER - bien, pourDescendre: DUR_POUR_DESCENDRE - dur };
   }
 
-  function seance(tous, suivi, aimes, maintenant, historique) {
+  // `joues` (facultatif) : { id: {n, t} }, les morceaux lancés, notés ou non.
+  function seance(tous, suivi, aimes, maintenant, historique, joues) {
+    joues = joues || {};
     var parId = {};
     tous.forEach(function (p) { parId[p.id] = p; });
     var pals = paliers(tous);
@@ -146,17 +151,27 @@
     // Échauffement : un exercice d'accords ou de technique, dû si possible,
     // sinon le moins avancé des paliers ouverts.
     var technique = function (id) { var p = parId[id]; return !p.chanson && ['accords', 'entrainement', 'pouce', 'pouce-main'].indexOf(p.categorie) !== -1; };
-    var ech = dus.filter(technique)[0] ||
+
+    // Commencés et pas encore acquis : notés (boîte 1-2) ou seulement lancés.
+    // Favoris d'abord, puis le plus récemment travaillé, puis le plus joué.
+    var activite = function (id) { return Math.max((suivi[id] && suivi[id].t) || 0, (joues[id] && joues[id].t) || 0); };
+    var fois = function (id) { return Math.max((suivi[id] && suivi[id].n) || 0, (joues[id] && joues[id].n) || 0); };
+    var commences = Object.keys(parId).filter(function (id) { return (suivi[id] || joues[id]) && !acquis(suivi[id]); })
+      .sort(function (a, b) { return (aime(b) - aime(a)) || (activite(b) - activite(a)) || (fois(b) - fois(a)); });
+
+    var ech = dus.filter(technique)[0] || commences.filter(technique)[0] ||
       disponibles.filter(technique).filter(function (id) { return !acquis(suivi[id]); })
         .sort(function (a, b) { return ((suivi[a] && suivi[a].b) || 0) - ((suivi[b] && suivi[b].b) || 0); })[0];
     if (ech) ajoute(ech, 'echauffement');
 
     dus.forEach(function (id) { if (items.length < 4) ajoute(id, 'revision'); });
 
-    var enCours = Object.keys(suivi).filter(function (id) { return parId[id] && suivi[id].b > 0 && suivi[id].b < ACQUIS; }).length;
+    commences.forEach(function (id) { if (items.length < 5) ajoute(id, 'continuer'); });
+
+    var enCours = commences.length;
     var nNeufs = enCours >= 6 ? 0 : enCours >= 3 ? 1 : 2;
     // La technique a déjà son échauffement : les nouveautés sont de la musique.
-    var neufs = disponibles.filter(function (id) { return !suivi[id] && !pris[id] && !technique(id); })
+    var neufs = disponibles.filter(function (id) { return !suivi[id] && !joues[id] && !pris[id] && !technique(id); })
       .sort(function (a, b) { return (aime(b) - aime(a)) || (palierId[a] - palierId[b]); });
     neufs.slice(0, nNeufs).forEach(function (id) { if (items.length < 5) ajoute(id, aime(id) ? 'favori' : 'nouveau'); });
 

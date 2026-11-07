@@ -218,7 +218,7 @@
   /* Paliers, répétition espacée et favoris : la logique est dans
    * programme.js, ici seulement l'écran et les boutons de ressenti. */
   var RESSENTIS = [['dur', '😣 Dur'], ['moyen', '🙂 Ça va'], ['facile', '😎 Facile']];
-  var RAISONS = { echauffement: '🔥 Échauffement', revision: '🔁 À revoir', nouveau: '✨ Nouveau',
+  var RAISONS = { echauffement: '🔥 Échauffement', revision: '🔁 À revoir', continuer: '📈 Déjà commencé, à continuer', nouveau: '✨ Nouveau',
                   favori: '♥ Nouveau favori', defi: '🎯 Défi ♥ (palier suivant)' };
 
   function debutJour() { var d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); }
@@ -239,9 +239,10 @@
   function programmeDuJour(refaire) {
     var tous = Morceaux.tous();
     var aimes = Store.aimes();
-    var calc = Programme.seance(tous, Store.suivi(), aimes, Date.now(), Store.ressentis());
+    var calc = Programme.seance(tous, Store.suivi(), aimes, Date.now(), Store.ressentis(), Store.joues());
     var r = Store.seanceProgramme();
-    var valide = r && r.jour === Store.jourCourant() && r.items.every(function (it) { return Morceaux.get(it.id); });
+    // v2 : les morceaux commencés passent avant les nouveautés.
+    var valide = r && r.v === 2 && r.jour === Store.jourCourant() && r.items.every(function (it) { return Morceaux.get(it.id); });
     // Un nouveau ♥ ou un changement de palier (ressenti) refait la séance.
     if (!refaire && valide && r.aimes === aimes.join(',') && r.palier === calc.palier.num) {
       calc.items = r.items;
@@ -253,12 +254,12 @@
       });
       calc.items = faits.concat(calc.items);
     }
-    Store.sauverSeanceProgramme({ jour: Store.jourCourant(), items: calc.items, aimes: aimes.join(','), palier: calc.palier.num });
+    Store.sauverSeanceProgramme({ v: 2, jour: Store.jourCourant(), items: calc.items, aimes: aimes.join(','), palier: calc.palier.num });
     return calc;
   }
 
   function palierDeTravail() {
-    return Programme.seance(Morceaux.tous(), Store.suivi(), Store.aimes(), Date.now(), Store.ressentis()).palier.num;
+    return Programme.seance(Morceaux.tous(), Store.suivi(), Store.aimes(), Date.now(), Store.ressentis(), Store.joues()).palier.num;
   }
   function noterRessenti(id, note) {
     var avant = Morceaux.get(id) ? palierDeTravail() : null;
@@ -297,6 +298,19 @@
     return d;
   }
 
+  /* Pour un morceau commencé : la prochaine étape non cochée de « Apprendre
+   * pas à pas » (null si rien n'est coché encore ou si tout l'est). */
+  function etapeSuivante(p) {
+    var faites = Store.etapesFaites(p.id);
+    if (!faites.length) return null;
+    var nb = Math.max(1, Math.ceil(Tablature.duree_totale(p) / Tablature.noiresParMesure(p)));
+    var etapes = Morceaux.etapes(p, nb);
+    for (var k = 0; k < etapes.length; k++) {
+      if (faites.indexOf(k) === -1) return { num: k + 1, total: etapes.length, titre: etapes[k].titre };
+    }
+    return null;
+  }
+
   function lancerProgramme(items) {
     var ids = [], pcts = [], etiquettes = [];
     items.forEach(function (it) {
@@ -333,6 +347,8 @@
       t.appendChild(el('b', null, (faitAujourdhui(it) ? '✓ ' : '') + p.titre));
       t.appendChild(el('small', null, RAISONS[it.raison] + ' · ' + it.passages.length + ' passage' + (it.passages.length > 1 ? 's' : '') +
         ' : ' + it.passages.join(' → ') + ' %'));
+      var suite = etapeSuivante(p);
+      if (suite) t.appendChild(el('small', null, '🎯 Pas à pas : étape ' + suite.num + '/' + suite.total + ' — ' + suite.titre));
       li.appendChild(t);
       var b = el('button', 'btn', '▶');
       b.setAttribute('aria-label', 'Ouvrir ' + p.titre);
@@ -353,7 +369,7 @@
     bRe.onclick = function () { rendreProgramme(true); };
     act.appendChild(bRe);
     tete.appendChild(act);
-    tete.appendChild(el('p', 'aide', 'Chaque morceau se joue plusieurs fois, du plus lent au tempo normal. À la fin, dis comment c’était : « dur » le ramène demain, « facile » l’espace de plus en plus (1, 2, 4, 8, 16 jours). Tes ♥ passent en premier.'));
+    tete.appendChild(el('p', 'aide', 'Les morceaux que tu as déjà joués passent en premier, jusqu’à ce qu’ils soient acquis ; les nouveautés prennent les places qui restent. Chaque morceau se joue plusieurs fois, du plus lent au tempo normal. À la fin, dis comment c’était : « dur » le ramène demain, « facile » l’espace de plus en plus (1, 2, 4, 8, 16 jours). Tes ♥ passent en premier.'))
     h.appendChild(tete);
 
     var palierDe = {};
@@ -1203,8 +1219,8 @@
    * Listes de morceaux joués à la suite, comme une répétition : à la fin d'un
    * morceau, décompte de 5 s puis le suivant démarre seul, en plein écran.
    * Tempo : celui de chaque morceau, ou un même pourcentage pour tous.
-   * « Révision du jour » : liste générée, ce qu'on n'a pas joué depuis le plus
-   * longtemps + de quoi découvrir, figée pour la journée. */
+   * « Révision du jour » : liste générée, les morceaux déjà joués d'abord (pas
+   * encore acquis, puis les plus anciens), des nouveautés s'il en manque, figée pour la journée. */
   var session = null;      // {nom, ids, i, pct, boucle}
   var minuteurSuite = null;
 
@@ -1213,20 +1229,23 @@
   function revisionDuJour() {
     var jour = Store.jourCourant();
     var r = Store.revision();
-    if (r && r.jour === jour && r.ids.every(trouverMorceau)) return r.ids;
-    var joues = Store.joues();
+    if (r && r.v === 2 && r.jour === jour && r.ids.every(trouverMorceau)) return r.ids;
+    var joues = Store.joues(), suivi = Store.suivi();
     var tous = Morceaux.tous().filter(function (m) { return !m.versionDe && !m.simplifieDe; });
     var debut = new Date(); debut.setHours(0, 0, 0, 0);
-    // Déjà joués (pas aujourd'hui), du plus ancien au plus récent : à revoir.
+    // Déjà joués (pas aujourd'hui) : en priorité. D'abord ceux qui ne sont
+    // pas encore acquis (pour finir de les apprendre), puis du plus ancien
+    // au plus récent.
+    var acquis = function (m) { return Programme.acquis(suivi[m.id]); };
     var anciens = tous.filter(function (m) { return joues[m.id] && joues[m.id].t < debut.getTime(); })
-      .sort(function (a, b) { return joues[a.id].t - joues[b.id].t; });
+      .sort(function (a, b) { return (acquis(a) - acquis(b)) || (joues[a.id].t - joues[b.id].t); });
     // Jamais joués, les plus faciles d'abord : à découvrir.
     var neufs = tous.filter(function (m) { return !joues[m.id]; })
       .sort(function (a, b) { return (a.niveau || 9) - (b.niveau || 9); });
-    var ids = anciens.slice(0, 3).map(function (m) { return m.id; });
+    // Les nouveautés complètent seulement s'il manque des morceaux joués.
+    var ids = anciens.slice(0, 5).map(function (m) { return m.id; });
     neufs.forEach(function (m) { if (ids.length < 5) ids.push(m.id); });
-    anciens.slice(3).forEach(function (m) { if (ids.length < 5) ids.push(m.id); });
-    Store.sauverRevision({ jour: jour, ids: ids });
+    Store.sauverRevision({ v: 2, jour: jour, ids: ids });
     return ids;
   }
 

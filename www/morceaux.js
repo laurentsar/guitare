@@ -1337,6 +1337,83 @@
     }), { alterne: true })
   });
 
+  /* @aka_11.03 : « 1 String », une mélodie en Mi majeur sur la 1re corde ;
+   * les cases s'affichent à l'écran (0 7 0 · 2 4 5 4 2 · 7 9 11 12 · 2 4 5 4
+   * · 2 0). Hauteurs vérifiées sur le son (Mi4 à Mi5), rythme mesuré :
+   * une note longue toutes les ~0,95 s, écrite ici en rondes à ♩ ≈ 126 ; les
+   * notes de passage (presque des triolets) arrondies en noires et noires
+   * pointées. [case, durée en noires] ; 16 mesures. */
+  var UNE_CORDE_MI = [
+    [0, 4], [7, 4], [0, 6], [2, 1], [4, 1],
+    [5, 4], [4, 4], [2, 7], [7, 1],
+    [9, 4], [11, 4], [12, 4], [2, 1.5], [4, 1.5], [5, 1],
+    [4, 4], [2, 4], [0, 8]
+  ];
+  // Un doigt par case en IIe position (2 4 5 = index, annulaire, auriculaire),
+  // puis on monte : 7 et 9 index et annulaire, l'index glisse jusqu'à 11, 12 au majeur.
+  var DOIGTS_UNE_CORDE = { 2: 1, 4: 3, 5: 4, 7: 1, 9: 3, 11: 1, 12: 2 };
+  var SECTIONS_UNE_CORDE = [{ titre: 'Mi – Si – Mi', de: 1, a: 4 }, { titre: 'La – Sol♯ – Fa♯', de: 5, a: 8 },
+                            { titre: 'On monte : Do♯ – Ré♯ – Mi', de: 9, a: 12 }, { titre: 'Retour au Mi', de: 13, a: 16 }];
+  ajoute({
+    id: 'tiktok-une-corde-mi', titre: 'Mélodie en Mi sur une corde', sous_titre: 'TikTok · @aka_11.03 · 1re corde, cases 0 à 12 · titre non indiqué',
+    niveau: 2, tempo: 126, signature: [4, 4], categorie: 'tiktok', sections: SECTIONS_UNE_CORDE,
+    description: 'Relevé d’une vidéo TikTok (@aka_11.03, « 1 String ») : toute la mélodie sur la seule 1re corde, le Mi aigu, avec les cases affichées à l’écran : 0 7 0 · 2 4 5 4 2 · 7 9 11 12 · 2 4 5 4 · 2 0. Les notes de la gamme de Mi majeur (Mi, Fa♯, Sol♯, La, Si, Do♯, Ré♯), qui part du Mi à vide et revient s’y poser. Main gauche : en IIe position un doigt par case (case 2 = index, 4 = annulaire, 5 = auriculaire) ; pour monter, 7 à l’index, 9 à l’annulaire, l’index glisse à 11 et le majeur prend 12. Main droite : index et majeur en alternance. Les notes longues durent une mesure entière : laisse-les sonner. Dans la vidéo, les deux petites notes avant le La et les trois avant le Sol♯ sont un peu plus serrées (presque des triolets) ; ici, arrondies pour rester simples. La vidéo ne donne pas le titre.',
+    notes: (function () {
+      var t = 0, k = 0;
+      return UNE_CORDE_MI.map(function (x) {
+        var n = { corde: 1, frette: x[0], temps: t, duree: x[1], midi: 64 + x[0], main: (k++ % 2) ? 'm' : 'i' };
+        if (x[0]) n.doigt = DOIGTS_UNE_CORDE[x[0]];
+        t += x[1];
+        return n;
+      });
+    })()
+  });
+  // Une octave plus bas : tout tient en première position (cordes 4 à 1).
+  ajoute({
+    id: 'tiktok-une-corde-mi-facile', titre: 'Mélodie en Mi — version facile', sous_titre: 'TikTok · même mélodie en première position',
+    niveau: 2, tempo: 110, signature: [4, 4], categorie: 'tiktok', sections: SECTIONS_UNE_CORDE,
+    description: 'La mélodie de la vidéo, une octave plus bas : elle tient en première position, sans déplacer la main (cordes 4 à 1, un doigt par case). Une fois sûre, passe à la version sur une corde.',
+    notes: melodie(UNE_CORDE_MI.map(function (x) {
+      return [{ 0: 'mi3', 2: 'fa#3', 4: 'sol#3', 5: 'la3', 7: 'si3', 9: 'do#4', 11: 're#4', 12: 'mi4' }[x[0]], x[1]];
+    }), { alterne: true })
+  });
+
+  /* @aka_11.03 encore (« String 1 ») : une mélodie en Ré mineur sur la
+   * 1re corde, cases 5 à 13, affichées à l'écran par groupes (13 13 13 13 ·
+   * 13 13 12 · 10 12 12 12 12 · 12 12 12 10 · 8 10 10 10 10 · 10 12 10 9 5 ·
+   * 7 9 9 10 12 13). Le premier groupe passe deux fois (dix Fa). Hauteurs
+   * vérifiées sur le son (La4 à Fa5), rythme mesuré : croche ≈ 0,23 s, soit
+   * ♩ ≈ 130. [case, durée en noires, doigt] ; 8 mesures. */
+  var UNE_CORDE_RE = [
+    [13, .5, 4], [13, .5, 4], [13, .5, 4], [13, .5, 4], [13, .5, 4], [13, .5, 4], [13, 1, 4], [13, .5, 4], [13, .5, 4], [13, 1, 4], [12, 3, 3],
+    [10, .5, 1], [12, .5, 3], [12, .5, 3], [12, .5, 3], [12, .5, 3], [12, 1, 3], [12, .5, 3], [12, 1, 3], [10, 3, 1],
+    [8, .5, 1], [10, .5, 3], [10, .5, 3], [10, .5, 3], [10, .5, 3], [10, .5, 3], [12, .5, 4], [10, 1.5, 3], [9, 2, 2], [5, 2, 1],
+    [7, .5, 1], [9, .5, 3], [9, .5, 3], [10, 1, 4], [12, 1.5, 3], [13, 2, 4]
+  ];
+  var SECTIONS_UNE_CORDE_RE = [{ titre: 'Fa répété, puis Mi', de: 1, a: 2 }, { titre: 'Mi répété, puis Ré', de: 3, a: 4 },
+                               { titre: 'Ré, Do♯, La', de: 5, a: 6 }, { titre: 'On remonte jusqu’au Fa', de: 7, a: 8 }];
+  ajoute({
+    id: 'tiktok-une-corde-re', titre: 'Mélodie en Ré mineur sur une corde', sous_titre: 'TikTok · @aka_11.03 · 1re corde, cases 5 à 13 · titre non indiqué',
+    niveau: 3, tempo: 130, signature: [4, 4], categorie: 'tiktok', sections: SECTIONS_UNE_CORDE_RE,
+    description: 'Relevé d’une vidéo TikTok (@aka_11.03, « String 1 ») : toute la mélodie sur la seule 1re corde, le Mi aigu, haut sur le manche, avec les cases affichées à l’écran : 13 13 13 13 · 13 13 12 · 10 12 12 12 12 · 12 12 12 10 · 8 10 10 10 10 · 10 12 10 9 5 · 7 9 9 10 12 13 (le premier groupe deux fois). Chaque phrase répète une note en croches puis descend d’un degré : Fa, Mi, Ré, jusqu’au Do♯ et au La ; la dernière remonte au Fa. Notes de Ré mineur (Ré, Mi, Fa, La, Si, Do et Do♯). Main gauche : en Xe position, case 10 = index, 12 = annulaire, 13 = auriculaire ; la 3e phrase descend en VIIIe (8 = index, 9 = majeur, 10 = annulaire), puis l’index va chercher la case 5 et la 7, et la main remonte. Main droite : index et majeur en alternance, surtout sur les notes répétées. La vidéo ne donne pas le titre.',
+    notes: (function () {
+      var t = 0, k = 0;
+      return UNE_CORDE_RE.map(function (x) {
+        var n = { corde: 1, frette: x[0], temps: t, duree: x[1], midi: 64 + x[0], doigt: x[2], main: (k++ % 2) ? 'm' : 'i' };
+        t += x[1];
+        return n;
+      });
+    })()
+  });
+  ajoute({
+    id: 'tiktok-une-corde-re-facile', titre: 'Mélodie en Ré mineur — version facile', sous_titre: 'TikTok · même mélodie en première position',
+    niveau: 2, tempo: 110, signature: [4, 4], categorie: 'tiktok', sections: SECTIONS_UNE_CORDE_RE,
+    description: 'La mélodie de la vidéo, une octave plus bas : elle tient en première position, sur les cordes 3 à 1, sans déplacer la main. Une fois sûre, passe à la version sur une corde.',
+    notes: melodie(UNE_CORDE_RE.map(function (x) {
+      return [{ 5: 'la3', 7: 'si3', 8: 'do4', 9: 'do#4', 10: 're4', 12: 'mi4', 13: 'fa4' }[x[0]], x[1]];
+    }), { alterne: true })
+  });
+
   /* Bella Ciao, version longue : la chanson a plusieurs strophes sur la
    * même mélodie ; trois strophes à la suite, la dernière note tenue
    * seulement à la fin. */

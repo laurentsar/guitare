@@ -480,6 +480,15 @@
         { titre: 'Couplet', motif: 'valse', grille: ['C', 'Em', 'Am', 'Am', 'F', 'C', 'G', 'G', 'F', 'G', 'Am', 'F', 'C', 'G', 'C', 'C'] },
         { titre: 'Pont', motif: 'arpege-3', grille: ['Em', 'B7', 'Em', 'B7', 'Em', 'B7', 'Em', 'A7', 'Dm', 'G'] }
       ] },
+    { id: 'ch-beat-it', titre: 'Beat It', artiste: 'Michael Jackson', annee: 1982,
+      capo: 0, tempo: 138, groupe: 'tiktok',
+      structure: ['Couplet:Intro:1', 'Couplet', 'Pré-refrain', 'Refrain', 'Couplet', 'Pré-refrain', 'Refrain', 'Refrain:Solo', 'Refrain:Fin'],
+      note: 'En Mi mineur, tout en power chords au pouce. Le disque sonne un demi-ton plus bas (Mi♭ mineur, guitares accordées un demi-ton en dessous) ; ici on garde l’accordage normal. Le riff célèbre tourne sur Mi – Ré ; pré-refrain Do – Ré, refrain Mi – Ré – Do – Ré. La vidéo (@playguitarquick) montre le riff, une mélodie sous droits : ici la grille seule.',
+      sections: [
+        { titre: 'Couplet', motif: 'rock', tours: 2, grille: ['E5', 'D5', 'E5', 'D5'] },
+        { titre: 'Pré-refrain', motif: 'rock', grille: ['C5', 'D5', 'C5', 'D5'] },
+        { titre: 'Refrain', motif: 'rock', tours: 2, grille: ['E5', 'D5', 'C5', 'D5'] }
+      ] },
     /* Top 20 de la guitare acoustique, par niveau (top : 1 débutant, 2
      * intermédiaire, 3 confirmé, 4 avancé). Grilles d'après Hooktheory,
      * simplifiées et transposées au capo vers des formes ouvertes. */

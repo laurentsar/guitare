@@ -767,13 +767,13 @@ console.log('\n— TikTok —');
   verifie('TikTok, titre non indiqué : grilles Em C Am D et C G Am F, sans mélodie', ['tiktok-grille-em-c-am-d', 'tiktok-grille-c-g-am-f'].every((id) => {
     const g = Morceaux.get(id); return g && g.categorie === 'tiktok' && /ni mélodie ni paroles/.test(g.description) && g.notes.every((n) => n.accord); }) &&
     Morceaux.get('tiktok-grille-c-g-am-f').mains.gauche.map((a) => a.id).join(' ') === 'C G Am F');
-  verifie('vu sur TikTok : 9 grilles d’accords, ni mélodie ni paroles', tt.length === 9 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
+  verifie('vu sur TikTok : 10 grilles d’accords, ni mélodie ni paroles', tt.length === 10 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
           tt.map((p) => p.id).join(','));
   verifie('capos : Feel Good 6, Do I Wanna Know 3, Dance Monkey 2, Where Is My Mind 4, Hit the Road Jack 4',
           Morceaux.get('ch-feel-good-inc').capo === 6 && Morceaux.get('ch-do-i-wanna-know').capo === 3 && Morceaux.get('ch-dance-monkey').capo === 2 &&
           Morceaux.get('ch-where-is-my-mind').capo === 4 && Morceaux.get('ch-hit-the-road-jack').capo === 4);
   const longues = Morceaux.tous().filter((p) => p.versionDe);
-  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 29 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
+  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 30 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
   verifie('version longue plus longue que la courte, mêmes accords', longues.every((l) => {
     const c = Morceaux.get(l.versionDe);
     return Tablature.duree_totale(l) > Tablature.duree_totale(c) &&

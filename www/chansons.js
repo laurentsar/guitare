@@ -475,7 +475,7 @@
     { id: 'ch-cant-help-falling', titre: 'Can’t Help Falling in Love', artiste: 'Elvis Presley', annee: 1961,
       capo: 2, tempo: 95, groupe: 'tiktok', signature: [3, 4],
       structure: ['Couplet', 'Couplet', 'Pont', 'Couplet', 'Pont', 'Couplet:Fin'],
-      note: 'À trois temps, un accord par mesure. Capo case 2 : Ré – Fa♯ m – Si m – Sol – La du disque se jouent Do – Mi m – La m – Fa – Sol (Fa barré). Le pont « like a river » alterne Mi m et Si7, puis La7 – Ré m – Sol ramène au couplet. La vidéo (@aka_11.03) joue le début de la mélodie sur une corde ; elle est sous droits, donc ici la grille seule.',
+      note: 'À trois temps, un accord par mesure. Capo case 2 : Ré – Fa♯ m – Si m – Sol – La du disque se jouent Do – Mi m – La m – Fa – Sol (Fa barré). Le pont « like a river » alterne Mi m et Si7, puis La7 – Ré m – Sol ramène au couplet. Deux vidéos (@aka_11.03, puis @gitaris.virtual, qui donne le titre) jouent le début de la mélodie sur la 1re corde ; elle est sous droits, donc ici la grille seule.',
       sections: [
         { titre: 'Couplet', motif: 'valse', grille: ['C', 'Em', 'Am', 'Am', 'F', 'C', 'G', 'G', 'F', 'G', 'Am', 'F', 'C', 'G', 'C', 'C'] },
         { titre: 'Pont', motif: 'arpege-3', grille: ['Em', 'B7', 'Em', 'B7', 'Em', 'B7', 'Em', 'A7', 'Dm', 'G'] }

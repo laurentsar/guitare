@@ -1443,6 +1443,30 @@
     notes: arpegeTT(fois2(4, [AM7, F6]))
   });
 
+  /* @maesstttro : quatre accords égrenés en Si mineur, cases affichées à
+   * l'écran (2 4 0 · 0 4 0 · 3 4 0 · 0 4, puis 3 4 0). Basse au pouce sur
+   * la 5e ou la 6e corde, case 4 de la 4e (Fa♯) et Si à vide (2e corde) ;
+   * notes vérifiées sur le son, croches à ♩ ≈ 104, une mesure par accord. */
+  function mesureSi(acc, basse) {
+    var fa = [4, 4, 3, 'i', .5], si = [2, 0, 0, 'm', .5];
+    return { accord: acc, notes: [basse, fa, si, fa, [basse[0], basse[1], basse[2], 'p', .5], fa, si, fa] };
+  }
+  var SI_M = [mesureSi('Bm', [5, 2, 1, 'p', .5]), mesureSi('Bm/A', [5, 0, 0, 'p', .5]),
+              mesureSi('Gmaj7', [6, 3, 2, 'p', .5]), mesureSi('Em9', [6, 0, 0, 'p', .5])];
+  ajoute({
+    id: 'tiktok-arpege-si-m', titre: 'Arpège Si m – Sol maj7 – Mi m (basse qui descend)', sous_titre: 'TikTok · @maesstttro · l’annulaire ne bouge pas · titre non indiqué',
+    niveau: 2, tempo: 104, signature: [4, 4], categorie: 'tiktok',
+    sections: [{ titre: 'Si m – Si m/La', de: 1, a: 2 }, { titre: 'Sol maj7 – Mi m9', de: 3, a: 4 }, { titre: 'Deuxième tour et fin', de: 5, a: 9 }],
+    description: 'D’après une vidéo TikTok (@maesstttro) : quatre accords égrenés, avec les cases affichées à l’écran (2 4 0 · 0 4 0 · 3 4 0 · 0 4). L’annulaire reste posé tout le long case 4 sur la 4e corde (Fa♯), et la 2e corde sonne à vide (Si) : seule la basse change, au pouce. Si (5e corde, case 2, index), La (5e à vide), Sol (6e corde, case 3, majeur), Mi (6e à vide) : la basse descend, les notes du dessus restent. Une mesure par accord, en croches pouce – index – majeur – index. Les accords : en Si mineur, Si m, Si m avec La à la basse, Sol maj7 et Mi m9. La vidéo ne donne pas le titre.',
+    notes: (function () {
+      var n = arpegeTT(fois2(2, SI_M).concat([{ accord: 'Gmaj7', notes: [[6, 3, 2, 'p', 0], [4, 4, 3, 'i', 0], [2, 0, 0, 'm', 4]] }]));
+      // Le dernier accord est plaqué : les trois notes ensemble, tenues.
+      var fin = n.slice(-3), t = fin[0].temps;
+      fin.forEach(function (x) { x.temps = t; x.duree = 4; });
+      return n;
+    })()
+  });
+
   /* Grilles vues sur TikTok, titre non indiqué : les accords seuls, pas la
    * mélodie de la vidéo (on ne sait pas si elle est sous droits). */
   exerciceAccords({

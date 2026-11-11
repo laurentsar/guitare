@@ -427,7 +427,7 @@
   /* Les devoirs du cours, à refaire chaque jour. Chaque exercice se coche
    * (une case par variante : en regardant, yeux fermés…) ; les cases
    * repartent à zéro chaque matin, l'historique reste pour la série. */
-  var ETATS_ENTRAINEMENT = { nouveau: 'NOUVEAU', continuer: 'à continuer', pasvu: 'pas encore vu en cours' };
+  var ETATS_ENTRAINEMENT = { nouveau: 'NOUVEAU', continuer: 'à continuer', pasvu: 'pas encore vu en cours', idee: '💡 idée de l’app' };
 
   function rendreEntrainement() {
     var h = vide($('pageEntrainement'));

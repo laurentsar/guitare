@@ -336,7 +336,16 @@ console.log('\n— Entraînement (tablatures du cours) —');
           r.notes.every((n) => n.main === 'p' && (n.frette === 5 ? n.doigt === 1 : n.frette === 7 + k && n.doigt === 3 + k))) && Tablature.duree_totale(r1) === 36);
   verifie('1 3 1 3, 0 4 0 4, 1 4 1 4 : même chemin que 0 3 0 3', ['ent-v-1313', 'ent-v-0404', 'ent-v-1414'].every((id) => chemin(Morceaux.get(id).notes) === '654323456') &&
           Morceaux.get('ent-v-1414').notes.slice(0, 4).map((n) => n.frette).join() === '5,8,5,8');
-  verifie('chaque exercice du travail récurrent qui renvoie à une tablature la trouve', Entrainement.tous().every((e) => !e.morceau || Morceaux.get(e.morceau)));
+  verifie('chaque exercice du travail récurrent qui renvoie à une tablature la trouve', Entrainement.tous().concat(Entrainement.idees()).every((e) => !e.morceau || Morceaux.get(e.morceau)));
+  verifie('idées de l’app : à part, marquées, hors du travail du jour', Entrainement.idees().length === 3 && Entrainement.idees().every((e) => e.etat === 'idee' && Entrainement.tous().indexOf(e) === -1) &&
+          Entrainement.tous().every((e) => e.etat !== 'idee'));
+  const r3 = Morceaux.get('ent-riff-la-3');
+  verifie('riff n° 3 imaginé : La Si Do Ré, puis Ré Mi Fa Sol (1, 3, 4 puis 1)', r3.notes.slice(0, 4).map(nom).join(' ') === 'la si do re' &&
+          r3.notes.slice(16, 20).map(nom).join(' ') === 're mi fa sol' && r3.notes.slice(0, 4).map((n) => n.doigt).join('') === '1341');
+  const acc2 = Morceaux.get('ent-accomp-riff-2');
+  verifie('accompagnement du riff n° 2 : 9 mesures La 5 / Ré 5 qui suivent le riff, un aller par temps', acc2 && Tablature.duree_totale(acc2) === 36 &&
+          [0, 4, 8, 12, 16, 20, 24, 28, 32].map((t) => acc2.notes.find((n) => n.temps === t).accord).join(' ') === 'A5 A5 A5 A5 D5 D5 A5 A5 A5' &&
+          [0, 16, 24].every((t) => (acc2.notes.find((n) => n.temps === t).accord === 'A5') === (r2.notes.find((n) => n.temps === t).corde === 6)));
   const zb = Morceaux.get('ent-zombie-balaye');
   verifie('balayages Zombie : mêmes doigtés que le morceau Zombie (Em à l’index et au majeur)',
           zb.mains.gauche[0].id === 'Em' && zb.mains.gauche[0].doigts.join() === Morceaux.get('zombie').mains.gauche[0].doigts.join());

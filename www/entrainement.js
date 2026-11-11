@@ -3,7 +3,9 @@
  * Contenu dicté par le cours, pas par l'app : les consignes reprennent mot
  * pour mot ce que le professeur a demandé. Chaque exercice peut avoir :
  *  - etat : 'continuer' (déjà vu, à poursuivre), 'nouveau' (donné cette
- *    semaine), 'pasvu' (donné à faire, mais pas encore montré en cours) ;
+ *    semaine), 'pasvu' (donné à faire, mais pas encore montré en cours),
+ *    'idee' (imaginé par l'app, pas donné en cours : groupe `idees`, hors du
+ *    compte du jour) ;
  *  - variantes : les façons de le faire (en regardant, yeux fermés…), cochées
  *    séparément chaque jour ;
  *  - morceau : la tablature correspondante (www/morceaux.js, catégorie
@@ -96,6 +98,26 @@
       ]
     },
     {
+      titre: '💡 Pour aller plus loin (imaginé par l’app)',
+      idees: true,
+      intro: 'Pas donné en cours : des idées de l’app pour prolonger le travail de la semaine, quand le reste est bien en place. Montre-les à Françoise avant d’en faire une habitude. Elles ne comptent pas dans le travail du jour.',
+      exercices: [
+        { id: 'idee-accomp-riff-2', titre: 'Accompagner le riff n° 2 : 4 allers du pouce par mesure', etat: 'idee', morceau: 'ent-accomp-riff-2',
+          consignes: ['C’est ce que le fichier du riff n° 2 indique pour l’accompagnement : quatre allers du pouce par mesure, un par temps.',
+                      'La 5 (La à vide, case 2 sur la 4e et la 3e) quand le riff part de la 6e corde, Ré 5 (Ré à vide, case 2 sur la 3e, case 3 sur la 2e) quand il part de la 5e.',
+                      'L’aller du pouce comme en cours : avant-bras qui tourne, devant la guitare.',
+                      'Ensuite, joue l’accompagnement pendant que l’app joue le riff (ou l’inverse, guitare muette).'] },
+        { id: 'idee-v-1343', titre: 'Ve position : 1 3 4 3 sur chaque corde', etat: 'idee', morceau: 'ent-v-1343',
+          consignes: ['Les trois doigts de la semaine ensemble : 1er à la Ve case, 3e à la VIIe, 4e à la VIIIe, puis retour au 3e.',
+                      'Pars du 1er doigt posé, et ne lâche pas un doigt tant que le suivant n’est pas posé.',
+                      'Bien fléchir le 4e doigt ; le pouce gauche reste derrière la 6e case.'] },
+        { id: 'idee-riff-la-3', titre: 'Riff en La n° 3 (avec 1, 3 et 4)', etat: 'idee', morceau: 'ent-riff-la-3',
+          consignes: ['Le chemin des riffs n° 1 et 2 (4 fois depuis la 6e corde, 2 fois depuis la 5e, 2 fois depuis la 6e, La grave pour finir), avec un schéma qui monte : case V, VII, VIII, puis V sur la corde suivante.',
+                      'Ça donne La – Si – Do – Ré, puis Ré – Mi – Fa – Sol : les notes de la gamme de La mineur.',
+                      'Pouce buté, d’abord lentement (50), puis au rock groove à 55.'] }
+      ]
+    },
+    {
       titre: 'Rappel des cours précédents',
       exercices: [
         { id: 'noms-cordes', titre: 'Le nom des 6 cordes', etat: 'continuer', morceau: 'ent-noms-cordes',
@@ -106,13 +128,19 @@
     }
   ];
 
+  // Le travail du jour : tout sauf les idées de l'app (groupe `idees`).
   function tous() {
     var l = [];
-    GROUPES.forEach(function (g) { g.exercices.forEach(function (e) { l.push(e); }); });
+    GROUPES.forEach(function (g) { if (!g.idees) g.exercices.forEach(function (e) { l.push(e); }); });
+    return l;
+  }
+  function idees() {
+    var l = [];
+    GROUPES.forEach(function (g) { if (g.idees) g.exercices.forEach(function (e) { l.push(e); }); });
     return l;
   }
   // Nombre de cases à cocher d'un exercice : une par variante, sinon une.
   function cases(e) { return e.variantes ? e.variantes.length : 1; }
 
-  global.Entrainement = { groupes: function () { return GROUPES; }, tous: tous, cases: cases };
+  global.Entrainement = { groupes: function () { return GROUPES; }, tous: tous, idees: idees, cases: cases };
 })(typeof window !== 'undefined' ? window : globalThis);

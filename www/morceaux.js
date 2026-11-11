@@ -1037,10 +1037,12 @@
    * grave pour finir. Le riff n° 2 est relevé sur l'audio Guitar Pro du
    * cours (♩ = 60 : La La Do Ré, Ré Ré Fa Sol) ; le n° 1 suit le même
    * chemin avec le 3e doigt. */
-  function riffLa(doigt) {
-    var n = [], t = 0, haut = 4 + doigt;
+  // `doigts` : les trois premières notes du schéma, sur la corde de départ
+  // (doigt d → case 4 + d) ; la 4e est toujours le 1er doigt, corde suivante.
+  function riffLa(doigts) {
+    var n = [], t = 0;
     [6, 6, 6, 6, 5, 5, 6, 6].forEach(function (c) {
-      [[c, 5, 1], [c, 5, 1], [c, haut, doigt], [c - 1, 5, 1]].forEach(function (x) {
+      doigts.map(function (d) { return [c, 4 + d, d]; }).concat([[c - 1, 5, 1]]).forEach(function (x) {
         n.push({ corde: x[0], frette: x[1], temps: t, duree: 1, main: 'p', doigt: x[2], midi: Theorie.midiDeCase(x[0], x[1]) });
         t += 1;
       });
@@ -1054,13 +1056,44 @@
     id: 'ent-riff-la-1', titre: 'Riff en La n° 1', sous_titre: 'Entraînement · Ve position · 1er et 3e doigts · pouce buté',
     niveau: 2, tempo: 55, signature: [4, 4], categorie: 'entrainement', position: 5, sections: SECTIONS_RIFF,
     description: 'Schéma de 4 notes : case V, case V, case VII (3e doigt), puis case V sur la corde suivante. Pars 4 fois de la 6e corde, 2 fois de la 5e, 2 fois de la 6e, et finis par la note la plus grave : coupe le son en reposant le pouce sur la corde. D’abord sans métronome, puis avec un rock groove à 55. Ne lâche pas un doigt tant que le suivant n’est pas posé ; tire la main gauche vers la droite. (Écrit d’après les consignes du cours et le riff n° 2 : compare avec l’audio de Françoise.)',
-    notes: riffLa(3)
+    notes: riffLa([1, 1, 3])
   });
   ajoute({
     id: 'ent-riff-la-2', titre: 'Riff en La n° 2', sous_titre: 'Entraînement · Ve position · 1er et 4e doigts · pouce buté',
     niveau: 2, tempo: 60, signature: [4, 4], categorie: 'entrainement', position: 5, sections: SECTIONS_RIFF,
-    description: 'Le chemin du riff n° 1, avec le 4e doigt à la case VIII : La La Do Ré depuis la 6e corde, Ré Ré Fa Sol depuis la 5e. Départ en Ve position, pouce buté. Relevé de l’audio du cours (♩ = 60). Pour l’accompagnement, Françoise joue quatre allers du pouce par mesure.',
-    notes: riffLa(4)
+    description: 'Le chemin du riff n° 1, avec le 4e doigt à la case VIII : La La Do Ré depuis la 6e corde, Ré Ré Fa Sol depuis la 5e. Départ en Ve position, pouce buté. Relevé de l’audio du cours (♩ = 60). Le fichier indique, pour l’accompagnement : quatre allers du pouce par mesure (voir l’idée « Accompagnement du riff n° 2 »).',
+    notes: riffLa([1, 1, 4])
+  });
+
+  /* Idées de l'app pour prolonger le cours (groupe « Pour aller plus loin »
+   * de l'écran Travail récurrent) : pas données par le professeur. */
+  ajoute({
+    id: 'ent-riff-la-3', titre: 'Riff en La n° 3 (idée de l’app)', sous_titre: 'Entraînement · Ve position · 1er, 3e et 4e doigts · pouce buté',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5, sections: SECTIONS_RIFF,
+    description: 'Imaginé par l’app, pas donné en cours : le chemin des riffs n° 1 et 2 avec un schéma qui monte, case V (1er doigt), VII (3e), VIII (4e), puis V sur la corde suivante. La – Si – Do – Ré depuis la 6e corde, Ré – Mi – Fa – Sol depuis la 5e : la gamme de La mineur. Ne lâche pas un doigt tant que le suivant n’est pas posé.',
+    notes: riffLa([1, 3, 4])
+  });
+  ajoute({
+    id: 'ent-v-1343', titre: 'Ve position : 1 3 4 3 (idée de l’app)', sous_titre: 'Entraînement · main gauche · trois doigts',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: 'Imaginé par l’app, pas donné en cours : 1er doigt case V, 3e case VII, 4e case VIII, puis retour au 3e, sur chaque corde de la 6e à la 2e et retour. Prépare le riff n° 3.',
+    notes: cinquiemePosition([1, 3, 4, 3])
+  });
+  // Quatre allers du pouce par mesure (indication du fichier Guitar Pro du
+  // riff n° 2), sur La 5 et Ré 5 : deux doigts, cordes à vide à la basse.
+  exerciceAccords({
+    id: 'ent-accomp-riff-2', titre: 'Accompagnement du riff n° 2 (idée de l’app)', categorie: 'entrainement',
+    sous_titre: 'Entraînement · La 5 – Ré 5 · 4 allers du pouce par mesure', niveau: 1, tempo: 60,
+    accords: {
+      A5: { id: 'A5', fr: 'La 5 (quinte)', frettes: [-1, -1, 2, 2, 0, -1], doigts: [0, 0, 2, 1, 0, 0], basse: 5, alt: 4,
+            consigne: 'Index case 2 sur la 4e corde, majeur case 2 sur la 3e, juste à côté. Le pouce droit part de la 5e corde, à vide.' },
+      D5: { id: 'D5', fr: 'Ré 5 (quinte)', frettes: [-1, 3, 2, 0, -1, -1], doigts: [0, 3, 1, 0, 0, 0], basse: 4, alt: 4,
+            consigne: 'Index case 2 sur la 3e corde, annulaire case 3 sur la 2e. Le pouce droit part de la 4e corde, à vide.' }
+    },
+    description: 'Imaginé par l’app d’après l’indication du fichier du riff n° 2 (« jouer 4 allers du pouce par mesure ») : une mesure par mesure du riff, La 5 quand il part de la 6e corde, Ré 5 quand il part de la 5e. Un aller du pouce par temps, l’avant-bras qui tourne, devant la guitare.',
+    paliers: [
+      { motif: 'balaye-noires', grille: ['A5', 'A5', 'A5', 'A5', 'D5', 'D5', 'A5', 'A5', 'A5'] }
+    ]
   });
 
   // --- Chansons françaises (grilles d'accords, voir chansons.js) ------------

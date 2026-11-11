@@ -341,7 +341,7 @@ console.log('\n— Entraînement (tablatures du cours) —');
   verifie('chaque exercice du travail récurrent qui renvoie à une tablature la trouve', Entrainement.tous().concat(Entrainement.idees(), Entrainement.facultatifs()).every((e) => !e.morceau || Morceaux.get(e.morceau)));
   verifie('idées de l’app : à part, marquées, hors du travail du jour', Entrainement.idees().length === 3 && Entrainement.idees().every((e) => e.etat === 'idee' && Entrainement.tous().indexOf(e) === -1) &&
           Entrainement.tous().every((e) => e.etat !== 'idee'));
-  verifie('travail du jour = le dernier mail ; la semaine dernière en révision facultative', Entrainement.tous().length === 14 &&
+  verifie('travail du jour = le dernier mail ; les semaines précédentes en révision facultative', Entrainement.tous().length === 14 &&
           Entrainement.facultatifs().map((e) => e.id).join() === 'sd-pouce-bute-1,sd-main-droite,noms-cordes' &&
           Entrainement.facultatifs().every((e) => e.etat === 'semaine') && Entrainement.tous().some((e) => e.id === 'riff-la-2') &&
           Entrainement.facultatifs()[0].variantes.join() === '♩ = 40,♩ = 45,♩ = 50,♩ = 55,♩ = 60');

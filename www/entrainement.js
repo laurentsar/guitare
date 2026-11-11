@@ -28,7 +28,7 @@
         { id: 'pouce-bute-4', titre: 'Pouce buté : 4 fois sur chaque corde', etat: 'continuer', morceau: 'ent-pouce-bute-4', variantes: REGARD,
           consignes: ['1 : j’appuie contre la corde voisine, « et » : je lève.',
                       'Bien t’arrêter contre la corde voisine avant de soulever le pouce !',
-                      'Avec le métronome à 50, puis 55, puis 60 (si 50 est trop rapide, repars de 40 ou 45, comme la semaine dernière).',
+                      'Avec le métronome à 50, puis 55, puis 60 (si 50 est trop rapide, repars de 40 ou 45, comme les semaines précédentes).',
                       'Bien soulever le pouce à chaque attaque.'] }
       ]
     },
@@ -58,6 +58,7 @@
                       'Finis par la note la plus grave, et coupe le son en reposant le pouce sur la corde.',
                       'Ne lâche pas un doigt tant que le suivant n’est pas posé.',
                       'Tire la main gauche davantage vers la droite.',
+                      'Si le chemin entier accroche : reprends d’abord la première étape, celle d’il y a 15 jours (4 fois depuis la 6e corde).',
                       'Voir l’audio déjà envoyé par Françoise.'] },
         { id: 'v-0404', titre: 'Ve position : 0 4 0 4, pouce buté', etat: 'nouveau', morceau: 'ent-v-0404',
           consignes: ['Le 4e doigt joue à la VIIIe case, sur chaque corde.',
@@ -120,9 +121,9 @@
       ]
     },
     {
-      titre: '📅 Révision : la semaine dernière',
+      titre: '📅 Révision : les semaines précédentes',
       facultatif: true,
-      intro: 'Le mail de la semaine dernière, pour réviser quand le travail du jour est fait. Facultatif : ça ne compte pas dans le travail du jour.',
+      intro: 'Ce que les mails des deux semaines précédentes demandaient en plus, pour réviser quand le travail du jour est fait. Facultatif : ça ne compte pas dans le travail du jour.',
       exercices: [
         { id: 'sd-pouce-bute-1', titre: 'Pouce buté : 1 fois sur chaque corde', etat: 'semaine', morceau: 'ent-pouce-bute-1',
           variantes: ['♩ = 40', '♩ = 45', '♩ = 50', '♩ = 55', '♩ = 60'],
@@ -130,13 +131,13 @@
                       'Bien t’arrêter contre la corde voisine avant de soulever le pouce !',
                       'Avec le métronome à 40, 45, 50, 55 et 60 : monte d’un cran seulement quand c’est propre.',
                       'Bien soulever le pouce à chaque attaque.',
-                      'Pour le 4 fois sur chaque corde de cette semaine, si 50 est trop rapide : repars de 40 ou 45, comme la semaine dernière.'] },
+                      'Pour le 4 fois sur chaque corde de cette semaine, si 50 est trop rapide : repars de 40 ou 45, comme les semaines précédentes.'] },
         { id: 'sd-main-droite', titre: 'Corriger la position de la main droite', etat: 'semaine',
           consignes: ['Corrige la position de la main droite quand tu joues, comme vu pendant le cours.',
                       'Vérifie-la devant la glace, pendant le pouce buté.'] },
         { id: 'noms-cordes', titre: 'Le nom des 6 cordes', etat: 'semaine', morceau: 'ent-noms-cordes',
           consignes: ['De la plus grosse à la plus fine : Mi (6e), La (5e), Ré (4e), Sol (3e), Si (2e), Mi (1re).',
-                      'Dis le nom de chaque corde à voix haute en la jouant.'],
+                      'Dis le nom de chaque corde à voix haute en la jouant (voir le fichier Guitar Pro de Françoise).'],
           quiz: [['6e corde', 'Mi (grave)'], ['5e corde', 'La'], ['4e corde', 'Ré'], ['3e corde', 'Sol'], ['2e corde', 'Si'], ['1re corde', 'Mi (aigu)']] }
       ]
     }

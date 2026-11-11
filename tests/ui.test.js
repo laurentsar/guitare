@@ -674,7 +674,7 @@ function verifie(nom, cond, detail) {
     verifie('écran : le travail récurrent du cours, par thème', /Travail récurrent/.test(txt) && /Balayages/.test(txt) && /Pouce buté : 4 fois/.test(txt) && /Ve position : 0 1 0 1/.test(txt) && /Partir de la pince/.test(txt) &&
             /Riff en La n° 2/.test(txt) && /devant une glace/.test(txt));
     verifie('états : NOUVEAU, à continuer, pas encore vu en cours', /NOUVEAU/.test(txt) && /à continuer/.test(txt) && /pas encore vu en cours/.test(txt));
-    verifie('semaine dernière : révision facultative, à part', /Révision : les semaines précédentes/.test(txt) && /semaine dernière/.test(txt) && /♩ = 40/.test(txt));
+    verifie('semaines précédentes : révision facultative, à part', /Révision : les semaines précédentes/.test(txt) && /📅 semaines précédentes/.test(txt) && /♩ = 40/.test(txt));
     verifie('idées de l’app : groupe à part, marqué, hors du compte du jour', /Pour aller plus loin/.test(txt) && /idée de l’app/.test(txt) &&
             w.Entrainement.tous().every((e) => e.etat !== 'idee'));
     const total = w.Entrainement.tous().reduce((t, e) => t + w.Entrainement.cases(e), 0);

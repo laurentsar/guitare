@@ -23,7 +23,7 @@ jobs:
     needs: test
     permissions:
       contents: write
-    uses: laurentsar/app-kit/.github/workflows/build-apk.yml@57a5df8c62ecbd78c1ae89849c4398c0b7a2b408
+    uses: laurentsar/app-kit/.github/workflows/build-apk.yml@5bee0332a83002425afa69d11a89b8ec2363d11d
     with:
       apk_name: guitare
       release_name: Ma Guitare

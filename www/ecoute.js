@@ -137,15 +137,17 @@
     temps.sort(function (a, b) { return a - b; });
     this.etapes = temps.map(function (t) { return parT[t]; });
     this.i = 0; this.justes = 0; this.fautes = 0; this.fauteIci = false; this.erreurs = [];
+    this.instants = [];         // instant (ms) où chaque étape a été jouée juste
   }
   Suivi.prototype.attendue = function () { return this.etapes[this.i] || null; };
   Suivi.prototype.fini = function () { return this.i >= this.etapes.length; };
-  Suivi.prototype.entendu = function (midi) {
+  Suivi.prototype.entendu = function (midi, quand) {
     var e = this.attendue();
     if (!e) return { resultat: 'fini' };
     var ok = e.some(function (n) { return n.midi === midi; });
     if (ok) {
       if (!this.fauteIci) this.justes++;
+      this.instants[this.i] = quand == null ? Date.now() : quand;
       this.fauteIci = false; this.i++;
       return { resultat: 'juste', attendu: e, entendu: midi, fini: this.fini() };
     }
@@ -225,7 +227,86 @@
 
   function enMarche() { return actif; }
 
+  /* --- Recommandations après un tour ---------------------------------------
+   * Ce que l'app conclut d'un tour joué au micro : le genre de chaque faute,
+   * les mesures où elles se concentrent, les passages où l'on hésite. Rend
+   * une liste de { texte, action? } — l'action règle le lecteur (section en
+   * boucle, tempo réduit). `precedent` : le % du tour précédent, s'il y en a. */
+  function sec(ms) { return (ms / 1000).toFixed(1).replace('.', ','); }
+  function conseils(suivi, parMesure, precedent) {
+    var b = suivi.bilan(), out = [];
+    var mesureDe = function (k) { return Math.floor(suivi.etapes[k][0].temps / parMesure) + 1; };
+    var nomCorde = ['', '1re', '2e', '3e', '4e', '5e', '6e'];
+    if (precedent != null) {
+      var d = b.pct - precedent;
+      out.push({ texte: d > 0 ? '📈 Tu progresses : ' + precedent + ' % au tour précédent, ' + b.pct + ' % maintenant.'
+        : d < 0 ? '📉 ' + b.pct + ' % contre ' + precedent + ' % au tour précédent : la fatigue ? Fais une pause, puis reprends plus lentement.'
+        : '➡️ Même score qu’au tour précédent (' + b.pct + ' %).' });
+    }
+    // Le genre des fautes.
+    var genres = { case: [], corde: [], octave: [], autre: [] };
+    b.erreurs.forEach(function (x) {
+      var n = suivi.etapes[x.etape][0], ecart = x.entendu - x.attendu;
+      var voisine = [n.corde - 1, n.corde + 1].filter(function (c) { return c >= 1 && c <= 6 && global.Theorie && Theorie.midiDeCase(c, n.frette) === x.entendu; })[0];
+      if (voisine) genres.corde.push({ x: x, n: n, c: voisine });
+      else if (Math.abs(ecart) === 12) genres.octave.push({ x: x, n: n });
+      else if (Math.abs(ecart) <= 2) genres.case.push({ x: x, n: n, ecart: ecart });
+      else genres.autre.push({ x: x, n: n });
+    });
+    if (genres.case.length) {
+      var g = genres.case[0], haut = genres.case.filter(function (y) { return y.ecart > 0; }).length;
+      out.push({ texte: '🎯 ' + genres.case.length + ' note' + (genres.case.length > 1 ? 's' : '') + ' à une case près (ex. mesure ' + mesureDe(g.x.etape) + ' : case ' + g.n.frette + ' attendue). ' +
+        (haut > genres.case.length / 2 ? 'Tu tombes souvent une case trop haut : vise la case, pas la barrette d’après.' : 'Pose le doigt juste derrière la barrette de la bonne case, et regarde-la avant de jouer.') });
+    }
+    if (genres.corde.length) {
+      var gc = genres.corde[0];
+      out.push({ texte: '🎸 ' + genres.corde.length + ' fois la corde voisine (ex. mesure ' + mesureDe(gc.x.etape) + ' : ' + nomCorde[gc.c] + ' corde au lieu de la ' + nomCorde[gc.n.corde] +
+        '). Garde le pouce droit en appui et compte les cordes depuis la plus grave avant d’attaquer.' });
+    }
+    if (genres.octave.length) {
+      out.push({ texte: '🔁 ' + genres.octave.length + ' fois la bonne note, mais une octave à côté : c’est le bon nom de note sur une autre corde. Vérifie la corde indiquée.' });
+    }
+    // Auriculaire : les fautes sur les notes du 4e doigt.
+    var auri = b.erreurs.filter(function (x) { return suivi.etapes[x.etape][0].doigt === 4; }).length;
+    if (auri >= 2 && auri >= b.erreurs.length / 2) {
+      out.push({ texte: '🤙 La moitié des fautes tombent sur l’auriculaire (doigt 4) : fléchis-le bien avant de le poser, et garde-le au-dessus de sa case.' });
+    }
+    // Les mesures à retravailler : celles qui concentrent les fautes.
+    var parM = {};
+    b.erreurs.forEach(function (x) { var m = mesureDe(x.etape); parM[m] = (parM[m] || 0) + 1; });
+    var pires = Object.keys(parM).map(Number).sort(function (a, c) { return parM[c] - parM[a] || a - c; });
+    if (pires.length) {
+      var m0 = pires[0], de = m0, a = m0;
+      // Une mesure voisine fautive aussi : on travaille les deux ensemble.
+      if (parM[m0 + 1]) a = m0 + 1; else if (parM[m0 - 1]) de = m0 - 1;
+      out.push({ texte: '🔁 Le plus de fautes : mesure' + (de === a ? ' ' + de : 's ' + de + ' à ' + a) + ' (' + (parM[de] + (a !== de ? parM[a] || 0 : 0)) + '). Travaille-' + (de === a ? 'la' : 'les') + ' seule' + (de === a ? '' : 's') + ', en boucle, lentement.',
+                 action: { type: 'section', de: de, a: a, pct: 60, boucle: true }, bouton: '🔁 Mesure' + (de === a ? ' ' + de : 's ' + de + '–' + a) + ' en boucle à 60 %' });
+    }
+    // Les hésitations : un passage nettement plus long que les autres.
+    var ecarts = [];
+    for (var k = 1; k < suivi.instants.length; k++) {
+      if (suivi.instants[k] != null && suivi.instants[k - 1] != null) ecarts.push({ k: k, d: suivi.instants[k] - suivi.instants[k - 1] });
+    }
+    if (ecarts.length >= 4) {
+      var tri = ecarts.map(function (e) { return e.d; }).sort(function (x, y) { return x - y; });
+      var med = tri[Math.floor(tri.length / 2)];
+      var lents = ecarts.filter(function (e) { return e.d > Math.max(2.5 * med, med + 1200); }).sort(function (x, y) { return y.d - x.d; });
+      if (lents.length) {
+        var l = lents[0], av = suivi.etapes[l.k - 1][0], ap = suivi.etapes[l.k][0];
+        out.push({ texte: '⏱ Tu hésites mesure ' + mesureDe(l.k) + ', entre ' + Theorie.nomSansOctave(av.midi) + ' et ' + Theorie.nomSansOctave(ap.midi) +
+          ' (' + sec(l.d) + ' s, contre ' + sec(med) + ' s d’habitude) : répète ce seul changement, les doigts d’abord, sans jouer.' +
+          (lents.length > 1 ? ' ' + (lents.length - 1) + ' autre' + (lents.length > 2 ? 's' : '') + ' passage' + (lents.length > 2 ? 's' : '') + ' lent' + (lents.length > 2 ? 's' : '') + ' aussi.' : '') });
+      }
+    }
+    // La suite.
+    if (b.pct >= 95) out.push({ texte: '🚀 Presque parfait : joue-le maintenant au tempo, guitare muette — l’app bat la mesure, toi tu joues.', action: { type: 'section', de: 1, a: null, pct: 100, muet: true }, bouton: '▶ Jouer au tempo, guitare muette' });
+    else if (b.pct >= 80) out.push({ texte: '👍 Encore un tour ou deux au micro, puis passe au tempo lent (60 %) avec la lecture.' });
+    else out.push({ texte: '🐢 Ralentis : joue chaque note en la nommant, et vise la justesse avant la vitesse. Un tour par jour suffit pour progresser.' });
+    return out;
+  }
+
   global.Ecoute = {
+    conseils: conseils,
     detecter: detecter, analyser: analyser, Segmenteur: Segmenteur, Suivi: Suivi,
     demarrer: demarrer, arreter: arreter, enMarche: enMarche
   };

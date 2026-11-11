@@ -470,6 +470,9 @@ html.en-pupitre body { padding-bottom: 0; }
 .ecoute-verdict.juste { background: var(--ok); color: #0C2416; }
 .ecoute-verdict.faux { background: var(--presque); color: #22180C; }
 .ecoute-score { font-size: 20px; font-weight: 700; }
+.ecoute-conseils { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: var(--fond-3); }
+.ecoute-conseils p { margin: 6px 0; }
+.ecoute-panneau.fini { max-height: 70vh; overflow-y: auto; }
 .ecoute-erreurs { margin: 6px 0; padding-left: 18px; }
 .serie-travail { font-weight: 700; margin: 6px 0; }
 .etat-semaine { background: transparent; color: var(--texte-2); border: 1px dashed var(--trait); }

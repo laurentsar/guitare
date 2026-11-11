@@ -156,6 +156,11 @@
   function revision() { return lire('revision', null); }
   function sauverRevision(r) { ecrire('revision', r); }
 
+  /* Écoute au micro : le score (en %) du dernier tour fini de chaque morceau,
+   * pour dire si l'on progresse d'un tour à l'autre. */
+  function scoreEcoute(id) { var t = lire('scoresEcoute', {}); return t[id] == null ? null : t[id]; }
+  function noterScoreEcoute(id, pct) { var t = lire('scoresEcoute', {}); t[id] = pct; ecrire('scoresEcoute', t); }
+
   /* Morceaux aimés (♥) : une liste d'identifiants, dans l'ordre où on les a aimés. */
   function aimes() { return lire('aimes', []); }
   function aime(id) { return aimes().indexOf(id) !== -1; }
@@ -214,7 +219,7 @@
     joursEntrainement: joursEntrainement, notesCours: notesCours,
     etapesFaites: etapesFaites, marquerEtape: marquerEtape,
     listes: listes, sauverListe: sauverListe, supprimerListe: supprimerListe,
-    joues: joues, morceauJoue: morceauJoue, revision: revision, sauverRevision: sauverRevision,
+    joues: joues, morceauJoue: morceauJoue, scoreEcoute: scoreEcoute, noterScoreEcoute: noterScoreEcoute, revision: revision, sauverRevision: sauverRevision,
     tablatures: tablatures, tablature: tablature,
     sauverTablature: sauverTablature, supprimerTablature: supprimerTablature,
     reglages: reglages, reglage: reglage,

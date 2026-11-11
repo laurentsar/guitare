@@ -745,12 +745,26 @@ function verifie(nom, cond, detail) {
       const fin = pan2().textContent;
       verifie('fin du morceau : score et faute de la mesure 1, le micro RESTE allumé', new RegExp((temps.length - 1) + ' / ' + temps.length + ' notes justes du premier coup').test(fin) &&
               /Mesure 1 : /.test(fin) && ouvert && /reste allumé/.test(fin), fin.slice(0, 160));
+      verifie('fin du morceau : « 💡 Mes recommandations », avec la mesure 1 à retravailler', /Mes recommandations/.test(fin) && /mesure 1/.test(fin) &&
+              !![...pan2().querySelectorAll('button')].find((x) => /Mesure.* en boucle à 60 %/.test(x.textContent)), fin.slice(-300));
+      verifie('le score du tour est retenu pour le prochain', w.Store.scoreEcoute('au-clair') === Math.round((temps.length - 1) / temps.length * 100));
       jouer(notesM[temps.length > 1 ? 1 : 0].midi + 2);
       const encoreFin = /notes justes du premier coup/.test(pan2().textContent);
       jouer(notesM[0].midi);
       verifie('micro toujours allumé : une autre note ne fait rien, la première note relance un tour', encoreFin && new RegExp('note 2 / ' + temps.length).test(pan2().textContent), pan2().textContent.slice(0, 120));
       [...pan2().querySelectorAll('button')].find((x) => /Éteindre le micro/.test(x.textContent)).click();
       verifie('« Éteindre le micro » : micro fermé, interrupteur relevé', !ouvert && micro().getAttribute('aria-pressed') === 'false' && pan2().hidden);
+      // Tour suivant, fini : le bouton de la recommandation règle la boucle et éteint le micro.
+      micro().click();
+      jouer(notesM[0].midi + 1);
+      temps.forEach((tt) => jouer(notesM.find((n) => n.temps === tt).midi));
+      const finB = pan2().textContent;
+      verifie('2e tour : la comparaison avec le tour précédent', /même score|Même score|progresses|contre/i.test(finB), finB.slice(-300));
+      let lance = null; const jouerAvant = w.Tablature.jouer; w.Tablature.jouer = (pp, o) => { lance = o; };
+      [...pan2().querySelectorAll('button')].find((x) => /Mesure.* en boucle à 60 %/.test(x.textContent)).click();
+      verifie('bouton de la recommandation : micro éteint, mesure 1 en boucle lancée à 60 %', !ouvert && lance && lance.de === 0 &&
+              /60 %/.test($('detailMorceau').textContent), lance && JSON.stringify({ de: lance.de, a: lance.a }));
+      w.Tablature.jouer = jouerAvant; w.Tablature.arreter();
       w.Ecoute.demarrer = vrai; w.Ecoute.arreter = vraiArret; w.Ecoute.enMarche = () => false;
       w.AppGuitare.aller('entrainement');
     }

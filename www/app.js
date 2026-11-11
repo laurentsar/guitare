@@ -2085,6 +2085,7 @@
     }
     function rendreEcoute() {
       vide(panneauE);
+      panneauE.classList.toggle('fini', !!suiviE && suiviE.fini());
       if (!suiviE) return;
       var b = suiviE.bilan();
       if (suiviE.fini()) {
@@ -2100,6 +2101,30 @@
           if (b.erreurs.length > 6) ul.appendChild(el('li', null, '… et ' + (b.erreurs.length - 6) + ' autre(s).'));
           panneauE.appendChild(ul);
         }
+        // Recommandations : calculées une fois par tour, avec le score du tour
+        // précédent, puis ce score est retenu pour le prochain.
+        if (!suiviE.conseils) {
+          suiviE.conseils = Ecoute.conseils(suiviE, parMesure, Store.scoreEcoute(p.id));
+          Store.noterScoreEcoute(p.id, b.pct);
+        }
+        var rec = el('div', 'ecoute-conseils');
+        rec.appendChild(el('b', null, '💡 Mes recommandations'));
+        suiviE.conseils.forEach(function (c) {
+          var li = el('p', null, c.texte);
+          if (c.action) {
+            var bA = el('button', 'btn', c.bouton);
+            bA.onclick = function () {
+              var act = {}; Object.keys(c.action).forEach(function (k) { act[k] = c.action[k]; });
+              if (act.a == null) act.a = nbMesures;
+              eteindreMicro();
+              appliquerEtape(act);
+            };
+            li.appendChild(document.createElement('br'));
+            li.appendChild(bA);
+          }
+          rec.appendChild(li);
+        });
+        panneauE.appendChild(rec);
         panneauE.appendChild(el('p', 'aide', '🎤 Le micro reste allumé : rejoue la première note du morceau pour refaire un tour.'));
         var act = el('div', 'actions');
         var bRe = el('button', 'btn', '↺ Recommencer');
@@ -2149,7 +2174,7 @@
           suiviE = premier;
         }
         var att = suiviE.attendue();
-        var r = suiviE.entendu(midi);
+        var r = suiviE.entendu(midi, Date.now());
         if (r.resultat === 'juste') verdictE = { classe: 'juste', texte: '✓ Juste : ' + Theorie.nomSansOctave(midi) };
         else if (r.resultat === 'faux') verdictE = { classe: 'faux', texte: '✗ J’entends ' + Theorie.nomSansOctave(midi) + ', il faut ' + Theorie.nomSansOctave(att[0].midi) + ' : rejoue-la.' };
         rendreEcoute(); montrerAttendue();

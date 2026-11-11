@@ -505,6 +505,28 @@ console.log('\n— Écoute au micro : notes synthétisées, écoutées comme au 
   const bilan = suivi.bilan();
   verifie('suivi : bilan 3 / 4 du premier coup, la faute notée (La attendu, Si entendu)', bilan.justes === 3 && bilan.total === 4 &&
           bilan.erreurs.length === 1 && bilan.erreurs[0].attendu === 45 && bilan.erreurs[0].entendu === 47);
+  // Recommandations après un tour : genre des fautes, mesures à retravailler, hésitations.
+  {
+    const r2n = Morceaux.get('ent-riff-la-2').notes, su = new Ecoute.Suivi(r2n);
+    let t = 0;
+    su.etapes.forEach((e, k) => {
+      if (k === 2) su.entendu(47, t);            // Si au lieu de Do : une case trop bas
+      if (k === 3) su.entendu(45, t);            // Ré (5e corde, case 5) → La (6e corde, case 5) : corde voisine
+      if (k === 6) su.entendu(60, t);            // Do une octave trop haut
+      t += k === 12 ? 6000 : 1000;               // hésitation avant la 13e note
+      su.entendu(e[0].midi, t);
+    });
+    const cs = Ecoute.conseils(su, 4, 70), txt = cs.map((c) => c.texte).join('\n');
+    verifie('recommandations : progrès depuis le tour précédent (70 % → ' + su.bilan().pct + ' %)', /Tu progresses : 70 %/.test(txt), txt.split('\n')[0]);
+    verifie('recommandations : une case près, la corde voisine, l’octave', /à une case près/.test(txt) && /corde voisine \(ex\. mesure 1 : 6e corde au lieu de la 5e\)/.test(txt) && /une octave à côté/.test(txt), txt);
+    const boucle = cs.find((c) => c.action && c.action.boucle);
+    verifie('recommandations : les mesures 1 et 2 en boucle à 60 %', boucle && boucle.action.de === 1 && boucle.action.a === 2 && boucle.action.pct === 60, boucle && boucle.texte);
+    verifie('recommandations : l’hésitation repérée (mesure 4, 6 s)', /Tu hésites mesure 4/.test(txt) && /6,0 s/.test(txt), txt);
+    const parfait = new Ecoute.Suivi(r2n.slice(0, 8));
+    parfait.etapes.forEach((e, k) => parfait.entendu(e[0].midi, k * 1000));
+    const cp = Ecoute.conseils(parfait, 4, null);
+    verifie('tour parfait : passer au tempo, guitare muette', cp.length === 1 && cp[0].action && cp[0].action.muet && cp[0].action.pct === 100, cp.map((c) => c.texte).join(' | '));
+  }
   const accord = new Ecoute.Suivi([{ temps: 0, midi: 40 }, { temps: 0, midi: 47 }, { temps: 0, midi: 52 }, { temps: 1, midi: 45 }]);
   verifie('suivi : notes pincées ensemble = une étape, n’importe laquelle compte', accord.etapes.length === 2 && accord.entendu(52).resultat === 'juste');
 }

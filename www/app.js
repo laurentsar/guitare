@@ -44,6 +44,8 @@
     if (lecteur.indexOf(ecranCourant) !== -1 && lecteur.indexOf(nom) === -1) Tablature.arreter();
     // Quitter le lecteur termine l'enchaînement en cours.
     if (lecteur.indexOf(nom) === -1 && typeof arreterSession === 'function') arreterSession();
+    // Le micro ne reste jamais ouvert hors de la page du morceau.
+    if (nom !== 'morceau' && window.Ecoute) Ecoute.arreter();
     document.documentElement.classList.toggle('en-pupitre', nom === 'pupitre');
 
     ecranCourant = nom;
@@ -533,9 +535,15 @@
         });
         c.appendChild(coches);
         if (e.morceau && Morceaux.get(e.morceau)) {
+          var lb = el('div', 'actions');
           var b = el('button', 'btn', '🎼 Tablature : ' + Morceaux.get(e.morceau).titre);
           b.onclick = function () { ouvrirMorceau(e.morceau); };
-          c.appendChild(b);
+          lb.appendChild(b);
+          var bE = el('button', 'btn', '🎤 Écoute-moi');
+          bE.setAttribute('aria-label', 'Écoute-moi jouer : ' + e.titre);
+          bE.onclick = function () { ouvrirMorceau(e.morceau, { ecoute: true }); };
+          lb.appendChild(bE);
+          c.appendChild(lb);
         }
         h.appendChild(c);
       });
@@ -1513,6 +1521,10 @@
 
   function ouvrirMorceau(id, opts) {
     opts = opts || {};
+    // Lu tout de suite : plus bas, `opts` est réutilisé pour les interrupteurs.
+    var demandeEcoute = !!opts.ecoute;
+    // Changer de morceau referme le micro.
+    if (window.Ecoute) Ecoute.arreter();
     // Ouvrir un morceau hors de la liste en cours met fin à l'enchaînement.
     if (!opts.session) arreterSession();
     var p = trouverMorceau(id);
@@ -1755,7 +1767,10 @@
     function bornesVisibles() {
       if (pleinEcranOuvert()) return { haut: peBarre.offsetHeight, bas: window.innerHeight };
       var en = document.querySelector('.entete'), on = $('onglets');
-      return { haut: en ? Math.max(0, en.getBoundingClientRect().bottom) : 0,
+      // Pendant l'écoute, le panneau colle sous l'en-tête : la ligne suivie
+      // doit rester visible SOUS lui.
+      var pe = typeof panneauE !== 'undefined' && panneauE && !panneauE.hidden ? panneauE.getBoundingClientRect().bottom : 0;
+      return { haut: Math.max(en ? Math.max(0, en.getBoundingClientRect().bottom) : 0, pe),
                bas: window.innerHeight - (on && on.offsetParent ? on.offsetHeight : 0) };
     }
     function defilerDe(d) {
@@ -2033,6 +2048,137 @@
     actions.appendChild(bJouer); actions.appendChild(bStop); actions.appendChild(bMetro);
     hautLecture.insertBefore(actions, hautLecture.firstChild);
 
+    /* « 🎤 Écoute-moi » : l'app écoute au micro, note après note, et dit si
+     * c'est juste. Elle attend la bonne note (pas de tempo imposé) : on joue
+     * à son rythme. Le micro n'est ouvert que pendant l'écoute. */
+    var bEcoute = el('button', 'btn', '🎤 Écoute-moi');
+    actions.appendChild(bEcoute);
+    var panneauE = el('div', 'carte ecoute-panneau');
+    panneauE.hidden = true;
+    // Placé dans la page elle-même (pas dans la barre de lecture, trop courte
+    // pour qu'il reste collé en haut pendant que la tablature défile).
+    hautLecture.appendChild(panneauE);
+    var suiviE = null, verdictE = null, entenduE = '…';
+    var CORDES_NOM = ['', '1re corde (Mi aigu)', '2e corde (Si)', '3e corde (Sol)', '4e corde (Ré)', '5e corde (La)', '6e corde (Mi grave)'];
+    function notesEcoute() {
+      var de = (etat.de - 1) * parMesure, a = etat.a * parMesure, capo = etat.capo || 0;
+      return p.notes.filter(function (n) { return n.temps >= de && n.temps < a && n.midi != null; })
+        .map(function (n) { return { temps: n.temps, midi: n.midi + capo, corde: n.corde, frette: n.frette, doigt: n.doigt }; });
+    }
+    function decrire(n) {
+      return CORDES_NOM[n.corde] + ', ' + (n.frette ? 'case ' + n.frette + (n.doigt ? ' (doigt ' + n.doigt + ')' : '') : 'à vide') +
+        ' — ' + Theorie.nomSansOctave(n.midi);
+    }
+    function montrerAttendue() {
+      var e = suiviE && suiviE.attendue();
+      Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) {
+        g.classList.toggle('en-cours', !!e && parseFloat(g.dataset.temps) === e[0].temps);
+      });
+      if (e) { if (etat.manche) majManche(e[0].temps); guide.suivre(e[0].temps); suivreLigne(); }
+    }
+    function rendreEcoute() {
+      vide(panneauE);
+      if (!suiviE) return;
+      var b = suiviE.bilan();
+      if (suiviE.fini()) {
+        panneauE.appendChild(el('h3', null, b.pct >= 90 ? '🎉 Bravo !' : b.pct >= 70 ? '👍 Presque !' : '💪 Encore un peu de travail'));
+        panneauE.appendChild(el('p', 'ecoute-score', b.justes + ' / ' + b.total + ' notes justes du premier coup (' + b.pct + ' %)'));
+        if (b.erreurs.length) {
+          var ul = el('ul', 'ecoute-erreurs');
+          b.erreurs.slice(0, 6).forEach(function (x) {
+            var t = suiviE.etapes[x.etape][0].temps;
+            ul.appendChild(el('li', null, 'Mesure ' + (Math.floor(t / parMesure) + 1) + ' : ' + Theorie.nomSansOctave(x.entendu) + ' au lieu de ' +
+              Theorie.nomSansOctave(x.attendu) + ' (' + decrire(suiviE.etapes[x.etape][0]) + ')'));
+          });
+          if (b.erreurs.length > 6) ul.appendChild(el('li', null, '… et ' + (b.erreurs.length - 6) + ' autre(s).'));
+          panneauE.appendChild(ul);
+        }
+        // Exercice du travail de Françoise : le cocher pour aujourd'hui.
+        var ex = window.Entrainement && Entrainement.tous().concat(Entrainement.idees(), Entrainement.facultatifs())
+          .filter(function (e) { return e.morceau === p.id; })[0];
+        var act = el('div', 'actions');
+        if (ex && b.pct >= 80) {
+          var faites = Store.entrainementJour()[ex.id] || [], k = 0;
+          while (faites.indexOf(k) !== -1) k++;
+          if (k < Entrainement.cases(ex)) {
+            var bC = el('button', 'btn primaire', '✓ Cocher « ' + ex.titre + ' »' + (ex.variantes ? ' (' + ex.variantes[k] + ')' : '') + ' pour aujourd’hui');
+            bC.onclick = function () { Store.cocherEntrainement(ex.id, k, true); bC.disabled = true; bC.textContent = '✓ Coché pour aujourd’hui'; };
+            act.appendChild(bC);
+          }
+        }
+        var bRe = el('button', 'btn', '↺ Recommencer');
+        bRe.onclick = function () { suiviE = new Ecoute.Suivi(notesEcoute()); verdictE = null; rendreEcoute(); montrerAttendue(); if (!Ecoute.enMarche()) demarrerEcoute(); };
+        act.appendChild(bRe);
+        panneauE.appendChild(act);
+        return;
+      }
+      var e = suiviE.attendue();
+      var tete = el('p', 'aide ecoute-etat');
+      tete.appendChild(document.createTextNode('🎤 J’écoute, à ton rythme · note ' + (suiviE.i + 1) + ' / ' + b.total + ' · ' + b.justes + ' juste' + (b.justes > 1 ? 's' : '') + ' du 1er coup · '));
+      tete.appendChild(el('span', 'ecoute-entendu', 'j’entends : ' + entenduE));
+      panneauE.appendChild(tete);
+      panneauE.appendChild(el('p', 'ecoute-attendue', (e.length > 1 ? 'Ensemble (une suffit) : ' : 'Joue : ') + decrire(e[0])));
+      if (verdictE) panneauE.appendChild(el('p', 'ecoute-verdict ' + verdictE.classe, verdictE.texte));
+      var act2 = el('div', 'actions');
+      var bP = el('button', 'btn', 'Passer ›');
+      bP.onclick = function () { suiviE.passer(); verdictE = null; rendreEcoute(); montrerAttendue(); if (suiviE.fini()) Ecoute.arreter(); };
+      var bA = el('button', 'btn', '■ Arrêter l’écoute');
+      bA.onclick = finirEcoute;
+      act2.appendChild(bP); act2.appendChild(bA);
+      panneauE.appendChild(act2);
+    }
+    function finirEcoute() {
+      Ecoute.arreter();
+      suiviE = null; panneauE.hidden = true; vide(panneauE);
+      bEcoute.textContent = '🎤 Écoute-moi'; bEcoute.classList.remove('primaire');
+      effacer();
+    }
+    function demarrerEcoute() {
+      Ecoute.demarrer(function (midi) {
+        if (!suiviE || suiviE.fini()) return;
+        var att = suiviE.attendue();
+        var r = suiviE.entendu(midi);
+        if (r.resultat === 'juste') verdictE = { classe: 'juste', texte: '✓ Juste : ' + Theorie.nomSansOctave(midi) };
+        else if (r.resultat === 'faux') verdictE = { classe: 'faux', texte: '✗ J’entends ' + Theorie.nomSansOctave(midi) + ', il faut ' + Theorie.nomSansOctave(att[0].midi) + ' : rejoue-la.' };
+        if (suiviE.fini()) Ecoute.arreter();
+        rendreEcoute(); montrerAttendue();
+      }, function (m) {
+        var t = m.midi == null ? '…' : Theorie.nomSansOctave(m.midi) + (Math.abs(m.ecart) > 25 ? (m.ecart > 0 ? ' (un peu haut)' : ' (un peu bas)') : '');
+        if (t !== entenduE) { entenduE = t; var x = panneauE.querySelector('.ecoute-entendu'); if (x) x.textContent = 'j’entends : ' + t; }
+      }, function (msg) {
+        suiviE = null; vide(panneauE);
+        panneauE.appendChild(el('p', 'ecoute-verdict faux', '🎤 ' + msg));
+        bEcoute.textContent = '🎤 Écoute-moi'; bEcoute.classList.remove('primaire');
+      });
+    }
+    bEcoute.onclick = function () {
+      if (suiviE) { finirEcoute(); return; }
+      Tablature.arreter(); effacer();
+      var notesE = notesEcoute();
+      if (!notesE.length) return;
+      suiviE = new Ecoute.Suivi(notesE); verdictE = null; entenduE = '…';
+      if (hautLecture.parentNode && panneauE.parentNode === hautLecture) hautLecture.parentNode.insertBefore(panneauE, hautLecture.nextSibling);
+      panneauE.hidden = false;
+      // Collé sous l'en-tête : le verdict reste à l'écran quand la tablature défile.
+      var ent = document.querySelector('.entete');
+      panneauE.style.top = (ent ? ent.offsetHeight : 0) + 'px';
+      bEcoute.textContent = '■ Arrêter l’écoute'; bEcoute.classList.add('primaire');
+      rendreEcoute();
+      demarrerEcoute();
+      // La note attendue juste sous le panneau collé en haut. Une seconde fois
+      // un peu plus tard : à l'ouverture, la tablature se redessine dès que
+      // la largeur de l'écran est connue.
+      function amenerAttendue() {
+        var e0 = suiviE && suiviE.attendue();
+        var cible = e0 && zone.querySelector('.tab-note[data-temps="' + e0[0].temps + '"]');
+        var ligneC = cible && cible.closest('.systeme, .tab-ligne, .portee-ligne-bloc');
+        if (ligneC) { ligneSuivie = ligneC; amener(ligneC, bornesVisibles().haut + 8); }
+        montrerAttendue();
+      }
+      amenerAttendue();
+      setTimeout(amenerAttendue, 400);
+    };
+
     // Options de travail : des interrupteurs, pas des cases à cocher — plus
     // gros au doigt, et atteignables à la télécommande.
     var opts = el('div', 'filtres options-lecture');
@@ -2222,6 +2368,9 @@
     pupitreCourant = pupitre;
 
     aller('morceau');
+    // Ouvert par « 🎤 Écoute-moi » (travail de Françoise) : on écoute tout de
+    // suite — dans le même geste, sinon le navigateur refuse le micro.
+    if (demandeEcoute && !enListe) bEcoute.onclick();
     // Morceau d'une liste : plein écran et lecture tout de suite.
     if (enListe) {
       ouvrirPleinEcran();

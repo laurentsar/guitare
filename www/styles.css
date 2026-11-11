@@ -460,6 +460,17 @@ html.en-pupitre body { padding-bottom: 0; }
 .tempos-ligne { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .tempos-libelle { font-size: 13px; color: var(--texte-2); margin-right: 4px; }
 .tempos-ligne .btn { min-width: 56px; padding: 6px 10px; }
+.ecoute-panneau { margin: 10px 0; border-color: var(--accent); position: sticky; z-index: 15; background: var(--fond-2, var(--fond)); box-shadow: 0 6px 16px rgba(0,0,0,.35); }
+.ecoute-panneau p { margin: 6px 0; }
+.ecoute-attendue { font-size: 17px; font-weight: 700; }
+.ecoute-panneau .actions { margin: 4px 0 0; }
+.ecoute-panneau { padding: 10px 14px; }
+.ecoute-entendu { color: var(--texte-2); }
+.ecoute-verdict { font-size: 16px; font-weight: 700; padding: 6px 10px; border-radius: 10px; }
+.ecoute-verdict.juste { background: var(--ok); color: #0C2416; }
+.ecoute-verdict.faux { background: var(--presque); color: #22180C; }
+.ecoute-score { font-size: 20px; font-weight: 700; }
+.ecoute-erreurs { margin: 6px 0; padding-left: 18px; }
 .serie-travail { font-weight: 700; margin: 6px 0; }
 .etat-semaine { background: transparent; color: var(--texte-2); border: 1px dashed var(--trait); }
 .etat-idee { background: transparent; color: var(--texte-2); border: 1px dashed var(--trait); }

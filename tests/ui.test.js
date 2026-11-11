@@ -32,7 +32,7 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'entrainement.js', 'programme.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'entrainement.js', 'ecoute.js', 'programme.js', 'lecons.js',
  'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
@@ -711,6 +711,43 @@ function verifie(nom, cond, detail) {
       verifie('pouce buté : métronome de 40 à 60', ['♩ 40', '♩ 45', '♩ 50', '♩ 55', '♩ 60'].every((x) => pb.textContent.includes(x)));
       verifie('lien vers l’écran Métronome et boîte à rythmes', [...$('pageEntrainement').querySelectorAll('button')].some((x) => /Métronome et boîte à rythmes/.test(x.textContent)));
       $('metroSon').value = 'clic';
+    }
+    // « 🎤 Écoute-moi » : sur chaque exercice qui a une tablature, et sur la page du morceau.
+    {
+      const riff2 = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Riff en La n° 2/.test(c.textContent));
+      const bE = [...riff2.querySelectorAll('button')].find((x) => /Écoute-moi/.test(x.textContent));
+      verifie('travail : bouton « 🎤 Écoute-moi » sur l’exercice', !!bE);
+      bE.click();
+      const pan = $('detailMorceau').querySelector('.ecoute-panneau');
+      // Pas de micro dans jsdom : l'app le dit clairement, sans planter.
+      verifie('écoute sans micro : ouvre le riff et explique qu’il n’y a pas de micro', /Riff en La n° 2/.test($('detailMorceau').querySelector('h2').textContent) &&
+              pan && !pan.hidden && /accès au micro/.test(pan.textContent), pan && pan.textContent);
+      verifie('page du morceau : bouton « 🎤 Écoute-moi » à côté de « Écouter »', [...$('detailMorceau').querySelectorAll('.actions button')].some((x) => /Écoute-moi/.test(x.textContent)));
+      // Un faux micro qui « joue » : toutes les notes du riff, une fausse au début.
+      const vrai = w.Ecoute.demarrer, vraiArret = w.Ecoute.arreter;
+      let jouer = null, ouvert = false;
+      w.Ecoute.demarrer = (surNote) => { jouer = surNote; ouvert = true; return Promise.resolve(true); };
+      w.Ecoute.arreter = () => { ouvert = false; };
+      w.Ecoute.enMarche = () => ouvert;
+      w.Store.cocherEntrainement('riff-la-2', 0, false);
+      w.AppGuitare.aller('entrainement');
+      [...[...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Riff en La n° 2/.test(c.textContent)).querySelectorAll('button')]
+        .find((x) => /Écoute-moi/.test(x.textContent)).click();
+      const pan2 = () => $('detailMorceau').querySelector('.ecoute-panneau');
+      verifie('écoute : la première note attendue est annoncée (6e corde, case 5, La)', /Joue : 6e corde \(Mi grave\), case 5 \(doigt 1\) — La/.test(pan2().textContent), pan2().textContent);
+      jouer(47);
+      verifie('fausse note : « J’entends Si, il faut La »', /J’entends Si, il faut La/.test(pan2().textContent));
+      const notesRiff = w.Morceaux.get('ent-riff-la-2').notes.map((n) => n.midi);
+      notesRiff.forEach((m) => jouer(m));
+      const fin = pan2().textContent;
+      verifie('fin : score du premier coup (32 / 33) et la faute de la mesure 1', /32 \/ 33 notes justes du premier coup \(97 %\)/.test(fin) && /Mesure 1 : Si au lieu de La/.test(fin) && !ouvert, fin.slice(0, 160));
+      const bCocher = [...pan2().querySelectorAll('button')].find((x) => /Cocher « Riff en La n° 2/.test(x.textContent));
+      verifie('fin : bouton pour cocher l’exercice du travail de Françoise', !!bCocher);
+      bCocher.click();
+      verifie('exercice coché pour aujourd’hui depuis l’écoute', (w.Store.entrainementJour()['riff-la-2'] || []).join() === '0');
+      w.Store.cocherEntrainement('riff-la-2', 0, false);
+      w.Ecoute.demarrer = vrai; w.Ecoute.arreter = vraiArret; w.Ecoute.enMarche = () => false;
+      w.AppGuitare.aller('entrainement');
     }
     // Révision quotidienne : série, bouton qui enchaîne les tablatures, rappels.
     verifie('travail : série de jours d’affilée affichée', /1 jour d’affilée/.test($('pageEntrainement').textContent));

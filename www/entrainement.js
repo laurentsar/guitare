@@ -5,7 +5,8 @@
  *  - etat : 'continuer' (déjà vu, à poursuivre), 'nouveau' (donné cette
  *    semaine), 'pasvu' (donné à faire, mais pas encore montré en cours),
  *    'idee' (imaginé par l'app, pas donné en cours : groupe `idees`, hors du
- *    compte du jour) ;
+ *    compte du jour), 'semaine' (révision de la semaine dernière : groupe
+ *    `facultatif`, hors du compte du jour) ;
  *  - variantes : les façons de le faire (en regardant, yeux fermés…), cochées
  *    séparément chaque jour ;
  *  - morceau : la tablature correspondante (www/morceaux.js, catégorie
@@ -27,7 +28,7 @@
         { id: 'pouce-bute-4', titre: 'Pouce buté : 4 fois sur chaque corde', etat: 'continuer', morceau: 'ent-pouce-bute-4', variantes: REGARD,
           consignes: ['1 : j’appuie contre la corde voisine, « et » : je lève.',
                       'Bien t’arrêter contre la corde voisine avant de soulever le pouce !',
-                      'Avec le métronome à 50, puis 55, puis 60.',
+                      'Avec le métronome à 50, puis 55, puis 60 (si 50 est trop rapide, repars de 40 ou 45, comme la semaine dernière).',
                       'Bien soulever le pouce à chaque attaque.'] }
       ]
     },
@@ -119,9 +120,21 @@
       ]
     },
     {
-      titre: 'Rappel des cours précédents',
+      titre: '📅 Révision : la semaine dernière',
+      facultatif: true,
+      intro: 'Le mail de la semaine dernière, pour réviser quand le travail du jour est fait. Facultatif : ça ne compte pas dans le travail du jour.',
       exercices: [
-        { id: 'noms-cordes', titre: 'Le nom des 6 cordes', etat: 'continuer', morceau: 'ent-noms-cordes',
+        { id: 'sd-pouce-bute-1', titre: 'Pouce buté : 1 fois sur chaque corde', etat: 'semaine', morceau: 'ent-pouce-bute-1',
+          variantes: ['♩ = 40', '♩ = 45', '♩ = 50', '♩ = 55', '♩ = 60'],
+          consignes: ['1 : j’appuie contre la corde voisine, « et » : je lève.',
+                      'Bien t’arrêter contre la corde voisine avant de soulever le pouce !',
+                      'Avec le métronome à 40, 45, 50, 55 et 60 : monte d’un cran seulement quand c’est propre.',
+                      'Bien soulever le pouce à chaque attaque.',
+                      'Pour le 4 fois sur chaque corde de cette semaine, si 50 est trop rapide : repars de 40 ou 45, comme la semaine dernière.'] },
+        { id: 'sd-main-droite', titre: 'Corriger la position de la main droite', etat: 'semaine',
+          consignes: ['Corrige la position de la main droite quand tu joues, comme vu pendant le cours.',
+                      'Vérifie-la devant la glace, pendant le pouce buté.'] },
+        { id: 'noms-cordes', titre: 'Le nom des 6 cordes', etat: 'semaine', morceau: 'ent-noms-cordes',
           consignes: ['De la plus grosse à la plus fine : Mi (6e), La (5e), Ré (4e), Sol (3e), Si (2e), Mi (1re).',
                       'Dis le nom de chaque corde à voix haute en la jouant.'],
           quiz: [['6e corde', 'Mi (grave)'], ['5e corde', 'La'], ['4e corde', 'Ré'], ['3e corde', 'Sol'], ['2e corde', 'Si'], ['1re corde', 'Mi (aigu)']] }
@@ -129,10 +142,16 @@
     }
   ];
 
-  // Le travail du jour : tout sauf les idées de l'app (groupe `idees`).
+  // Le travail du jour : le dernier mail, sans les idées de l'app (groupe
+  // `idees`) ni la révision facultative de la semaine dernière (`facultatif`).
   function tous() {
     var l = [];
-    GROUPES.forEach(function (g) { if (!g.idees) g.exercices.forEach(function (e) { l.push(e); }); });
+    GROUPES.forEach(function (g) { if (!g.idees && !g.facultatif) g.exercices.forEach(function (e) { l.push(e); }); });
+    return l;
+  }
+  function facultatifs() {
+    var l = [];
+    GROUPES.forEach(function (g) { if (g.facultatif) g.exercices.forEach(function (e) { l.push(e); }); });
     return l;
   }
   function idees() {
@@ -143,5 +162,5 @@
   // Nombre de cases à cocher d'un exercice : une par variante, sinon une.
   function cases(e) { return e.variantes ? e.variantes.length : 1; }
 
-  global.Entrainement = { groupes: function () { return GROUPES; }, tous: tous, idees: idees, cases: cases };
+  global.Entrainement = { groupes: function () { return GROUPES; }, tous: tous, idees: idees, facultatifs: facultatifs, cases: cases };
 })(typeof window !== 'undefined' ? window : globalThis);

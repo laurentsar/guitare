@@ -478,7 +478,7 @@
     return b;
   }
 
-  var ETATS_ENTRAINEMENT = { nouveau: 'NOUVEAU', continuer: 'à continuer', pasvu: 'pas encore vu en cours', idee: '💡 idée de l’app' };
+  var ETATS_ENTRAINEMENT = { nouveau: 'NOUVEAU', continuer: 'à continuer', pasvu: 'pas encore vu en cours', idee: '💡 idée de l’app', semaine: '📅 semaine dernière' };
 
   function rendreEntrainement() {
     var h = vide($('pageEntrainement'));

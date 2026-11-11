@@ -338,9 +338,13 @@ console.log('\n— Entraînement (tablatures du cours) —');
           r.notes.every((n) => n.main === 'p' && (n.frette === 5 ? n.doigt === 1 : n.frette === 7 + k && n.doigt === 3 + k))) && Tablature.duree_totale(r1) === 36);
   verifie('1 3 1 3, 0 4 0 4, 1 4 1 4 : même chemin que 0 3 0 3', ['ent-v-1313', 'ent-v-0404', 'ent-v-1414'].every((id) => chemin(Morceaux.get(id).notes) === '654323456') &&
           Morceaux.get('ent-v-1414').notes.slice(0, 4).map((n) => n.frette).join() === '5,8,5,8');
-  verifie('chaque exercice du travail récurrent qui renvoie à une tablature la trouve', Entrainement.tous().concat(Entrainement.idees()).every((e) => !e.morceau || Morceaux.get(e.morceau)));
+  verifie('chaque exercice du travail récurrent qui renvoie à une tablature la trouve', Entrainement.tous().concat(Entrainement.idees(), Entrainement.facultatifs()).every((e) => !e.morceau || Morceaux.get(e.morceau)));
   verifie('idées de l’app : à part, marquées, hors du travail du jour', Entrainement.idees().length === 3 && Entrainement.idees().every((e) => e.etat === 'idee' && Entrainement.tous().indexOf(e) === -1) &&
           Entrainement.tous().every((e) => e.etat !== 'idee'));
+  verifie('travail du jour = le dernier mail ; la semaine dernière en révision facultative', Entrainement.tous().length === 14 &&
+          Entrainement.facultatifs().map((e) => e.id).join() === 'sd-pouce-bute-1,sd-main-droite,noms-cordes' &&
+          Entrainement.facultatifs().every((e) => e.etat === 'semaine') && Entrainement.tous().some((e) => e.id === 'riff-la-2') &&
+          Entrainement.facultatifs()[0].variantes.join() === '♩ = 40,♩ = 45,♩ = 50,♩ = 55,♩ = 60');
   const r3 = Morceaux.get('ent-riff-la-3');
   verifie('riff n° 3 imaginé : La Si Do Ré, puis Ré Mi Fa Sol (1, 3, 4 puis 1)', r3.notes.slice(0, 4).map(nom).join(' ') === 'la si do re' &&
           r3.notes.slice(16, 20).map(nom).join(' ') === 're mi fa sol' && r3.notes.slice(0, 4).map((n) => n.doigt).join('') === '1341');

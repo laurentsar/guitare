@@ -213,7 +213,7 @@
   // réveiller le programmateur assez souvent.
   var metro = {
     actif: false, tempo: 80, parMesure: 4, battement: 0,
-    prochain: 0, timer: null, surBattement: null, subdivision: 1
+    prochain: 0, timer: null, surBattement: null, subdivision: 1, style: 'clic'
   };
   var AVANCE = 0.12;     // horizon de programmation, en secondes
   var REVEIL = 25;       // période du minuteur, en millisecondes
@@ -240,6 +240,78 @@
     osc.stop(quand + 0.12);
   }
 
+  /* Boîte à rythmes : trois sons de batterie synthétisés (pas de fichier).
+   * Grosse caisse = sinus qui plonge de 140 à 45 Hz ; caisse claire = bruit
+   * filtré + un peu de corps ; charleston = bruit aigu très court. Chaque son
+   * est enregistré comme une note, pour que « Arrêter » le coupe. */
+  var bruit = null;
+  function bufferBruit(c) {
+    if (bruit) return bruit;
+    bruit = c.createBuffer(1, c.sampleRate * 0.5, c.sampleRate);
+    var d = bruit.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return bruit;
+  }
+  function suivre(src, fin) {
+    var entree = { src: src, gain: null, fin: fin };
+    enCours.push(entree);
+    src.onended = function () { var i = enCours.indexOf(entree); if (i !== -1) enCours.splice(i, 1); };
+  }
+  function grosseCaisse(quand, fort) {
+    var c = contexte(), o = c.createOscillator(), g = c.createGain();
+    o.frequency.setValueAtTime(140, quand);
+    o.frequency.exponentialRampToValueAtTime(45, quand + 0.12);
+    g.gain.setValueAtTime(0.0001, quand);
+    g.gain.exponentialRampToValueAtTime(fort ? 0.95 : 0.8, quand + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, quand + 0.3);
+    o.connect(g).connect(maitre);
+    suivre(o, quand + 0.32);
+    o.start(quand); o.stop(quand + 0.32);
+  }
+  function caisseClaire(quand) {
+    var c = contexte(), n = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    n.buffer = bufferBruit(c);
+    f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 0.8;
+    g.gain.setValueAtTime(0.0001, quand);
+    g.gain.exponentialRampToValueAtTime(0.5, quand + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, quand + 0.18);
+    n.connect(f).connect(g).connect(maitre);
+    suivre(n, quand + 0.2);
+    n.start(quand); n.stop(quand + 0.2);
+    var o = c.createOscillator(), go = c.createGain();
+    o.frequency.value = 190;
+    go.gain.setValueAtTime(0.0001, quand);
+    go.gain.exponentialRampToValueAtTime(0.3, quand + 0.002);
+    go.gain.exponentialRampToValueAtTime(0.0001, quand + 0.08);
+    o.connect(go).connect(maitre);
+    suivre(o, quand + 0.1);
+    o.start(quand); o.stop(quand + 0.1);
+  }
+  function charleston(quand, accent) {
+    var c = contexte(), n = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    n.buffer = bufferBruit(c);
+    f.type = 'highpass'; f.frequency.value = 7000;
+    g.gain.setValueAtTime(0.0001, quand);
+    g.gain.exponentialRampToValueAtTime(accent ? 0.22 : 0.12, quand + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, quand + 0.05);
+    n.connect(f).connect(g).connect(maitre);
+    suivre(n, quand + 0.06);
+    n.start(quand); n.stop(quand + 0.06);
+  }
+  /* Rock groove, en croches : charleston sur chaque croche, grosse caisse
+   * sur le 1er et le 3e temps (et le « et » du 3e), caisse claire sur les
+   * temps pairs (2 et 4 : le contretemps du rock). À 3 temps : grosse
+   * caisse au 1er, caisse claire aux 2e et 3e. */
+  var ROCK = {
+    grosse: function (t, s, par) { return (t === 0 && s === 0) || (par >= 4 && t === 2); },
+    claire: function (t, s, par) { return s === 0 && (par >= 4 ? t % 2 === 1 : t > 0); }
+  };
+  function coupRock(quand, temps, sousPas, par) {
+    charleston(quand, sousPas === 0);
+    if (ROCK.grosse(temps, sousPas, par)) grosseCaisse(quand, temps === 0);
+    if (ROCK.claire(temps, sousPas, par)) caisseClaire(quand);
+  }
+
   function programmer() {
     var c = contexte();
     if (!c) return;
@@ -247,7 +319,8 @@
     while (metro.prochain < c.currentTime + AVANCE) {
       var sousPas = metro.battement % metro.subdivision;
       var temps = Math.floor(metro.battement / metro.subdivision) % metro.parMesure;
-      clic(metro.prochain, sousPas === 0 && temps === 0, sousPas !== 0);
+      if (metro.style === 'rock') coupRock(metro.prochain, temps, sousPas, metro.parMesure);
+      else clic(metro.prochain, sousPas === 0 && temps === 0, sousPas !== 0);
       if (metro.surBattement) {
         // Callback visuel : on passe l'instant audio, l'affichage se cale
         // dessus plutôt que sur l'instant où le minuteur s'est réveillé.
@@ -265,7 +338,9 @@
     arreterMetronome();
     metro.tempo = opts.tempo || metro.tempo;
     metro.parMesure = opts.parMesure || metro.parMesure;
-    metro.subdivision = opts.subdivision || 1;
+    metro.style = opts.style === 'rock' ? 'rock' : 'clic';
+    // La boîte à rythmes joue en croches : le charleston marque chaque croche.
+    metro.subdivision = metro.style === 'rock' ? 2 : (opts.subdivision || 1);
     metro.surBattement = opts.surBattement || null;
     metro.battement = 0;
     metro.prochain = c.currentTime + 0.08;
@@ -287,6 +362,7 @@
   }
 
   function metronomeActif() { return metro.actif; }
+  function styleMetronome() { return metro.actif ? metro.style : null; }
 
   /* Coupe tout ce qui sonne ou attend son tour.
    *
@@ -328,6 +404,7 @@
     jouerFreq: jouerFreq, jouerNote: jouerNote, jouerCase: jouerCase, jouerAccord: jouerAccord,
     couperTout: couperTout, jouerClic: jouerClic,
     demarrerMetronome: demarrerMetronome, arreterMetronome: arreterMetronome,
-    tempoMetronome: tempoMetronome, metronomeActif: metronomeActif
+    tempoMetronome: tempoMetronome, metronomeActif: metronomeActif, styleMetronome: styleMetronome,
+    ROCK: ROCK
   };
 })(typeof window !== 'undefined' ? window : globalThis);

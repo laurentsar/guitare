@@ -11,7 +11,9 @@
  *    séparément chaque jour ;
  *  - morceau : la tablature correspondante (www/morceaux.js, catégorie
  *    « entrainement ») ;
- *  - quiz : questions-réponses à réviser (noms des accords).
+ *  - quiz : questions-réponses à réviser (noms des accords) ;
+ *  - tempos : les tempos du métronome donnés en cours (boutons qui le lancent
+ *    sur place) ; rythme : { style: 'rock', tempos } pour la boîte à rythmes.
  * Pour la semaine suivante, on modifie ce fichier. Version actuelle : le mail
  * de suivi de Françoise après le cours (pouce buté, Ve position, riffs en La).
  */
@@ -26,6 +28,7 @@
       intro: 'À travailler en priorité. Travaille devant une glace, pour éviter de forcer sur les cervicales !',
       exercices: [
         { id: 'pouce-bute-4', titre: 'Pouce buté : 4 fois sur chaque corde', etat: 'continuer', morceau: 'ent-pouce-bute-4', variantes: REGARD,
+          tempos: [40, 45, 50, 55, 60],
           consignes: ['1 : j’appuie contre la corde voisine, « et » : je lève.',
                       'Bien t’arrêter contre la corde voisine avant de soulever le pouce !',
                       'Avec le métronome à 50, puis 55, puis 60 (si 50 est trop rapide, repars de 40 ou 45, comme les semaines précédentes).',
@@ -52,7 +55,7 @@
                       'Un doigt chasse l’autre : ne lâche pas un doigt tant que le suivant n’est pas posé. Les doigts « marchent ».',
                       'Pars toujours du 3e doigt, et écarte le 1er.',
                       'Tire la main vers la droite, comme vu en cours.'] },
-        { id: 'riff-la-1', titre: 'Riff en La n° 1', etat: 'continuer', morceau: 'ent-riff-la-1',
+        { id: 'riff-la-1', titre: 'Riff en La n° 1', etat: 'continuer', morceau: 'ent-riff-la-1', tempos: [55], rythme: { style: 'rock', tempos: [55] },
           variantes: ['sans métronome ni boîte à rythme', 'avec métronome ou boîte à rythme : rock groove à 55'],
           consignes: ['Pars 4 fois de la 6e corde (schéma de 4 notes), 2 fois de la 5e, 2 fois de la 6e.',
                       'Finis par la note la plus grave, et coupe le son en reposant le pouce sur la corde.',
@@ -66,7 +69,7 @@
         { id: 'v-1414', titre: 'Ve position : 1 4 1 4, pouce buté', etat: 'nouveau', morceau: 'ent-v-1414',
           consignes: ['1er doigt à la Ve case, 4e doigt à la VIIIe, sur chaque corde.',
                       'Ne lâche pas le 1er doigt tant que le 4e n’est pas posé.'] },
-        { id: 'riff-la-2', titre: 'Riff en La n° 2 (avec 1 et 4)', etat: 'nouveau', morceau: 'ent-riff-la-2',
+        { id: 'riff-la-2', titre: 'Riff en La n° 2 (avec 1 et 4)', etat: 'nouveau', morceau: 'ent-riff-la-2', tempos: [60],
           consignes: ['Le même chemin que le riff n° 1, avec le 4e doigt (case VIII) au lieu du 3e, et le pouce buté.',
                       'Départ en Ve position. Voir l’audio envoyé par Françoise.'] }
       ]
@@ -104,7 +107,7 @@
       idees: true,
       intro: 'Pas donné en cours : des idées de l’app pour prolonger le travail de la semaine, quand le reste est bien en place. Montre-les à Françoise avant d’en faire une habitude. Elles ne comptent pas dans le travail du jour.',
       exercices: [
-        { id: 'idee-accomp-riff-2', titre: 'Accompagner le riff n° 2 : 4 allers du pouce par mesure', etat: 'idee', morceau: 'ent-accomp-riff-2',
+        { id: 'idee-accomp-riff-2', titre: 'Accompagner le riff n° 2 : 4 allers du pouce par mesure', etat: 'idee', morceau: 'ent-accomp-riff-2', rythme: { style: 'rock', tempos: [55, 60] },
           consignes: ['C’est ce que le fichier du riff n° 2 indique pour l’accompagnement : quatre allers du pouce par mesure, un par temps.',
                       'Les deux accords partent de la 5e corde. La 5 : La à vide, case 2 sur la 4e et la 3e, quand le riff part de la 6e corde.',
                       'Ré 5 : en Ve position, case 5 sur la 5e corde (Ré), case 7 sur la 4e et la 3e, quand le riff part de la 5e.',
@@ -114,7 +117,7 @@
           consignes: ['Les trois doigts de la semaine ensemble : 1er à la Ve case, 3e à la VIIe, 4e à la VIIIe, puis retour au 3e.',
                       'Pars du 1er doigt posé, et ne lâche pas un doigt tant que le suivant n’est pas posé.',
                       'Bien fléchir le 4e doigt ; le pouce gauche reste derrière la 6e case.'] },
-        { id: 'idee-riff-la-3', titre: 'Riff en La n° 3 (avec 1, 3 et 4)', etat: 'idee', morceau: 'ent-riff-la-3',
+        { id: 'idee-riff-la-3', titre: 'Riff en La n° 3 (avec 1, 3 et 4)', etat: 'idee', morceau: 'ent-riff-la-3', tempos: [50], rythme: { style: 'rock', tempos: [55] },
           consignes: ['Le chemin des riffs n° 1 et 2 (4 fois depuis la 6e corde, 2 fois depuis la 5e, 2 fois depuis la 6e, La grave pour finir), avec un schéma qui monte : case V, VII, VIII, puis V sur la corde suivante.',
                       'Ça donne La – Si – Do – Ré, puis Ré – Mi – Fa – Sol : les notes de la gamme de La mineur.',
                       'Pouce buté, d’abord lentement (50), puis au rock groove à 55.'] }
@@ -125,7 +128,7 @@
       facultatif: true,
       intro: 'Ce que les mails des deux semaines précédentes demandaient en plus, pour réviser quand le travail du jour est fait. Facultatif : ça ne compte pas dans le travail du jour.',
       exercices: [
-        { id: 'sd-pouce-bute-1', titre: 'Pouce buté : 1 fois sur chaque corde', etat: 'semaine', morceau: 'ent-pouce-bute-1',
+        { id: 'sd-pouce-bute-1', titre: 'Pouce buté : 1 fois sur chaque corde', etat: 'semaine', morceau: 'ent-pouce-bute-1', tempos: [40, 45, 50, 55, 60],
           variantes: ['♩ = 40', '♩ = 45', '♩ = 50', '♩ = 55', '♩ = 60'],
           consignes: ['1 : j’appuie contre la corde voisine, « et » : je lève.',
                       'Bien t’arrêter contre la corde voisine avant de soulever le pouce !',

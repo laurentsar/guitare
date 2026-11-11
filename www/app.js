@@ -500,6 +500,9 @@
       : 'Le travail de Françoise se révise chaque jour : coche au moins un exercice pour lancer ta série.'));
     var actT = el('div', 'actions');
     actT.appendChild(boutonReviserTravail());
+    var bM = el('button', 'btn', '🥁 Métronome et boîte à rythmes');
+    bM.onclick = function () { aller('metronome'); };
+    actT.appendChild(bM);
     tete.appendChild(actT);
     h.appendChild(tete);
 
@@ -516,6 +519,7 @@
         e.consignes.forEach(function (x) { ul.appendChild(el('li', null, x)); });
         c.appendChild(ul);
         if (e.quiz) c.appendChild(quizEntrainement(e.quiz));
+        if (e.tempos || e.rythme) c.appendChild(blocTempos(e));
         var coches = el('div', 'exercice-coches');
         (e.variantes || ['Fait aujourd’hui']).forEach(function (v, k) {
           var l = el('label', 'ligne-coche');
@@ -547,6 +551,31 @@
     ta.oninput = function () { Store.notesCours(ta.value); };
     notes.appendChild(ta);
     h.appendChild(notes);
+  }
+
+  /* Les tempos du cours, à lancer sans quitter l'exercice : métronome (clic)
+   * et boîte à rythmes. Le bouton du tempo qui joue devient « ■ » (stop). */
+  function blocTempos(e) {
+    var d = el('div', 'tempos-exercice');
+    function ligne(libelle, style, tempos) {
+      var l = el('div', 'tempos-ligne');
+      l.appendChild(el('span', 'tempos-libelle', libelle));
+      tempos.forEach(function (t) {
+        var cours = tempoEnCours();
+        var actif = cours && cours.tempo === t && cours.style === style;
+        var b = el('button', 'btn' + (actif ? ' primaire' : ''), actif ? '■ ' + t : '♩ ' + t);
+        b.setAttribute('aria-label', (actif ? 'Arrêter ' : 'Lancer ') + libelle + ' à ' + t);
+        b.onclick = function () {
+          if (actif) arreterMetro(); else lancerTempo(t, style);
+          rendreEntrainement();
+        };
+        l.appendChild(b);
+      });
+      d.appendChild(l);
+    }
+    if (e.tempos) ligne('🥁 Métronome', 'clic', e.tempos);
+    if (e.rythme) ligne('🥁 Boîte à rythmes (rock groove)', e.rythme.style, e.rythme.tempos);
+    return d;
   }
 
   // Révision « par cœur » : on montre la question, la réponse se dévoile.
@@ -856,6 +885,7 @@
       tempo: parseInt($('metroSlider').value, 10),
       parMesure: par,
       subdivision: sub,
+      style: $('metroSon').value,
       surBattement: function (temps, sousPas) {
         if (sousPas !== 0) return;
         metroTemps = temps;
@@ -865,6 +895,19 @@
       }
     });
     $('btnMetro').textContent = 'Arrêter';
+  }
+
+  /* Lance le métronome (ou la boîte à rythmes) à un tempo donné, depuis
+   * n'importe quel écran — le travail de Françoise donne ses tempos. */
+  function lancerTempo(tempo, style) {
+    $('metroSon').value = style === 'rock' ? 'rock' : 'clic';
+    $('metroMesure').value = '4';
+    reglerTempo(tempo);
+    demarrerMetro();
+  }
+  // Ce qui joue en ce moment : { tempo, style } ou null.
+  function tempoEnCours() {
+    return Audio5.metronomeActif() ? { tempo: parseInt($('metroSlider').value, 10), style: $('metroSon').value } : null;
   }
 
   function arreterMetro() {
@@ -2663,6 +2706,7 @@
     $('metroSlider').onchange = function () { reglerTempo(parseInt(this.value, 10)); };
     $('metroMesure').onchange = function () { pointsMetro(parseInt(this.value, 10)); if (Audio5.metronomeActif()) demarrerMetro(); };
     $('metroSub').onchange = function () { if (Audio5.metronomeActif()) demarrerMetro(); };
+    $('metroSon').onchange = function () { if (Audio5.metronomeActif()) demarrerMetro(); };
     Array.prototype.forEach.call(document.querySelectorAll('[data-tempo]'), function (b) {
       b.onclick = function () { reglerTempo(parseInt($('metroSlider').value, 10) + parseInt(b.dataset.tempo, 10)); };
     });

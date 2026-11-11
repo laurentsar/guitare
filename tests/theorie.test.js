@@ -345,6 +345,10 @@ console.log('\n— Entraînement (tablatures du cours) —');
           Entrainement.facultatifs().map((e) => e.id).join() === 'sd-pouce-bute-1,sd-main-droite,noms-cordes' &&
           Entrainement.facultatifs().every((e) => e.etat === 'semaine') && Entrainement.tous().some((e) => e.id === 'riff-la-2') &&
           Entrainement.facultatifs()[0].variantes.join() === '♩ = 40,♩ = 45,♩ = 50,♩ = 55,♩ = 60');
+  const R = Audio5.ROCK, coups = (f) => [0, 1, 2, 3].map((t) => [0, 1].map((x) => f(t, x, 4) ? 'x' : '.').join('')).join('|');
+  verifie('boîte à rythmes rock : grosse caisse 1, 3 et « 3 et », caisse claire 2 et 4', coups(R.grosse) === 'x.|..|xx|..' && coups(R.claire) === '..|x.|..|x.');
+  verifie('travail : les tempos du cours (pouce buté jusqu’à 60, riff n° 1 en rock groove à 55)', Entrainement.tous().find((e) => e.id === 'pouce-bute-4').tempos.join() === '40,45,50,55,60' &&
+          Entrainement.tous().find((e) => e.id === 'riff-la-1').rythme.style === 'rock' && Entrainement.tous().find((e) => e.id === 'riff-la-1').rythme.tempos.join() === '55');
   const r3 = Morceaux.get('ent-riff-la-3');
   verifie('riff n° 3 imaginé : La Si Do Ré, puis Ré Mi Fa Sol (1, 3, 4 puis 1)', r3.notes.slice(0, 4).map(nom).join(' ') === 'la si do re' &&
           r3.notes.slice(16, 20).map(nom).join(' ') === 're mi fa sol' && r3.notes.slice(0, 4).map((n) => n.doigt).join('') === '1341');

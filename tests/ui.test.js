@@ -712,40 +712,39 @@ function verifie(nom, cond, detail) {
       verifie('lien vers l’écran Métronome et boîte à rythmes', [...$('pageEntrainement').querySelectorAll('button')].some((x) => /Métronome et boîte à rythmes/.test(x.textContent)));
       $('metroSon').value = 'clic';
     }
-    // « 🎤 Écoute-moi » : sur chaque exercice qui a une tablature, et sur la page du morceau.
+    // « 🎤 Écoute-moi » : seulement sur les morceaux qu'on joue, pas sur le travail ni les exercices.
     {
-      const riff2 = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Riff en La n° 2/.test(c.textContent));
-      const bE = [...riff2.querySelectorAll('button')].find((x) => /Écoute-moi/.test(x.textContent));
-      verifie('travail : bouton « 🎤 Écoute-moi » sur l’exercice', !!bE);
+      verifie('travail : pas de bouton « Écoute-moi » sur les exercices', ![...$('pageEntrainement').querySelectorAll('button')].some((x) => /Écoute-moi/.test(x.textContent)));
+      const aEcoute = () => [...$('detailMorceau').querySelectorAll('.actions button')].some((x) => /Écoute-moi/.test(x.textContent));
+      w.AppGuitare.ouvrirMorceau('ent-riff-la-2');
+      const exo = aEcoute();
+      w.AppGuitare.ouvrirMorceau('ch-come-as-you-are');
+      const grille = aEcoute();
+      w.AppGuitare.ouvrirMorceau('au-clair');
+      verifie('« Écoute-moi » sur un morceau joué note à note, pas sur un exercice ni une grille d’accords', aEcoute() && !exo && !grille, [exo, grille].join());
+      const bE = [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /Écoute-moi/.test(x.textContent));
       bE.click();
       const pan = $('detailMorceau').querySelector('.ecoute-panneau');
       // Pas de micro dans jsdom : l'app le dit clairement, sans planter.
-      verifie('écoute sans micro : ouvre le riff et explique qu’il n’y a pas de micro', /Riff en La n° 2/.test($('detailMorceau').querySelector('h2').textContent) &&
-              pan && !pan.hidden && /accès au micro/.test(pan.textContent), pan && pan.textContent);
-      verifie('page du morceau : bouton « 🎤 Écoute-moi » à côté de « Écouter »', [...$('detailMorceau').querySelectorAll('.actions button')].some((x) => /Écoute-moi/.test(x.textContent)));
-      // Un faux micro qui « joue » : toutes les notes du riff, une fausse au début.
+      verifie('écoute sans micro : l’app explique qu’il n’y a pas de micro', pan && !pan.hidden && /accès au micro/.test(pan.textContent), pan && pan.textContent);
+      // Un faux micro qui « joue » : toutes les notes du morceau, une fausse au début.
       const vrai = w.Ecoute.demarrer, vraiArret = w.Ecoute.arreter;
       let jouer = null, ouvert = false;
       w.Ecoute.demarrer = (surNote) => { jouer = surNote; ouvert = true; return Promise.resolve(true); };
       w.Ecoute.arreter = () => { ouvert = false; };
       w.Ecoute.enMarche = () => ouvert;
-      w.Store.cocherEntrainement('riff-la-2', 0, false);
-      w.AppGuitare.aller('entrainement');
-      [...[...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Riff en La n° 2/.test(c.textContent)).querySelectorAll('button')]
-        .find((x) => /Écoute-moi/.test(x.textContent)).click();
+      w.AppGuitare.ouvrirMorceau('au-clair');
+      [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /Écoute-moi/.test(x.textContent)).click();
       const pan2 = () => $('detailMorceau').querySelector('.ecoute-panneau');
-      verifie('écoute : la première note attendue est annoncée (6e corde, case 5, La)', /Joue : 6e corde \(Mi grave\), case 5 \(doigt 1\) — La/.test(pan2().textContent), pan2().textContent);
-      jouer(47);
-      verifie('fausse note : « J’entends Si, il faut La »', /J’entends Si, il faut La/.test(pan2().textContent));
-      const notesRiff = w.Morceaux.get('ent-riff-la-2').notes.map((n) => n.midi);
-      notesRiff.forEach((m) => jouer(m));
+      const notesM = w.Morceaux.get('au-clair').notes;
+      verifie('écoute : la première note attendue est annoncée', /Joue : /.test(pan2().textContent) && ouvert, pan2().textContent);
+      const fausse = notesM[0].midi + 1;
+      jouer(fausse);
+      verifie('fausse note : signalée, on attend la bonne', /J’entends .*, il faut /.test(pan2().textContent));
+      const etapes = [...new Set(notesM.map((n) => n.temps))].length;
+      [...new Set(notesM.map((n) => n.temps))].forEach((t) => jouer(notesM.find((n) => n.temps === t).midi));
       const fin = pan2().textContent;
-      verifie('fin : score du premier coup (32 / 33) et la faute de la mesure 1', /32 \/ 33 notes justes du premier coup \(97 %\)/.test(fin) && /Mesure 1 : Si au lieu de La/.test(fin) && !ouvert, fin.slice(0, 160));
-      const bCocher = [...pan2().querySelectorAll('button')].find((x) => /Cocher « Riff en La n° 2/.test(x.textContent));
-      verifie('fin : bouton pour cocher l’exercice du travail de Françoise', !!bCocher);
-      bCocher.click();
-      verifie('exercice coché pour aujourd’hui depuis l’écoute', (w.Store.entrainementJour()['riff-la-2'] || []).join() === '0');
-      w.Store.cocherEntrainement('riff-la-2', 0, false);
+      verifie('fin : score du premier coup et la faute de la mesure 1, micro refermé', new RegExp((etapes - 1) + ' / ' + etapes + ' notes justes du premier coup').test(fin) && /Mesure 1 : /.test(fin) && !ouvert, fin.slice(0, 160));
       w.Ecoute.demarrer = vrai; w.Ecoute.arreter = vraiArret; w.Ecoute.enMarche = () => false;
       w.AppGuitare.aller('entrainement');
     }

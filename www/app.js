@@ -535,15 +535,9 @@
         });
         c.appendChild(coches);
         if (e.morceau && Morceaux.get(e.morceau)) {
-          var lb = el('div', 'actions');
           var b = el('button', 'btn', '🎼 Tablature : ' + Morceaux.get(e.morceau).titre);
           b.onclick = function () { ouvrirMorceau(e.morceau); };
-          lb.appendChild(b);
-          var bE = el('button', 'btn', '🎤 Écoute-moi');
-          bE.setAttribute('aria-label', 'Écoute-moi jouer : ' + e.titre);
-          bE.onclick = function () { ouvrirMorceau(e.morceau, { ecoute: true }); };
-          lb.appendChild(bE);
-          c.appendChild(lb);
+          c.appendChild(b);
         }
         h.appendChild(c);
       });
@@ -1521,8 +1515,6 @@
 
   function ouvrirMorceau(id, opts) {
     opts = opts || {};
-    // Lu tout de suite : plus bas, `opts` est réutilisé pour les interrupteurs.
-    var demandeEcoute = !!opts.ecoute;
     // Changer de morceau referme le micro.
     if (window.Ecoute) Ecoute.arreter();
     // Ouvrir un morceau hors de la liste en cours met fin à l'enchaînement.
@@ -2051,8 +2043,13 @@
     /* « 🎤 Écoute-moi » : l'app écoute au micro, note après note, et dit si
      * c'est juste. Elle attend la bonne note (pas de tempo imposé) : on joue
      * à son rythme. Le micro n'est ouvert que pendant l'écoute. */
+    // Seulement sur les morceaux qu'on joue note à note : ni les exercices du
+    // cours (pouce buté, Ve position, riffs), ni les grilles d'accords
+    // grattées, que le micro ne sait pas suivre (plusieurs cordes à la fois).
+    var ecoutable = !p.chanson && p.categorie !== 'entrainement' && p.categorie !== 'accords' &&
+      p.notes.some(function (n) { return n.midi != null; });
     var bEcoute = el('button', 'btn', '🎤 Écoute-moi');
-    actions.appendChild(bEcoute);
+    if (ecoutable) actions.appendChild(bEcoute);
     var panneauE = el('div', 'carte ecoute-panneau');
     panneauE.hidden = true;
     // Placé dans la page elle-même (pas dans la barre de lecture, trop courte
@@ -2093,19 +2090,7 @@
           if (b.erreurs.length > 6) ul.appendChild(el('li', null, '… et ' + (b.erreurs.length - 6) + ' autre(s).'));
           panneauE.appendChild(ul);
         }
-        // Exercice du travail de Françoise : le cocher pour aujourd'hui.
-        var ex = window.Entrainement && Entrainement.tous().concat(Entrainement.idees(), Entrainement.facultatifs())
-          .filter(function (e) { return e.morceau === p.id; })[0];
         var act = el('div', 'actions');
-        if (ex && b.pct >= 80) {
-          var faites = Store.entrainementJour()[ex.id] || [], k = 0;
-          while (faites.indexOf(k) !== -1) k++;
-          if (k < Entrainement.cases(ex)) {
-            var bC = el('button', 'btn primaire', '✓ Cocher « ' + ex.titre + ' »' + (ex.variantes ? ' (' + ex.variantes[k] + ')' : '') + ' pour aujourd’hui');
-            bC.onclick = function () { Store.cocherEntrainement(ex.id, k, true); bC.disabled = true; bC.textContent = '✓ Coché pour aujourd’hui'; };
-            act.appendChild(bC);
-          }
-        }
         var bRe = el('button', 'btn', '↺ Recommencer');
         bRe.onclick = function () { suiviE = new Ecoute.Suivi(notesEcoute()); verdictE = null; rendreEcoute(); montrerAttendue(); if (!Ecoute.enMarche()) demarrerEcoute(); };
         act.appendChild(bRe);
@@ -2368,9 +2353,6 @@
     pupitreCourant = pupitre;
 
     aller('morceau');
-    // Ouvert par « 🎤 Écoute-moi » (travail de Françoise) : on écoute tout de
-    // suite — dans le même geste, sinon le navigateur refuse le micro.
-    if (demandeEcoute && !enListe) bEcoute.onclick();
     // Morceau d'une liste : plein écran et lecture tout de suite.
     if (enListe) {
       ouvrirPleinEcran();

@@ -2040,16 +2040,25 @@
     actions.appendChild(bJouer); actions.appendChild(bStop); actions.appendChild(bMetro);
     hautLecture.insertBefore(actions, hautLecture.firstChild);
 
-    /* « 🎤 Écoute-moi » : l'app écoute au micro, note après note, et dit si
-     * c'est juste. Elle attend la bonne note (pas de tempo imposé) : on joue
-     * à son rythme. Le micro n'est ouvert que pendant l'écoute. */
+    /* Interrupteur « 🎤 Micro » : une fois allumé, l'app écoute TOUT le
+     * morceau, du début à la fin (même si une section est en boucle), note
+     * après note, et dit si c'est juste. Elle attend la bonne note (pas de
+     * tempo imposé) : on joue à son rythme. Le micro reste allumé jusqu'à ce
+     * qu'on l'éteigne — à la fin, rejouer la première note relance un tour —
+     * et se referme si on quitte la page. */
     // Seulement sur les morceaux qu'on joue note à note : ni les exercices du
     // cours (pouce buté, Ve position, riffs), ni les grilles d'accords
     // grattées, que le micro ne sait pas suivre (plusieurs cordes à la fois).
     var ecoutable = !p.chanson && p.categorie !== 'entrainement' && p.categorie !== 'accords' &&
       p.notes.some(function (n) { return n.midi != null; });
-    var bEcoute = el('button', 'btn', '🎤 Écoute-moi');
+    var bEcoute = el('button', 'btn', '🎤 Micro');
+    bEcoute.setAttribute('aria-pressed', 'false');
     if (ecoutable) actions.appendChild(bEcoute);
+    function majBoutonMicro(allume) {
+      bEcoute.textContent = allume ? '🎤 Micro allumé' : '🎤 Micro';
+      bEcoute.classList.toggle('primaire', allume);
+      bEcoute.setAttribute('aria-pressed', allume ? 'true' : 'false');
+    }
     var panneauE = el('div', 'carte ecoute-panneau');
     panneauE.hidden = true;
     // Placé dans la page elle-même (pas dans la barre de lecture, trop courte
@@ -2057,9 +2066,10 @@
     hautLecture.appendChild(panneauE);
     var suiviE = null, verdictE = null, entenduE = '…';
     var CORDES_NOM = ['', '1re corde (Mi aigu)', '2e corde (Si)', '3e corde (Sol)', '4e corde (Ré)', '5e corde (La)', '6e corde (Mi grave)'];
+    // Tout le morceau, toujours : la section en boucle ne limite pas l'écoute.
     function notesEcoute() {
-      var de = (etat.de - 1) * parMesure, a = etat.a * parMesure, capo = etat.capo || 0;
-      return p.notes.filter(function (n) { return n.temps >= de && n.temps < a && n.midi != null; })
+      var capo = etat.capo || 0;
+      return p.notes.filter(function (n) { return n.midi != null; })
         .map(function (n) { return { temps: n.temps, midi: n.midi + capo, corde: n.corde, frette: n.frette, doigt: n.doigt }; });
     }
     function decrire(n) {
@@ -2090,42 +2100,58 @@
           if (b.erreurs.length > 6) ul.appendChild(el('li', null, '… et ' + (b.erreurs.length - 6) + ' autre(s).'));
           panneauE.appendChild(ul);
         }
+        panneauE.appendChild(el('p', 'aide', '🎤 Le micro reste allumé : rejoue la première note du morceau pour refaire un tour.'));
         var act = el('div', 'actions');
         var bRe = el('button', 'btn', '↺ Recommencer');
-        bRe.onclick = function () { suiviE = new Ecoute.Suivi(notesEcoute()); verdictE = null; rendreEcoute(); montrerAttendue(); if (!Ecoute.enMarche()) demarrerEcoute(); };
-        act.appendChild(bRe);
+        bRe.onclick = recommencer;
+        var bOff = el('button', 'btn', '■ Éteindre le micro');
+        bOff.onclick = eteindreMicro;
+        act.appendChild(bRe); act.appendChild(bOff);
         panneauE.appendChild(act);
         return;
       }
       var e = suiviE.attendue();
       var tete = el('p', 'aide ecoute-etat');
-      tete.appendChild(document.createTextNode('🎤 J’écoute, à ton rythme · note ' + (suiviE.i + 1) + ' / ' + b.total + ' · ' + b.justes + ' juste' + (b.justes > 1 ? 's' : '') + ' du 1er coup · '));
+      tete.appendChild(document.createTextNode('🎤 J’écoute tout le morceau, à ton rythme · note ' + (suiviE.i + 1) + ' / ' + b.total + ' · ' + b.justes + ' juste' + (b.justes > 1 ? 's' : '') + ' du 1er coup · '));
       tete.appendChild(el('span', 'ecoute-entendu', 'j’entends : ' + entenduE));
       panneauE.appendChild(tete);
       panneauE.appendChild(el('p', 'ecoute-attendue', (e.length > 1 ? 'Ensemble (une suffit) : ' : 'Joue : ') + decrire(e[0])));
       if (verdictE) panneauE.appendChild(el('p', 'ecoute-verdict ' + verdictE.classe, verdictE.texte));
       var act2 = el('div', 'actions');
       var bP = el('button', 'btn', 'Passer ›');
-      bP.onclick = function () { suiviE.passer(); verdictE = null; rendreEcoute(); montrerAttendue(); if (suiviE.fini()) Ecoute.arreter(); };
-      var bA = el('button', 'btn', '■ Arrêter l’écoute');
-      bA.onclick = finirEcoute;
-      act2.appendChild(bP); act2.appendChild(bA);
+      bP.onclick = function () { suiviE.passer(); verdictE = null; rendreEcoute(); montrerAttendue(); };
+      var bD = el('button', 'btn', '⏮ Début');
+      bD.onclick = recommencer;
+      var bA = el('button', 'btn', '■ Éteindre le micro');
+      bA.onclick = eteindreMicro;
+      act2.appendChild(bP); act2.appendChild(bD); act2.appendChild(bA);
       panneauE.appendChild(act2);
     }
-    function finirEcoute() {
+    function eteindreMicro() {
       Ecoute.arreter();
       suiviE = null; panneauE.hidden = true; vide(panneauE);
-      bEcoute.textContent = '🎤 Écoute-moi'; bEcoute.classList.remove('primaire');
+      majBoutonMicro(false);
       effacer();
+    }
+    function recommencer() {
+      suiviE = new Ecoute.Suivi(notesEcoute()); verdictE = null;
+      rendreEcoute(); amenerAttendue();
     }
     function demarrerEcoute() {
       Ecoute.demarrer(function (midi) {
-        if (!suiviE || suiviE.fini()) return;
+        if (!suiviE) return;
+        // Pendant « ▶ Écouter », le micro entendrait la guitare de l'app.
+        if (Tablature.enLecture()) return;
+        // Morceau fini, micro toujours allumé : la première note relance un tour.
+        if (suiviE.fini()) {
+          var premier = new Ecoute.Suivi(notesEcoute());
+          if (!premier.attendue().some(function (n) { return n.midi === midi; })) return;
+          suiviE = premier;
+        }
         var att = suiviE.attendue();
         var r = suiviE.entendu(midi);
         if (r.resultat === 'juste') verdictE = { classe: 'juste', texte: '✓ Juste : ' + Theorie.nomSansOctave(midi) };
         else if (r.resultat === 'faux') verdictE = { classe: 'faux', texte: '✗ J’entends ' + Theorie.nomSansOctave(midi) + ', il faut ' + Theorie.nomSansOctave(att[0].midi) + ' : rejoue-la.' };
-        if (suiviE.fini()) Ecoute.arreter();
         rendreEcoute(); montrerAttendue();
       }, function (m) {
         var t = m.midi == null ? '…' : Theorie.nomSansOctave(m.midi) + (Math.abs(m.ecart) > 25 ? (m.ecart > 0 ? ' (un peu haut)' : ' (un peu bas)') : '');
@@ -2133,11 +2159,19 @@
       }, function (msg) {
         suiviE = null; vide(panneauE);
         panneauE.appendChild(el('p', 'ecoute-verdict faux', '🎤 ' + msg));
-        bEcoute.textContent = '🎤 Écoute-moi'; bEcoute.classList.remove('primaire');
+        majBoutonMicro(false);
       });
     }
+    // La note attendue juste sous le panneau collé en haut.
+    function amenerAttendue() {
+      var e0 = suiviE && suiviE.attendue();
+      var cible = e0 && zone.querySelector('.tab-note[data-temps="' + e0[0].temps + '"]');
+      var ligneC = cible && cible.closest('.systeme, .tab-ligne, .portee-ligne-bloc');
+      if (ligneC) { ligneSuivie = ligneC; amener(ligneC, bornesVisibles().haut + 8); }
+      montrerAttendue();
+    }
     bEcoute.onclick = function () {
-      if (suiviE) { finirEcoute(); return; }
+      if (suiviE) { eteindreMicro(); return; }
       Tablature.arreter(); effacer();
       var notesE = notesEcoute();
       if (!notesE.length) return;
@@ -2147,19 +2181,11 @@
       // Collé sous l'en-tête : le verdict reste à l'écran quand la tablature défile.
       var ent = document.querySelector('.entete');
       panneauE.style.top = (ent ? ent.offsetHeight : 0) + 'px';
-      bEcoute.textContent = '■ Arrêter l’écoute'; bEcoute.classList.add('primaire');
+      majBoutonMicro(true);
       rendreEcoute();
       demarrerEcoute();
-      // La note attendue juste sous le panneau collé en haut. Une seconde fois
-      // un peu plus tard : à l'ouverture, la tablature se redessine dès que
-      // la largeur de l'écran est connue.
-      function amenerAttendue() {
-        var e0 = suiviE && suiviE.attendue();
-        var cible = e0 && zone.querySelector('.tab-note[data-temps="' + e0[0].temps + '"]');
-        var ligneC = cible && cible.closest('.systeme, .tab-ligne, .portee-ligne-bloc');
-        if (ligneC) { ligneSuivie = ligneC; amener(ligneC, bornesVisibles().haut + 8); }
-        montrerAttendue();
-      }
+      // Une seconde fois un peu plus tard : à l'ouverture, la tablature se
+      // redessine dès que la largeur de l'écran est connue.
       amenerAttendue();
       setTimeout(amenerAttendue, 400);
     };

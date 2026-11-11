@@ -712,39 +712,45 @@ function verifie(nom, cond, detail) {
       verifie('lien vers l’écran Métronome et boîte à rythmes', [...$('pageEntrainement').querySelectorAll('button')].some((x) => /Métronome et boîte à rythmes/.test(x.textContent)));
       $('metroSon').value = 'clic';
     }
-    // « 🎤 Écoute-moi » : seulement sur les morceaux qu'on joue, pas sur le travail ni les exercices.
+    // Interrupteur « 🎤 Micro » : seulement sur les morceaux qu'on joue, pas sur le travail ni les exercices.
     {
-      verifie('travail : pas de bouton « Écoute-moi » sur les exercices', ![...$('pageEntrainement').querySelectorAll('button')].some((x) => /Écoute-moi/.test(x.textContent)));
-      const aEcoute = () => [...$('detailMorceau').querySelectorAll('.actions button')].some((x) => /Écoute-moi/.test(x.textContent));
+      const micro = () => [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /🎤 Micro/.test(x.textContent));
+      verifie('travail : pas de micro sur les exercices', ![...$('pageEntrainement').querySelectorAll('button')].some((x) => /🎤/.test(x.textContent)));
       w.AppGuitare.ouvrirMorceau('ent-riff-la-2');
-      const exo = aEcoute();
+      const exo = !!micro();
       w.AppGuitare.ouvrirMorceau('ch-come-as-you-are');
-      const grille = aEcoute();
+      const grille = !!micro();
       w.AppGuitare.ouvrirMorceau('au-clair');
-      verifie('« Écoute-moi » sur un morceau joué note à note, pas sur un exercice ni une grille d’accords', aEcoute() && !exo && !grille, [exo, grille].join());
-      const bE = [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /Écoute-moi/.test(x.textContent));
-      bE.click();
+      verifie('« 🎤 Micro » sur un morceau joué note à note, pas sur un exercice ni une grille d’accords', !!micro() && !exo && !grille, [exo, grille].join());
+      micro().click();
       const pan = $('detailMorceau').querySelector('.ecoute-panneau');
       // Pas de micro dans jsdom : l'app le dit clairement, sans planter.
-      verifie('écoute sans micro : l’app explique qu’il n’y a pas de micro', pan && !pan.hidden && /accès au micro/.test(pan.textContent), pan && pan.textContent);
-      // Un faux micro qui « joue » : toutes les notes du morceau, une fausse au début.
+      verifie('micro absent : l’app explique qu’il n’y a pas de micro, l’interrupteur reste éteint', pan && !pan.hidden && /accès au micro/.test(pan.textContent) &&
+              micro().getAttribute('aria-pressed') === 'false', pan && pan.textContent);
+      // Un faux micro qui « joue ».
       const vrai = w.Ecoute.demarrer, vraiArret = w.Ecoute.arreter;
       let jouer = null, ouvert = false;
       w.Ecoute.demarrer = (surNote) => { jouer = surNote; ouvert = true; return Promise.resolve(true); };
       w.Ecoute.arreter = () => { ouvert = false; };
       w.Ecoute.enMarche = () => ouvert;
       w.AppGuitare.ouvrirMorceau('au-clair');
-      [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /Écoute-moi/.test(x.textContent)).click();
+      micro().click();
       const pan2 = () => $('detailMorceau').querySelector('.ecoute-panneau');
-      const notesM = w.Morceaux.get('au-clair').notes;
-      verifie('écoute : la première note attendue est annoncée', /Joue : /.test(pan2().textContent) && ouvert, pan2().textContent);
-      const fausse = notesM[0].midi + 1;
-      jouer(fausse);
+      const notesM = w.Morceaux.get('au-clair').notes, temps = [...new Set(notesM.map((n) => n.temps))];
+      verifie('micro allumé : interrupteur enfoncé, première note du morceau annoncée', ouvert && micro().getAttribute('aria-pressed') === 'true' &&
+              /Micro allumé/.test(micro().textContent) && new RegExp('note 1 / ' + temps.length).test(pan2().textContent), pan2().textContent.slice(0, 120));
+      jouer(notesM[0].midi + 1);
       verifie('fausse note : signalée, on attend la bonne', /J’entends .*, il faut /.test(pan2().textContent));
-      const etapes = [...new Set(notesM.map((n) => n.temps))].length;
-      [...new Set(notesM.map((n) => n.temps))].forEach((t) => jouer(notesM.find((n) => n.temps === t).midi));
+      temps.forEach((t) => jouer(notesM.find((n) => n.temps === t).midi));
       const fin = pan2().textContent;
-      verifie('fin : score du premier coup et la faute de la mesure 1, micro refermé', new RegExp((etapes - 1) + ' / ' + etapes + ' notes justes du premier coup').test(fin) && /Mesure 1 : /.test(fin) && !ouvert, fin.slice(0, 160));
+      verifie('fin du morceau : score et faute de la mesure 1, le micro RESTE allumé', new RegExp((temps.length - 1) + ' / ' + temps.length + ' notes justes du premier coup').test(fin) &&
+              /Mesure 1 : /.test(fin) && ouvert && /reste allumé/.test(fin), fin.slice(0, 160));
+      jouer(notesM[temps.length > 1 ? 1 : 0].midi + 2);
+      const encoreFin = /notes justes du premier coup/.test(pan2().textContent);
+      jouer(notesM[0].midi);
+      verifie('micro toujours allumé : une autre note ne fait rien, la première note relance un tour', encoreFin && new RegExp('note 2 / ' + temps.length).test(pan2().textContent), pan2().textContent.slice(0, 120));
+      [...pan2().querySelectorAll('button')].find((x) => /Éteindre le micro/.test(x.textContent)).click();
+      verifie('« Éteindre le micro » : micro fermé, interrupteur relevé', !ouvert && micro().getAttribute('aria-pressed') === 'false' && pan2().hidden);
       w.Ecoute.demarrer = vrai; w.Ecoute.arreter = vraiArret; w.Ecoute.enMarche = () => false;
       w.AppGuitare.aller('entrainement');
     }

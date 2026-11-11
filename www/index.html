@@ -86,6 +86,12 @@
             <option value="6">6 temps</option>
           </select>
         </label>
+        <label>Son
+          <select id="metroSon">
+            <option value="clic" selected>clic</option>
+            <option value="rock">boîte à rythmes : rock groove</option>
+          </select>
+        </label>
         <label>Subdivision
           <select id="metroSub">
             <option value="1" selected>noires</option>
@@ -223,7 +229,7 @@
 
 <script>
   window.BACKUP_APP = 'guitare';
-  window.APP_VERSION = '1.44';
+  window.APP_VERSION = '1.45';
   // Mise à jour automatique : update-check.js interroge la dernière release
   // de ce dépôt et propose l'installation (apk-update.js + le plugin natif
   // posé par ci/patch_updater.py). Sans ce nom de dépôt, le script se tait.

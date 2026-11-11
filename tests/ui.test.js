@@ -694,6 +694,24 @@ function verifie(nom, cond, detail) {
     const b = [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Tablature : Ve position : 0 3 0 3/.test(x.textContent));
     b.click();
     verifie('bouton tablature : ouvre l’exercice en Ve position', /Ve position : 0 3 0 3/.test($('detailMorceau').querySelector('h2').textContent));
+    // Tempos du cours : métronome et boîte à rythmes lancés sur place.
+    {
+      const riff = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Riff en La n° 1/.test(c.textContent));
+      verifie('riff n° 1 : boutons métronome et boîte à rythmes (rock groove) à 55', /Boîte à rythmes \(rock groove\)/.test(riff.textContent) && /♩ 55/.test(riff.textContent));
+      const lignes = riff.querySelectorAll('.tempos-ligne');
+      lignes[1].querySelector('button').click();
+      verifie('boîte à rythmes lancée : son rock, tempo 55, sur place', $('metroSon').value === 'rock' && $('metroSlider').value === '55' && /Travail récurrent/.test($('pageEntrainement').textContent));
+      const riff2 = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Riff en La n° 1/.test(c.textContent));
+      if (w.Audio5.metronomeActif()) {
+        verifie('le tempo qui joue devient un bouton stop', /■ 55/.test(riff2.querySelectorAll('.tempos-ligne')[1].textContent));
+        riff2.querySelectorAll('.tempos-ligne')[1].querySelector('button').click();
+        verifie('stop : la boîte à rythmes s’arrête', !w.Audio5.metronomeActif());
+      }
+      const pb = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Pouce buté : 4 fois/.test(c.textContent));
+      verifie('pouce buté : métronome de 40 à 60', ['♩ 40', '♩ 45', '♩ 50', '♩ 55', '♩ 60'].every((x) => pb.textContent.includes(x)));
+      verifie('lien vers l’écran Métronome et boîte à rythmes', [...$('pageEntrainement').querySelectorAll('button')].some((x) => /Métronome et boîte à rythmes/.test(x.textContent)));
+      $('metroSon').value = 'clic';
+    }
     // Révision quotidienne : série, bouton qui enchaîne les tablatures, rappels.
     verifie('travail : série de jours d’affilée affichée', /1 jour d’affilée/.test($('pageEntrainement').textContent));
     const bRev = [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Réviser ce qui reste/.test(x.textContent));

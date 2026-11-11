@@ -1009,6 +1009,60 @@
     notes: cinquiemePosition([0, 1, 0, 1])
   });
 
+  ajoute({
+    id: 'ent-v-1313', titre: 'Ve position : 1 3 1 3', sous_titre: 'Entraînement · main gauche · les doigts « marchent »',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: '1er doigt à la case V, 3e doigt à la case VII, sur chaque corde de la 6e à la 2e puis retour. La main gauche d’abord, seule. Un doigt chasse l’autre : ne lâche pas un doigt tant que le suivant n’est pas posé. Pars toujours du 3e doigt et écarte le 1er ; tire la main vers la droite.',
+    notes: cinquiemePosition([1, 3, 1, 3])
+  });
+
+  ajoute({
+    id: 'ent-v-0404', titre: 'Ve position : 0 4 0 4', sous_titre: 'Entraînement · main gauche · pouce buté',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: 'Corde à vide, puis le 4e doigt à la case VIII, sur chaque corde de la 6e à la 2e puis retour. Bien fléchir le 4e doigt avant de le poser sur la corde.',
+    notes: cinquiemePosition([0, 4, 0, 4])
+  });
+
+  ajoute({
+    id: 'ent-v-1414', titre: 'Ve position : 1 4 1 4', sous_titre: 'Entraînement · main gauche · pouce buté',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: '1er doigt à la case V, 4e doigt à la case VIII, sur chaque corde de la 6e à la 2e puis retour. Ne lâche pas le 1er doigt tant que le 4e n’est pas posé.',
+    notes: cinquiemePosition([1, 4, 1, 4])
+  });
+
+  /* Riffs en La du cours, en Ve position, au pouce buté. Schéma de 4 notes
+   * à partir d'une corde : case V, case V, case VII (3e doigt, riff n° 1) ou
+   * VIII (4e doigt, riff n° 2), puis case V sur la corde au-dessus. 4 fois
+   * depuis la 6e corde, 2 fois depuis la 5e, 2 fois depuis la 6e, et le La
+   * grave pour finir. Le riff n° 2 est relevé sur l'audio Guitar Pro du
+   * cours (♩ = 60 : La La Do Ré, Ré Ré Fa Sol) ; le n° 1 suit le même
+   * chemin avec le 3e doigt. */
+  function riffLa(doigt) {
+    var n = [], t = 0, haut = 4 + doigt;
+    [6, 6, 6, 6, 5, 5, 6, 6].forEach(function (c) {
+      [[c, 5, 1], [c, 5, 1], [c, haut, doigt], [c - 1, 5, 1]].forEach(function (x) {
+        n.push({ corde: x[0], frette: x[1], temps: t, duree: 1, main: 'p', doigt: x[2], midi: Theorie.midiDeCase(x[0], x[1]) });
+        t += 1;
+      });
+    });
+    n.push({ corde: 6, frette: 5, temps: t, duree: 4, main: 'p', doigt: 1, midi: Theorie.midiDeCase(6, 5) });
+    return n;
+  }
+  var SECTIONS_RIFF = [{ titre: '4 fois depuis la 6e corde', de: 1, a: 4 }, { titre: '2 fois depuis la 5e', de: 5, a: 6 },
+                       { titre: '2 fois depuis la 6e, et le La grave', de: 7, a: 9 }];
+  ajoute({
+    id: 'ent-riff-la-1', titre: 'Riff en La n° 1', sous_titre: 'Entraînement · Ve position · 1er et 3e doigts · pouce buté',
+    niveau: 2, tempo: 55, signature: [4, 4], categorie: 'entrainement', position: 5, sections: SECTIONS_RIFF,
+    description: 'Schéma de 4 notes : case V, case V, case VII (3e doigt), puis case V sur la corde suivante. Pars 4 fois de la 6e corde, 2 fois de la 5e, 2 fois de la 6e, et finis par la note la plus grave : coupe le son en reposant le pouce sur la corde. D’abord sans métronome, puis avec un rock groove à 55. Ne lâche pas un doigt tant que le suivant n’est pas posé ; tire la main gauche vers la droite. (Écrit d’après les consignes du cours et le riff n° 2 : compare avec l’audio de Françoise.)',
+    notes: riffLa(3)
+  });
+  ajoute({
+    id: 'ent-riff-la-2', titre: 'Riff en La n° 2', sous_titre: 'Entraînement · Ve position · 1er et 4e doigts · pouce buté',
+    niveau: 2, tempo: 60, signature: [4, 4], categorie: 'entrainement', position: 5, sections: SECTIONS_RIFF,
+    description: 'Le chemin du riff n° 1, avec le 4e doigt à la case VIII : La La Do Ré depuis la 6e corde, Ré Ré Fa Sol depuis la 5e. Départ en Ve position, pouce buté. Relevé de l’audio du cours (♩ = 60). Pour l’accompagnement, Françoise joue quatre allers du pouce par mesure.',
+    notes: riffLa(4)
+  });
+
   // --- Chansons françaises (grilles d'accords, voir chansons.js) ------------
   /* Dictionnaire : la bibliothèque d'accords (accords.js) + quatre accords
    * barrés que certaines grilles demandent. `basse` = corde de la basse (la

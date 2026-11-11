@@ -55,10 +55,10 @@ ctx.AudioContext = function () {
   this.resume = () => {};
 };
 
-['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', '../tests/detecteur-hauteur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js']
+['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', '../tests/detecteur-hauteur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js', 'entrainement.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
-const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes, Programme } = ctx;
+const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes, Programme, Entrainement } = ctx;
 
 let ok = 0, ko = 0;
 function verifie(nom, cond, detail) {
@@ -327,6 +327,16 @@ console.log('\n— Entraînement (tablatures du cours) —');
   verifie('pouce buté 4 fois : quatre attaques par corde', Morceaux.get('ent-pouce-bute-4').notes.length === 36);
   verifie('nom des cordes : 6 → 1 puis 1 → 6, à vide', chemin(Morceaux.get('ent-noms-cordes').notes) === '654321123456'.replace('11', '1') &&
           Morceaux.get('ent-noms-cordes').notes.every((n) => n.frette === 0));
+  const r2 = Morceaux.get('ent-riff-la-2'), r1 = Morceaux.get('ent-riff-la-1');
+  const nom = (n) => ['do', 'do#', 're', 're#', 'mi', 'fa', 'fa#', 'sol', 'sol#', 'la', 'la#', 'si'][n.midi % 12];
+  verifie('riff n° 2 : La La Do Ré ×4, Ré Ré Fa Sol ×2, La La Do Ré ×2, La grave (audio du cours)', r2 &&
+          r2.notes.map(nom).join(' ') === [].concat(Array(4).fill('la la do re'), Array(2).fill('re re fa sol'), Array(2).fill('la la do re'), ['la']).join(' ') &&
+          r2.notes[0].midi === 45 && r2.notes[r2.notes.length - 1].midi === 45);
+  verifie('riffs en La : Ve position, 1er doigt case V, 3e (n° 1) ou 4e (n° 2) doigt, pouce', [r1, r2].every((r, k) =>
+          r.notes.every((n) => n.main === 'p' && (n.frette === 5 ? n.doigt === 1 : n.frette === 7 + k && n.doigt === 3 + k))) && Tablature.duree_totale(r1) === 36);
+  verifie('1 3 1 3, 0 4 0 4, 1 4 1 4 : même chemin que 0 3 0 3', ['ent-v-1313', 'ent-v-0404', 'ent-v-1414'].every((id) => chemin(Morceaux.get(id).notes) === '654323456') &&
+          Morceaux.get('ent-v-1414').notes.slice(0, 4).map((n) => n.frette).join() === '5,8,5,8');
+  verifie('chaque exercice du travail récurrent qui renvoie à une tablature la trouve', Entrainement.tous().every((e) => !e.morceau || Morceaux.get(e.morceau)));
   const zb = Morceaux.get('ent-zombie-balaye');
   verifie('balayages Zombie : mêmes doigtés que le morceau Zombie (Em à l’index et au majeur)',
           zb.mains.gauche[0].id === 'Em' && zb.mains.gauche[0].doigts.join() === Morceaux.get('zombie').mains.gauche[0].doigts.join());

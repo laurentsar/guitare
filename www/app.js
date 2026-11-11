@@ -182,7 +182,7 @@
       var jourE = Store.entrainementJour();
       var totalE = Entrainement.tous().reduce(function (t, e) { return t + Entrainement.cases(e); }, 0);
       var faitesE = Entrainement.tous().reduce(function (t, e) { return t + (jourE[e.id] || []).length; }, 0);
-      var bE = el('button', 'btn large', '💪 Entraînement du jour : ' + faitesE + ' / ' + totalE);
+      var bE = el('button', 'btn large', '💪 Travail du jour : ' + faitesE + ' / ' + totalE);
       bE.onclick = function () { aller('entrainement'); };
       carte.appendChild(bE);
     }
@@ -437,8 +437,8 @@
     var faites = tous.reduce(function (t, e) { return t + (jour[e.id] || []).length; }, 0);
     var jours = Store.joursEntrainement();
     var tete = el('div', 'carte');
-    tete.appendChild(el('h2', null, '💪 Entraînement'));
-    tete.appendChild(el('p', 'aide', 'Les exercices du cours, à refaire chaque jour. Coche-les au fur et à mesure : les cases repartent à zéro demain.'));
+    tete.appendChild(el('h2', null, '💪 Travail récurrent'));
+    tete.appendChild(el('p', 'aide', 'Le travail donné en cours, à refaire chaque jour, en commençant par ce qui est à travailler en priorité. Coche-le au fur et à mesure : les cases repartent à zéro demain.'));
     var barre = el('div', 'barre-objectif');
     var i = el('i'); i.style.width = Math.round(faites / total * 100) + '%';
     barre.appendChild(i);

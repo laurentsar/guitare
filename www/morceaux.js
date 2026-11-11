@@ -1080,17 +1080,18 @@
     notes: cinquiemePosition([1, 3, 4, 3])
   });
   // Quatre allers du pouce par mesure (indication du fichier Guitar Pro du
-  // riff n° 2), sur La 5 et Ré 5 : deux doigts, cordes à vide à la basse.
+  // riff n° 2), sur La 5 et Ré 5, la basse toujours sur la 5e corde : La à
+  // vide, Ré à la case 5 (Ve position, comme le riff).
   exerciceAccords({
     id: 'ent-accomp-riff-2', titre: 'Accompagnement du riff n° 2 (idée de l’app)', categorie: 'entrainement',
     sous_titre: 'Entraînement · La 5 – Ré 5 · 4 allers du pouce par mesure', niveau: 1, tempo: 60,
     accords: {
       A5: { id: 'A5', fr: 'La 5 (quinte)', frettes: [-1, -1, 2, 2, 0, -1], doigts: [0, 0, 2, 1, 0, 0], basse: 5, alt: 4,
             consigne: 'Index case 2 sur la 4e corde, majeur case 2 sur la 3e, juste à côté. Le pouce droit part de la 5e corde, à vide.' },
-      D5: { id: 'D5', fr: 'Ré 5 (quinte)', frettes: [-1, 3, 2, 0, -1, -1], doigts: [0, 3, 1, 0, 0, 0], basse: 4, alt: 4,
-            consigne: 'Index case 2 sur la 3e corde, annulaire case 3 sur la 2e. Le pouce droit part de la 4e corde, à vide.' }
+      D5: { id: 'D5', fr: 'Ré 5 (quinte)', frettes: [-1, -1, 7, 7, 5, -1], doigts: [0, 0, 4, 3, 1, 0], basse: 5, alt: 4,
+            consigne: 'En Ve position, sur la 5e corde comme le La 5 : index case 5 sur la 5e corde (Ré), annulaire case 7 sur la 4e, auriculaire case 7 sur la 3e. Le pouce gauche derrière la 6e case.' }
     },
-    description: 'Imaginé par l’app d’après l’indication du fichier du riff n° 2 (« jouer 4 allers du pouce par mesure ») : une mesure par mesure du riff, La 5 quand il part de la 6e corde, Ré 5 quand il part de la 5e. Un aller du pouce par temps, l’avant-bras qui tourne, devant la guitare.',
+    description: 'Imaginé par l’app d’après l’indication du fichier du riff n° 2 (« jouer 4 allers du pouce par mesure ») : une mesure par mesure du riff, La 5 quand il part de la 6e corde, Ré 5 quand il part de la 5e. Les deux accords partent de la 5e corde : La à vide, puis Ré à la case 5, en Ve position comme le riff. Un aller du pouce par temps, l’avant-bras qui tourne, devant la guitare.',
     paliers: [
       { motif: 'balaye-noires', grille: ['A5', 'A5', 'A5', 'A5', 'D5', 'D5', 'A5', 'A5', 'A5'] }
     ]

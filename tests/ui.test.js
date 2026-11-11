@@ -693,6 +693,23 @@ function verifie(nom, cond, detail) {
     const b = [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Tablature : Ve position : 0 3 0 3/.test(x.textContent));
     b.click();
     verifie('bouton tablature : ouvre l’exercice en Ve position', /Ve position : 0 3 0 3/.test($('detailMorceau').querySelector('h2').textContent));
+    // Révision quotidienne : série, bouton qui enchaîne les tablatures, rappels.
+    verifie('travail : série de jours d’affilée affichée', /1 jour d’affilée/.test($('pageEntrainement').textContent));
+    const bRev = [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Réviser ce qui reste/.test(x.textContent));
+    verifie('travail : bouton « Réviser ce qui reste », tablatures à la suite', !!bRev && /tablatures à la suite/.test(bRev.textContent));
+    w.AppGuitare.aller('accueil');
+    const acc = $('carteReprendre').textContent;
+    verifie('accueil : le travail de Françoise d’abord, avant la leçon', /D’abord : le travail de Françoise/.test(acc) &&
+            acc.indexOf('travail de Françoise') < acc.indexOf('Ensuite : la leçon suivante') && /1 jour d’affilée/.test(acc), acc.slice(0, 160));
+    w.AppGuitare.aller('programme');
+    verifie('séance du jour : rappel du travail de Françoise en tête', /D’abord : le travail de Françoise/.test($('pageProgramme').textContent));
+    w.AppGuitare.aller('entrainement');
+    let lancee = null;
+    const avantJouer = w.Tablature.jouer; w.Tablature.jouer = () => {};
+    [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Réviser ce qui reste/.test(x.textContent)).click();
+    lancee = $('detailMorceau').querySelector('h2') && $('detailMorceau').querySelector('h2').textContent;
+    verifie('réviser : ouvre la première tablature du travail (pouce buté non coché en entier)', /Pouce buté : 4 fois/.test(lancee || ''), lancee);
+    w.Tablature.jouer = avantJouer;
     w.Store.cocherEntrainement('pouce-bute-4', 0, false);
     w.AppGuitare.aller('accueil');
     verifie('accueil : rappel « Travail du jour »', /Travail du jour : 0 \//.test($('carteReprendre').textContent));

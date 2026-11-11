@@ -455,6 +455,8 @@ html.en-pupitre body { padding-bottom: 0; }
 .etat-nouveau { background: var(--accent); color: #0B1220; }
 .etat-continuer { background: var(--fond-3); color: var(--texte-2); border: 1px solid var(--trait); }
 .etat-pasvu { background: var(--presque); color: #22180C; }
+.apres-travail { margin-top: 18px; }
+.serie-travail { font-weight: 700; margin: 6px 0; }
 .etat-idee { background: transparent; color: var(--texte-2); border: 1px dashed var(--trait); }
 .exercice-coches { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
 .ligne-coche { display: flex; gap: 8px; align-items: center; cursor: pointer; }

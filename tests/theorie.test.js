@@ -145,6 +145,8 @@ Morceaux.tous().forEach(p => {
   else if (p.chanson) verifie(p.id + ' : formes d’accords, rien au-delà de la case 7', p.notes.every(n => n.frette <= 7));
   // TikTok : relevé tel quel de la vidéo, qui peut monter le long du manche.
   else if (p.categorie === 'tiktok') verifie(p.id + ' : relevé de la vidéo, rien au-delà de la case 15', p.notes.every(n => n.frette >= 0 && n.frette <= 15));
+  // Accompagnement du riff en La : La 5 à vide, Ré 5 en Ve position (case 7 au plus).
+  else if (p.id === 'ent-accomp-riff-2') verifie(p.id + ' : La 5 à vide, Ré 5 en Ve position, rien au-delà de la case 7', p.notes.every(n => n.frette <= 7));
   else if (!p.source) verifie(p.id + ' : rien au-delà de la 5e case (première position)',
           p.notes.every(n => n.frette >= 0 && n.frette <= 5),
           p.notes.filter(n => n.frette > 5).map(n => n.frette).join(','));
@@ -343,6 +345,8 @@ console.log('\n— Entraînement (tablatures du cours) —');
   verifie('riff n° 3 imaginé : La Si Do Ré, puis Ré Mi Fa Sol (1, 3, 4 puis 1)', r3.notes.slice(0, 4).map(nom).join(' ') === 'la si do re' &&
           r3.notes.slice(16, 20).map(nom).join(' ') === 're mi fa sol' && r3.notes.slice(0, 4).map((n) => n.doigt).join('') === '1341');
   const acc2 = Morceaux.get('ent-accomp-riff-2');
+  verifie('accompagnement : la basse des accords toujours sur la 5e corde (La à vide, Ré case 5)', acc2.mains.gauche.every((a) => a.basse === 5) &&
+          acc2.mains.gauche.map((a) => a.frettes[4]).join() === '0,5');
   verifie('accompagnement du riff n° 2 : 9 mesures La 5 / Ré 5 qui suivent le riff, un aller par temps', acc2 && Tablature.duree_totale(acc2) === 36 &&
           [0, 4, 8, 12, 16, 20, 24, 28, 32].map((t) => acc2.notes.find((n) => n.temps === t).accord).join(' ') === 'A5 A5 A5 A5 D5 D5 A5 A5 A5' &&
           [0, 16, 24].every((t) => (acc2.notes.find((n) => n.temps === t).accord === 'A5') === (r2.notes.find((n) => n.temps === t).corde === 6)));

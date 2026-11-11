@@ -104,7 +104,8 @@
       exercices: [
         { id: 'idee-accomp-riff-2', titre: 'Accompagner le riff n° 2 : 4 allers du pouce par mesure', etat: 'idee', morceau: 'ent-accomp-riff-2',
           consignes: ['C’est ce que le fichier du riff n° 2 indique pour l’accompagnement : quatre allers du pouce par mesure, un par temps.',
-                      'La 5 (La à vide, case 2 sur la 4e et la 3e) quand le riff part de la 6e corde, Ré 5 (Ré à vide, case 2 sur la 3e, case 3 sur la 2e) quand il part de la 5e.',
+                      'Les deux accords partent de la 5e corde. La 5 : La à vide, case 2 sur la 4e et la 3e, quand le riff part de la 6e corde.',
+                      'Ré 5 : en Ve position, case 5 sur la 5e corde (Ré), case 7 sur la 4e et la 3e, quand le riff part de la 5e.',
                       'L’aller du pouce comme en cours : avant-bras qui tourne, devant la guitare.',
                       'Ensuite, joue l’accompagnement pendant que l’app joue le riff (ou l’inverse, guitare muette).'] },
         { id: 'idee-v-1343', titre: 'Ve position : 1 3 4 3 sur chaque corde', etat: 'idee', morceau: 'ent-v-1343',

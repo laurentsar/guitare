@@ -166,11 +166,24 @@
     var p = Store.progression();
     var suivante = Lecons.suivante(p.lecons);
     var carte = vide($('carteReprendre'));
+    // Le travail de Françoise d'abord : il se révise chaque jour.
+    if (window.Entrainement) {
+      var bt = bilanTravail();
+      var finiT = bt.faites >= bt.total;
+      carte.appendChild(el('h2', null, finiT ? '✓ Travail de Françoise fait aujourd’hui' : 'D’abord : le travail de Françoise'));
+      carte.appendChild(el('p', 'aide', bt.faites + ' / ' + bt.total + ' coché' + (bt.faites > 1 ? 's' : '') + ' aujourd’hui' +
+        (bt.serie ? ' · 🔥 ' + bt.serie + ' jour' + (bt.serie > 1 ? 's' : '') + ' d’affilée' : '') + '. À réviser chaque jour.'));
+      var bE = el('button', 'btn large' + (finiT ? '' : ' primaire'), '💪 Travail du jour : ' + bt.faites + ' / ' + bt.total);
+      bE.onclick = function () { aller('entrainement'); };
+      carte.appendChild(bE);
+    }
     if (suivante) {
-      carte.appendChild(el('h2', null, 'À faire maintenant'));
+      var hL = el('h2', 'apres-travail', window.Entrainement ? 'Ensuite : la leçon suivante' : 'À faire maintenant');
+      carte.appendChild(hL);
       carte.appendChild(el('b', null, suivante.titre));
       carte.appendChild(el('p', 'aide', suivante.chapitre + ' · environ ' + suivante.minutes + ' min'));
-      var b = el('button', 'btn primaire large', 'Commencer');
+      var travailFait = !window.Entrainement || bilanTravail().faites >= bilanTravail().total;
+      var b = el('button', 'btn large' + (travailFait ? ' primaire' : ''), 'Commencer');
       b.onclick = function () { ouvrirLecon(suivante.id); };
       carte.appendChild(b);
     } else {
@@ -178,14 +191,6 @@
       carte.appendChild(el('p', 'aide', 'Toutes les leçons sont validées. Reprends les morceaux au métronome, et monte le tempo de cinq en cinq.'));
     }
 
-    if (window.Entrainement) {
-      var jourE = Store.entrainementJour();
-      var totalE = Entrainement.tous().reduce(function (t, e) { return t + Entrainement.cases(e); }, 0);
-      var faitesE = Entrainement.tous().reduce(function (t, e) { return t + (jourE[e.id] || []).length; }, 0);
-      var bE = el('button', 'btn large', '💪 Travail du jour : ' + faitesE + ' / ' + totalE);
-      bE.onclick = function () { aller('entrainement'); };
-      carte.appendChild(bE);
-    }
     if (window.Programme) {
       var sp = programmeDuJour();
       var bP = el('button', 'btn large', '🪜 Programme du jour : ' + sp.items.filter(faitAujourdhui).length + ' / ' + sp.items.length +
@@ -331,6 +336,19 @@
     var tete = el('div', 'carte accent');
     tete.appendChild(el('h2', null, '🪜 Séance du jour'));
     tete.appendChild(el('p', 'aide', 'Palier ' + sp.palier.num + ' — ' + sp.palier.nom + ' : ' + sp.palier.but));
+    if (window.Entrainement) {
+      var bt = bilanTravail();
+      var rappel = el('div', 'liste-ligne' + (bt.faites >= bt.total ? ' fait' : ''));
+      var tr = el('span');
+      tr.appendChild(el('b', null, (bt.faites >= bt.total ? '✓ ' : '') + '💪 D’abord : le travail de Françoise'));
+      tr.appendChild(el('small', null, bt.faites + ' / ' + bt.total + ' aujourd’hui · à réviser chaque jour, avant la séance'));
+      rappel.appendChild(tr);
+      var bR = el('button', 'btn', '▶');
+      bR.setAttribute('aria-label', 'Ouvrir le travail de Françoise');
+      bR.onclick = function () { aller('entrainement'); };
+      rappel.appendChild(bR);
+      tete.appendChild(rappel);
+    }
     // Adapté au ressenti : on consolide un palier en dessous, ou on y reste.
     if (sp.travail.descendu) {
       tete.appendChild(el('p', 'consolide', '⬇ Tes derniers morceaux étaient difficiles : la séance consolide au palier ' + sp.palier.num +
@@ -427,6 +445,39 @@
   /* Les devoirs du cours, à refaire chaque jour. Chaque exercice se coche
    * (une case par variante : en regardant, yeux fermés…) ; les cases
    * repartent à zéro chaque matin, l'historique reste pour la série. */
+  /* Travail de Françoise : où en est-on aujourd'hui, depuis combien de jours
+   * d'affilée, et quelles tablatures enchaîner pour tout réviser. */
+  function bilanTravail() {
+    var jour = Store.entrainementJour(), tous = Entrainement.tous();
+    var total = tous.reduce(function (t, e) { return t + Entrainement.cases(e); }, 0);
+    var faites = tous.reduce(function (t, e) { return t + Math.min(Entrainement.cases(e), (jour[e.id] || []).length); }, 0);
+    // Série : jours consécutifs avec du travail coché, jusqu'à aujourd'hui
+    // (ou hier, si rien n'est encore coché aujourd'hui).
+    var jours = Store.joursEntrainement(), serie = 0;
+    var d = new Date(); d.setHours(12, 0, 0, 0);
+    var cle = function (x) { return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2); };
+    if (jours.indexOf(cle(d)) === -1) d.setDate(d.getDate() - 1);
+    while (jours.indexOf(cle(d)) !== -1) { serie++; d.setDate(d.getDate() - 1); }
+    return { total: total, faites: faites, serie: serie, jours: jours.length };
+  }
+  // Les tablatures du travail, dans l'ordre de l'écran (priorité d'abord) ;
+  // `restants` : seulement celles des exercices pas encore cochés aujourd'hui.
+  function tablaturesTravail(restants) {
+    var jour = Store.entrainementJour(), ids = [];
+    Entrainement.tous().forEach(function (e) {
+      if (!e.morceau || !Morceaux.get(e.morceau) || ids.indexOf(e.morceau) !== -1) return;
+      if (restants && (jour[e.id] || []).length >= Entrainement.cases(e)) return;
+      ids.push(e.morceau);
+    });
+    return ids;
+  }
+  function boutonReviserTravail(classe) {
+    var restants = tablaturesTravail(true), ids = restants.length ? restants : tablaturesTravail(false);
+    var b = el('button', classe || 'btn primaire', '▶ Réviser ' + (restants.length ? 'ce qui reste' : 'tout le travail') + ' (' + ids.length + ' tablature' + (ids.length > 1 ? 's' : '') + ' à la suite)');
+    b.onclick = function () { lancerListe({ nom: 'Travail de Françoise', morceaux: ids, pct: null, boucle: false }); };
+    return b;
+  }
+
   var ETATS_ENTRAINEMENT = { nouveau: 'NOUVEAU', continuer: 'à continuer', pasvu: 'pas encore vu en cours', idee: '💡 idée de l’app' };
 
   function rendreEntrainement() {
@@ -444,6 +495,12 @@
     barre.appendChild(i);
     tete.appendChild(barre);
     tete.appendChild(el('p', 'aide', 'Aujourd’hui : ' + faites + ' / ' + total + ' · ' + jours.length + ' jour' + (jours.length > 1 ? 's' : '') + ' d’entraînement en tout'));
+    var bilan = bilanTravail();
+    tete.appendChild(el('p', 'serie-travail', bilan.serie ? '🔥 ' + bilan.serie + ' jour' + (bilan.serie > 1 ? 's' : '') + ' d’affilée : continue demain !'
+      : 'Le travail de Françoise se révise chaque jour : coche au moins un exercice pour lancer ta série.'));
+    var actT = el('div', 'actions');
+    actT.appendChild(boutonReviserTravail());
+    tete.appendChild(actT);
     h.appendChild(tete);
 
     Entrainement.groupes().forEach(function (g) {

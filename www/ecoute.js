@@ -1,6 +1,6 @@
 /* Écoute au micro : l'app écoute les notes jouées, À LA DEMANDE (bouton
- * « 🎤 Écoute-moi »), et dit si elles sont justes. Le micro n'est ouvert que
- * pendant l'écoute, et refermé dès qu'on l'arrête ou qu'on quitte la page.
+ * interrupteur « 🎤 Micro » d'un morceau), et dit si elles sont justes. Le micro n'est ouvert que
+ * tant que l'interrupteur est allumé, et refermé dès qu'on l'éteint ou qu'on quitte la page.
  *
  * Trois couches, les deux dernières sans micro (testables en Node) :
  *  1. detecter(tampon) : la hauteur d'une fenêtre de son, par autocorrélation

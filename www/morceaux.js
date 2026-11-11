@@ -1009,6 +1009,94 @@
     notes: cinquiemePosition([0, 1, 0, 1])
   });
 
+  ajoute({
+    id: 'ent-v-1313', titre: 'Ve position : 1 3 1 3', sous_titre: 'Entraînement · main gauche · les doigts « marchent »',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: '1er doigt à la case V, 3e doigt à la case VII, sur chaque corde de la 6e à la 2e puis retour. La main gauche d’abord, seule. Un doigt chasse l’autre : ne lâche pas un doigt tant que le suivant n’est pas posé. Pars toujours du 3e doigt et écarte le 1er ; tire la main vers la droite.',
+    notes: cinquiemePosition([1, 3, 1, 3])
+  });
+
+  ajoute({
+    id: 'ent-v-0404', titre: 'Ve position : 0 4 0 4', sous_titre: 'Entraînement · main gauche · pouce buté',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: 'Corde à vide, puis le 4e doigt à la case VIII, sur chaque corde de la 6e à la 2e puis retour. Bien fléchir le 4e doigt avant de le poser sur la corde.',
+    notes: cinquiemePosition([0, 4, 0, 4])
+  });
+
+  ajoute({
+    id: 'ent-v-1414', titre: 'Ve position : 1 4 1 4', sous_titre: 'Entraînement · main gauche · pouce buté',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: '1er doigt à la case V, 4e doigt à la case VIII, sur chaque corde de la 6e à la 2e puis retour. Ne lâche pas le 1er doigt tant que le 4e n’est pas posé.',
+    notes: cinquiemePosition([1, 4, 1, 4])
+  });
+
+  /* Riffs en La du cours, en Ve position, au pouce buté. Schéma de 4 notes
+   * à partir d'une corde : case V, case V, case VII (3e doigt, riff n° 1) ou
+   * VIII (4e doigt, riff n° 2), puis case V sur la corde au-dessus. 4 fois
+   * depuis la 6e corde, 2 fois depuis la 5e, 2 fois depuis la 6e, et le La
+   * grave pour finir. Le riff n° 2 est relevé sur l'audio Guitar Pro du
+   * cours (♩ = 60 : La La Do Ré, Ré Ré Fa Sol) ; le n° 1 suit le même
+   * chemin avec le 3e doigt. */
+  // `doigts` : les trois premières notes du schéma, sur la corde de départ
+  // (doigt d → case 4 + d) ; la 4e est toujours le 1er doigt, corde suivante.
+  function riffLa(doigts) {
+    var n = [], t = 0;
+    [6, 6, 6, 6, 5, 5, 6, 6].forEach(function (c) {
+      doigts.map(function (d) { return [c, 4 + d, d]; }).concat([[c - 1, 5, 1]]).forEach(function (x) {
+        n.push({ corde: x[0], frette: x[1], temps: t, duree: 1, main: 'p', doigt: x[2], midi: Theorie.midiDeCase(x[0], x[1]) });
+        t += 1;
+      });
+    });
+    n.push({ corde: 6, frette: 5, temps: t, duree: 4, main: 'p', doigt: 1, midi: Theorie.midiDeCase(6, 5) });
+    return n;
+  }
+  var SECTIONS_RIFF = [{ titre: '4 fois depuis la 6e corde', de: 1, a: 4 }, { titre: '2 fois depuis la 5e', de: 5, a: 6 },
+                       { titre: '2 fois depuis la 6e, et le La grave', de: 7, a: 9 }];
+  ajoute({
+    id: 'ent-riff-la-1', titre: 'Riff en La n° 1', sous_titre: 'Entraînement · Ve position · 1er et 3e doigts · pouce buté',
+    niveau: 2, tempo: 55, signature: [4, 4], categorie: 'entrainement', position: 5, sections: SECTIONS_RIFF,
+    description: 'Schéma de 4 notes : case V, case V, case VII (3e doigt), puis case V sur la corde suivante. Pars 4 fois de la 6e corde, 2 fois de la 5e, 2 fois de la 6e, et finis par la note la plus grave : coupe le son en reposant le pouce sur la corde. D’abord sans métronome, puis avec un rock groove à 55. Ne lâche pas un doigt tant que le suivant n’est pas posé ; tire la main gauche vers la droite. (Écrit d’après les consignes du cours et le riff n° 2 : compare avec l’audio de Françoise.)',
+    notes: riffLa([1, 1, 3])
+  });
+  ajoute({
+    id: 'ent-riff-la-2', titre: 'Riff en La n° 2', sous_titre: 'Entraînement · Ve position · 1er et 4e doigts · pouce buté',
+    niveau: 2, tempo: 60, signature: [4, 4], categorie: 'entrainement', position: 5, sections: SECTIONS_RIFF,
+    description: 'Le chemin du riff n° 1, avec le 4e doigt à la case VIII : La La Do Ré depuis la 6e corde, Ré Ré Fa Sol depuis la 5e. Départ en Ve position, pouce buté. Relevé de l’audio du cours (♩ = 60). Le fichier indique, pour l’accompagnement : quatre allers du pouce par mesure (voir l’idée « Accompagnement du riff n° 2 »).',
+    notes: riffLa([1, 1, 4])
+  });
+
+  /* Idées de l'app pour prolonger le cours (groupe « Pour aller plus loin »
+   * de l'écran Travail récurrent) : pas données par le professeur. */
+  ajoute({
+    id: 'ent-riff-la-3', titre: 'Riff en La n° 3 (idée de l’app)', sous_titre: 'Entraînement · Ve position · 1er, 3e et 4e doigts · pouce buté',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5, sections: SECTIONS_RIFF,
+    description: 'Imaginé par l’app, pas donné en cours : le chemin des riffs n° 1 et 2 avec un schéma qui monte, case V (1er doigt), VII (3e), VIII (4e), puis V sur la corde suivante. La – Si – Do – Ré depuis la 6e corde, Ré – Mi – Fa – Sol depuis la 5e : la gamme de La mineur. Ne lâche pas un doigt tant que le suivant n’est pas posé.',
+    notes: riffLa([1, 3, 4])
+  });
+  ajoute({
+    id: 'ent-v-1343', titre: 'Ve position : 1 3 4 3 (idée de l’app)', sous_titre: 'Entraînement · main gauche · trois doigts',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: 'Imaginé par l’app, pas donné en cours : 1er doigt case V, 3e case VII, 4e case VIII, puis retour au 3e, sur chaque corde de la 6e à la 2e et retour. Prépare le riff n° 3.',
+    notes: cinquiemePosition([1, 3, 4, 3])
+  });
+  // Quatre allers du pouce par mesure (indication du fichier Guitar Pro du
+  // riff n° 2), sur La 5 et Ré 5, la basse toujours sur la 5e corde : La à
+  // vide, Ré à la case 5 (Ve position, comme le riff).
+  exerciceAccords({
+    id: 'ent-accomp-riff-2', titre: 'Accompagnement du riff n° 2 (idée de l’app)', categorie: 'entrainement',
+    sous_titre: 'Entraînement · La 5 – Ré 5 · 4 allers du pouce par mesure', niveau: 1, tempo: 60,
+    accords: {
+      A5: { id: 'A5', fr: 'La 5 (quinte)', frettes: [-1, -1, 2, 2, 0, -1], doigts: [0, 0, 2, 1, 0, 0], basse: 5, alt: 4,
+            consigne: 'Index case 2 sur la 4e corde, majeur case 2 sur la 3e, juste à côté. Le pouce droit part de la 5e corde, à vide.' },
+      D5: { id: 'D5', fr: 'Ré 5 (quinte)', frettes: [-1, -1, 7, 7, 5, -1], doigts: [0, 0, 4, 3, 1, 0], basse: 5, alt: 4,
+            consigne: 'En Ve position, sur la 5e corde comme le La 5 : index case 5 sur la 5e corde (Ré), annulaire case 7 sur la 4e, auriculaire case 7 sur la 3e. Le pouce gauche derrière la 6e case.' }
+    },
+    description: 'Imaginé par l’app d’après l’indication du fichier du riff n° 2 (« jouer 4 allers du pouce par mesure ») : une mesure par mesure du riff, La 5 quand il part de la 6e corde, Ré 5 quand il part de la 5e. Les deux accords partent de la 5e corde : La à vide, puis Ré à la case 5, en Ve position comme le riff. Un aller du pouce par temps, l’avant-bras qui tourne, devant la guitare.',
+    paliers: [
+      { motif: 'balaye-noires', grille: ['A5', 'A5', 'A5', 'A5', 'D5', 'D5', 'A5', 'A5', 'A5'] }
+    ]
+  });
+
   // --- Chansons françaises (grilles d'accords, voir chansons.js) ------------
   /* Dictionnaire : la bibliothèque d'accords (accords.js) + quatre accords
    * barrés que certaines grilles demandent. `basse` = corde de la basse (la
@@ -1441,6 +1529,30 @@
     niveau: 2, tempo: 86, signature: [4, 4], categorie: 'tiktok',
     description: 'Vu dans deux vidéos TikTok (@maesstttro, @wiragustiii) : deux accords égrenés, quatre notes chacun, puis on laisse sonner. La m7 : La à vide (5e corde), case 2 sur la 4e (majeur), Sol à vide, case 1 sur la 2e (index). Fa : case 1 sur la 6e (index), case 3 sur la 5e (annulaire), Ré à vide, case 2 sur la 3e (majeur). Le pouce prend les cordes graves, l’index et le majeur les aiguës. Les accords : en La mineur, i (La m7 : La, Mi, Sol, Do) puis VI (Fa avec une sixte : Fa, Do, Ré, La). Les deux accords ont en commun le Do et le La : c’est ce qui fait ce balancement doux, sans tension. Le même motif revient dans plusieurs vidéos, sans titre de chanson.',
     notes: arpegeTT(fois2(4, [AM7, F6]))
+  });
+
+  /* @maesstttro : quatre accords égrenés en Si mineur, cases affichées à
+   * l'écran (2 4 0 · 0 4 0 · 3 4 0 · 0 4, puis 3 4 0). Basse au pouce sur
+   * la 5e ou la 6e corde, case 4 de la 4e (Fa♯) et Si à vide (2e corde) ;
+   * notes vérifiées sur le son, croches à ♩ ≈ 104, une mesure par accord. */
+  function mesureSi(acc, basse) {
+    var fa = [4, 4, 3, 'i', .5], si = [2, 0, 0, 'm', .5];
+    return { accord: acc, notes: [basse, fa, si, fa, [basse[0], basse[1], basse[2], 'p', .5], fa, si, fa] };
+  }
+  var SI_M = [mesureSi('Bm', [5, 2, 1, 'p', .5]), mesureSi('Bm/A', [5, 0, 0, 'p', .5]),
+              mesureSi('Gmaj7', [6, 3, 2, 'p', .5]), mesureSi('Em9', [6, 0, 0, 'p', .5])];
+  ajoute({
+    id: 'tiktok-arpege-si-m', titre: 'Arpège Si m – Sol maj7 – Mi m (basse qui descend)', sous_titre: 'TikTok · @maesstttro · l’annulaire ne bouge pas · titre non indiqué',
+    niveau: 2, tempo: 104, signature: [4, 4], categorie: 'tiktok',
+    sections: [{ titre: 'Si m – Si m/La', de: 1, a: 2 }, { titre: 'Sol maj7 – Mi m9', de: 3, a: 4 }, { titre: 'Deuxième tour et fin', de: 5, a: 9 }],
+    description: 'D’après une vidéo TikTok (@maesstttro) : quatre accords égrenés, avec les cases affichées à l’écran (2 4 0 · 0 4 0 · 3 4 0 · 0 4). L’annulaire reste posé tout le long case 4 sur la 4e corde (Fa♯), et la 2e corde sonne à vide (Si) : seule la basse change, au pouce. Si (5e corde, case 2, index), La (5e à vide), Sol (6e corde, case 3, majeur), Mi (6e à vide) : la basse descend, les notes du dessus restent. Une mesure par accord, en croches pouce – index – majeur – index. Les accords : en Si mineur, Si m, Si m avec La à la basse, Sol maj7 et Mi m9. La vidéo ne donne pas le titre.',
+    notes: (function () {
+      var n = arpegeTT(fois2(2, SI_M).concat([{ accord: 'Gmaj7', notes: [[6, 3, 2, 'p', 0], [4, 4, 3, 'i', 0], [2, 0, 0, 'm', 4]] }]));
+      // Le dernier accord est plaqué : les trois notes ensemble, tenues.
+      var fin = n.slice(-3), t = fin[0].temps;
+      fin.forEach(function (x) { x.temps = t; x.duree = 4; });
+      return n;
+    })()
   });
 
   /* Grilles vues sur TikTok, titre non indiqué : les accords seuls, pas la

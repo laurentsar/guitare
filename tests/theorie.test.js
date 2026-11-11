@@ -55,10 +55,10 @@ ctx.AudioContext = function () {
   this.resume = () => {};
 };
 
-['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', '../tests/detecteur-hauteur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js']
+['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', '../tests/detecteur-hauteur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js', 'entrainement.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
-const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes, Programme } = ctx;
+const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes, Programme, Entrainement } = ctx;
 
 let ok = 0, ko = 0;
 function verifie(nom, cond, detail) {
@@ -145,6 +145,8 @@ Morceaux.tous().forEach(p => {
   else if (p.chanson) verifie(p.id + ' : formes d’accords, rien au-delà de la case 7', p.notes.every(n => n.frette <= 7));
   // TikTok : relevé tel quel de la vidéo, qui peut monter le long du manche.
   else if (p.categorie === 'tiktok') verifie(p.id + ' : relevé de la vidéo, rien au-delà de la case 15', p.notes.every(n => n.frette >= 0 && n.frette <= 15));
+  // Accompagnement du riff en La : La 5 à vide, Ré 5 en Ve position (case 7 au plus).
+  else if (p.id === 'ent-accomp-riff-2') verifie(p.id + ' : La 5 à vide, Ré 5 en Ve position, rien au-delà de la case 7', p.notes.every(n => n.frette <= 7));
   else if (!p.source) verifie(p.id + ' : rien au-delà de la 5e case (première position)',
           p.notes.every(n => n.frette >= 0 && n.frette <= 5),
           p.notes.filter(n => n.frette > 5).map(n => n.frette).join(','));
@@ -327,6 +329,31 @@ console.log('\n— Entraînement (tablatures du cours) —');
   verifie('pouce buté 4 fois : quatre attaques par corde', Morceaux.get('ent-pouce-bute-4').notes.length === 36);
   verifie('nom des cordes : 6 → 1 puis 1 → 6, à vide', chemin(Morceaux.get('ent-noms-cordes').notes) === '654321123456'.replace('11', '1') &&
           Morceaux.get('ent-noms-cordes').notes.every((n) => n.frette === 0));
+  const r2 = Morceaux.get('ent-riff-la-2'), r1 = Morceaux.get('ent-riff-la-1');
+  const nom = (n) => ['do', 'do#', 're', 're#', 'mi', 'fa', 'fa#', 'sol', 'sol#', 'la', 'la#', 'si'][n.midi % 12];
+  verifie('riff n° 2 : La La Do Ré ×4, Ré Ré Fa Sol ×2, La La Do Ré ×2, La grave (audio du cours)', r2 &&
+          r2.notes.map(nom).join(' ') === [].concat(Array(4).fill('la la do re'), Array(2).fill('re re fa sol'), Array(2).fill('la la do re'), ['la']).join(' ') &&
+          r2.notes[0].midi === 45 && r2.notes[r2.notes.length - 1].midi === 45);
+  verifie('riffs en La : Ve position, 1er doigt case V, 3e (n° 1) ou 4e (n° 2) doigt, pouce', [r1, r2].every((r, k) =>
+          r.notes.every((n) => n.main === 'p' && (n.frette === 5 ? n.doigt === 1 : n.frette === 7 + k && n.doigt === 3 + k))) && Tablature.duree_totale(r1) === 36);
+  verifie('1 3 1 3, 0 4 0 4, 1 4 1 4 : même chemin que 0 3 0 3', ['ent-v-1313', 'ent-v-0404', 'ent-v-1414'].every((id) => chemin(Morceaux.get(id).notes) === '654323456') &&
+          Morceaux.get('ent-v-1414').notes.slice(0, 4).map((n) => n.frette).join() === '5,8,5,8');
+  verifie('chaque exercice du travail récurrent qui renvoie à une tablature la trouve', Entrainement.tous().concat(Entrainement.idees(), Entrainement.facultatifs()).every((e) => !e.morceau || Morceaux.get(e.morceau)));
+  verifie('idées de l’app : à part, marquées, hors du travail du jour', Entrainement.idees().length === 3 && Entrainement.idees().every((e) => e.etat === 'idee' && Entrainement.tous().indexOf(e) === -1) &&
+          Entrainement.tous().every((e) => e.etat !== 'idee'));
+  verifie('travail du jour = le dernier mail ; les semaines précédentes en révision facultative', Entrainement.tous().length === 14 &&
+          Entrainement.facultatifs().map((e) => e.id).join() === 'sd-pouce-bute-1,sd-main-droite,noms-cordes' &&
+          Entrainement.facultatifs().every((e) => e.etat === 'semaine') && Entrainement.tous().some((e) => e.id === 'riff-la-2') &&
+          Entrainement.facultatifs()[0].variantes.join() === '♩ = 40,♩ = 45,♩ = 50,♩ = 55,♩ = 60');
+  const r3 = Morceaux.get('ent-riff-la-3');
+  verifie('riff n° 3 imaginé : La Si Do Ré, puis Ré Mi Fa Sol (1, 3, 4 puis 1)', r3.notes.slice(0, 4).map(nom).join(' ') === 'la si do re' &&
+          r3.notes.slice(16, 20).map(nom).join(' ') === 're mi fa sol' && r3.notes.slice(0, 4).map((n) => n.doigt).join('') === '1341');
+  const acc2 = Morceaux.get('ent-accomp-riff-2');
+  verifie('accompagnement : la basse des accords toujours sur la 5e corde (La à vide, Ré case 5)', acc2.mains.gauche.every((a) => a.basse === 5) &&
+          acc2.mains.gauche.map((a) => a.frettes[4]).join() === '0,5');
+  verifie('accompagnement du riff n° 2 : 9 mesures La 5 / Ré 5 qui suivent le riff, un aller par temps', acc2 && Tablature.duree_totale(acc2) === 36 &&
+          [0, 4, 8, 12, 16, 20, 24, 28, 32].map((t) => acc2.notes.find((n) => n.temps === t).accord).join(' ') === 'A5 A5 A5 A5 D5 D5 A5 A5 A5' &&
+          [0, 16, 24].every((t) => (acc2.notes.find((n) => n.temps === t).accord === 'A5') === (r2.notes.find((n) => n.temps === t).corde === 6)));
   const zb = Morceaux.get('ent-zombie-balaye');
   verifie('balayages Zombie : mêmes doigtés que le morceau Zombie (Em à l’index et au majeur)',
           zb.mains.gauche[0].id === 'Em' && zb.mains.gauche[0].doigts.join() === Morceaux.get('zombie').mains.gauche[0].doigts.join());
@@ -372,7 +399,7 @@ console.log('\n— Nouvelles tablatures (v1.21) —');
 
 console.log('\n— Rock et reggae —');
 {
-  const rk = Morceaux.tous().filter((p) => p.chanson && p.niveau === 9);
+  const rk = Morceaux.tous().filter((p) => p.chanson && p.niveau === 9 && !p.versionDe);
   const par = (a) => rk.filter((p) => new RegExp(a).test(p.sous_titre)).length;
   verifie('24 chansons rock et reggae : Offspring 5, Nirvana 5, Cranberries 4, Police 4, Marley 6',
           rk.length === 24 && par('Offspring') === 5 && par('Nirvana') === 5 && par('Cranberries') === 4 && par('Police') === 4 && par('Marley') === 6, rk.length);
@@ -749,6 +776,11 @@ console.log('\n— TikTok —');
 }
 
 {
+  const si = Morceaux.get('tiktok-arpege-si-m');
+  verifie('Arpège en Si m : basses Si, La, Sol, Mi, annulaire fixe case 4 sur la 4e, 2e corde à vide', si &&
+          si.notes.filter((n) => n.main === 'p').map((n) => n.midi).slice(0, 8).join(' ') === '47 47 45 45 43 43 40 40' &&
+          si.notes.filter((n) => n.corde === 4).every((n) => n.frette === 4 && n.doigt === 3) && si.notes.filter((n) => n.corde === 2).every((n) => n.frette === 0) &&
+          Tablature.duree_totale(si) === 36);
   const elvis = Morceaux.get('ch-cant-help-falling');
   verifie('Can’t Help Falling in Love : grille seule à trois temps, capo 2, pas de mélodie relevée', elvis && elvis.categorie === 'tiktok' &&
           elvis.signature[0] === 3 && elvis.notes.every((n) => n.accord) && !Morceaux.get('tiktok-une-corde-mi'));
@@ -767,13 +799,13 @@ console.log('\n— TikTok —');
   verifie('TikTok, titre non indiqué : grilles Em C Am D et C G Am F, sans mélodie', ['tiktok-grille-em-c-am-d', 'tiktok-grille-c-g-am-f'].every((id) => {
     const g = Morceaux.get(id); return g && g.categorie === 'tiktok' && /ni mélodie ni paroles/.test(g.description) && g.notes.every((n) => n.accord); }) &&
     Morceaux.get('tiktok-grille-c-g-am-f').mains.gauche.map((a) => a.id).join(' ') === 'C G Am F');
-  verifie('vu sur TikTok : 10 grilles d’accords, ni mélodie ni paroles', tt.length === 10 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
+  verifie('vu sur TikTok : 11 grilles d’accords, ni mélodie ni paroles', tt.length === 11 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
           tt.map((p) => p.id).join(','));
   verifie('capos : Feel Good 6, Do I Wanna Know 3, Dance Monkey 2, Where Is My Mind 4, Hit the Road Jack 4',
           Morceaux.get('ch-feel-good-inc').capo === 6 && Morceaux.get('ch-do-i-wanna-know').capo === 3 && Morceaux.get('ch-dance-monkey').capo === 2 &&
           Morceaux.get('ch-where-is-my-mind').capo === 4 && Morceaux.get('ch-hit-the-road-jack').capo === 4);
   const longues = Morceaux.tous().filter((p) => p.versionDe);
-  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 30 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
+  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 32 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
   verifie('version longue plus longue que la courte, mêmes accords', longues.every((l) => {
     const c = Morceaux.get(l.versionDe);
     return Tablature.duree_totale(l) > Tablature.duree_totale(c) &&

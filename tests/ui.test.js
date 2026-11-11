@@ -671,15 +671,19 @@ function verifie(nom, cond, detail) {
   {
     const page = $('pageEntrainement');
     const txt = page.textContent;
-    verifie('écran : les exercices du cours, par thème', /Balayages/.test(txt) && /saute-mouton/.test(txt) && /Pouce buté : 4 fois/.test(txt) && /Ve position : 0 1 0 1/.test(txt) && /Partir de la pince/.test(txt));
+    verifie('écran : le travail récurrent du cours, par thème', /Travail récurrent/.test(txt) && /Balayages/.test(txt) && /Pouce buté : 4 fois/.test(txt) && /Ve position : 0 1 0 1/.test(txt) && /Partir de la pince/.test(txt) &&
+            /Riff en La n° 2/.test(txt) && /devant une glace/.test(txt));
     verifie('états : NOUVEAU, à continuer, pas encore vu en cours', /NOUVEAU/.test(txt) && /à continuer/.test(txt) && /pas encore vu en cours/.test(txt));
+    verifie('semaines précédentes : révision facultative, à part', /Révision : les semaines précédentes/.test(txt) && /📅 semaines précédentes/.test(txt) && /♩ = 40/.test(txt));
+    verifie('idées de l’app : groupe à part, marqué, hors du compte du jour', /Pour aller plus loin/.test(txt) && /idée de l’app/.test(txt) &&
+            w.Entrainement.tous().every((e) => e.etat !== 'idee'));
     const total = w.Entrainement.tous().reduce((t, e) => t + w.Entrainement.cases(e), 0);
     verifie('compteur du jour à zéro', new RegExp('Aujourd’hui : 0 / ' + total).test(txt));
-    const carte = [...page.querySelectorAll('.exercice')].find((c) => /saute-mouton/.test(c.textContent));
-    verifie('saute-mouton : deux variantes (en regardant, yeux fermés)', carte.querySelectorAll('input[type=checkbox]').length === 2 && /yeux fermés/.test(carte.textContent));
+    const carte = [...page.querySelectorAll('.exercice')].find((c) => /Pouce buté : 4 fois/.test(c.textContent));
+    verifie('pouce buté : deux variantes (en regardant, yeux fermés)', carte.querySelectorAll('input[type=checkbox]').length === 2 && /yeux fermés/.test(carte.textContent));
     carte.querySelector('input').click();
     verifie('case cochée : compteur à 1 et mémorisée pour aujourd’hui',
-            new RegExp('Aujourd’hui : 1 / ' + total).test($('pageEntrainement').textContent) && w.Store.entrainementJour()['saute-mouton'].join() === '0');
+            new RegExp('Aujourd’hui : 1 / ' + total).test($('pageEntrainement').textContent) && w.Store.entrainementJour()['pouce-bute-4'].join() === '0');
     const quiz = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Les noms par cœur/.test(c.textContent));
     [...quiz.querySelectorAll('button')].find((b) => /Interroge-moi/.test(b.textContent)).click();
     [...quiz.querySelectorAll('button')].find((b) => /Réponse/.test(b.textContent)).click();
@@ -690,9 +694,26 @@ function verifie(nom, cond, detail) {
     const b = [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Tablature : Ve position : 0 3 0 3/.test(x.textContent));
     b.click();
     verifie('bouton tablature : ouvre l’exercice en Ve position', /Ve position : 0 3 0 3/.test($('detailMorceau').querySelector('h2').textContent));
-    w.Store.cocherEntrainement('saute-mouton', 0, false);
+    // Révision quotidienne : série, bouton qui enchaîne les tablatures, rappels.
+    verifie('travail : série de jours d’affilée affichée', /1 jour d’affilée/.test($('pageEntrainement').textContent));
+    const bRev = [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Réviser ce qui reste/.test(x.textContent));
+    verifie('travail : bouton « Réviser ce qui reste », tablatures à la suite', !!bRev && /tablatures à la suite/.test(bRev.textContent));
     w.AppGuitare.aller('accueil');
-    verifie('accueil : rappel « Entraînement du jour »', /Entraînement du jour : 0 \//.test($('carteReprendre').textContent));
+    const acc = $('carteReprendre').textContent;
+    verifie('accueil : le travail de Françoise d’abord, avant la leçon', /D’abord : le travail de Françoise/.test(acc) &&
+            acc.indexOf('travail de Françoise') < acc.indexOf('Ensuite : la leçon suivante') && /1 jour d’affilée/.test(acc), acc.slice(0, 160));
+    w.AppGuitare.aller('programme');
+    verifie('séance du jour : rappel du travail de Françoise en tête', /D’abord : le travail de Françoise/.test($('pageProgramme').textContent));
+    w.AppGuitare.aller('entrainement');
+    let lancee = null;
+    const avantJouer = w.Tablature.jouer; w.Tablature.jouer = () => {};
+    [...$('pageEntrainement').querySelectorAll('button')].find((x) => /Réviser ce qui reste/.test(x.textContent)).click();
+    lancee = $('detailMorceau').querySelector('h2') && $('detailMorceau').querySelector('h2').textContent;
+    verifie('réviser : ouvre la première tablature du travail (pouce buté non coché en entier)', /Pouce buté : 4 fois/.test(lancee || ''), lancee);
+    w.Tablature.jouer = avantJouer;
+    w.Store.cocherEntrainement('pouce-bute-4', 0, false);
+    w.AppGuitare.aller('accueil');
+    verifie('accueil : rappel « Travail du jour »', /Travail du jour : 0 \//.test($('carteReprendre').textContent));
   }
 
   w.AppGuitare.ouvrirMorceau('carulli-andantino');

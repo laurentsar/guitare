@@ -266,7 +266,8 @@
       ] },
     { id: 'ch-come-as-you-are', titre: 'Come As You Are', artiste: 'Nirvana', annee: 1992,
       capo: 0, tempo: 110, groupe: 'rock',
-      note: 'Sur le disque, la guitare est accordée un ton plus bas : ici en accordage normal, les accords se jouent comme écrits (Mi m – Ré, puis La m – Do).',
+      structure: ['Couplet:Intro:1', 'Couplet', 'Pré-refrain', 'Refrain', 'Couplet', 'Pré-refrain', 'Refrain', 'Couplet:Solo', 'Pré-refrain', 'Refrain', 'Refrain:Fin'],
+      note: 'Sur le disque, la guitare est accordée un ton plus bas : ici en accordage normal, les accords se jouent comme écrits (Mi m – Ré, puis La m – Do). Le riff de l’intro, vu aussi sur TikTok (@fretreel), est la mélodie de la chanson, sous droits : ici la grille seule.',
       sections: [
         { titre: 'Couplet', motif: 'balade', tours: 2, grille: ['Em', 'D', 'Em', 'D'] },
         { titre: 'Pré-refrain', motif: 'balade', grille: ['Em', 'G', 'Em', 'G'] },
@@ -488,6 +489,15 @@
         { titre: 'Couplet', motif: 'rock', tours: 2, grille: ['E5', 'D5', 'E5', 'D5'] },
         { titre: 'Pré-refrain', motif: 'rock', grille: ['C5', 'D5', 'C5', 'D5'] },
         { titre: 'Refrain', motif: 'rock', tours: 2, grille: ['E5', 'D5', 'C5', 'D5'] }
+      ] },
+    { id: 'ch-shallow', titre: 'Shallow', artiste: 'Lady Gaga et Bradley Cooper', annee: 2018,
+      capo: 0, tempo: 96, groupe: 'tiktok',
+      structure: ['Couplet:Intro:1', 'Couplet', 'Couplet', 'Refrain', 'Shallow', 'Couplet', 'Refrain', 'Shallow', 'Shallow:Fin:1'],
+      note: 'En Sol majeur, sans capo. Couplet Mi m – Ré – Sol, puis Do – Sol – Ré ; refrain « I’m off the deep end » La m – Ré – Sol – Mi m ; « in the shallow » Do – Sol – Ré – Mi m. La vidéo (@fretreel, A Star Is Born) montre l’intro en arpège, la mélodie de la chanson, sous droits : ici la grille seule.',
+      sections: [
+        { titre: 'Couplet', motif: 'arpege', grille: ['Em', 'D', 'G', 'G', 'C', 'G', 'D', 'D'] },
+        { titre: 'Refrain', motif: 'balade', grille: ['Am', 'D', 'G', 'Em', 'Am', 'D', 'G', 'G'] },
+        { titre: 'Shallow', motif: 'plaque', grille: ['C', 'G', 'D', 'Em', 'C', 'G', 'D', 'D'] }
       ] },
     /* Top 20 de la guitare acoustique, par niveau (top : 1 débutant, 2
      * intermédiaire, 3 confirmé, 4 avancé). Grilles d'après Hooktheory,

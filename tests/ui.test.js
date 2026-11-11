@@ -32,7 +32,7 @@ function charge(f) {
 }
 
 vm.runInContext("window.BACKUP_APP='guitare'; window.APP_VERSION='1.0';", dom.getInternalVMContext());
-['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'entrainement.js', 'programme.js', 'lecons.js',
+['theorie.js', 'audio.js', 'accords.js', 'illustrations.js', 'tablature.js', 'portee.js', 'manche.js', 'gammes.js', 'apk-update.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'entrainement.js', 'ecoute.js', 'programme.js', 'lecons.js',
  'oreille.js', 'store.js', 'ecran.js', 'dpad-nav.js', 'tv.js', 'cast.js', 'vr.js', 'app.js'].forEach(charge);
 
 const $ = (id) => w.document.getElementById(id);
@@ -711,6 +711,62 @@ function verifie(nom, cond, detail) {
       verifie('pouce buté : métronome de 40 à 60', ['♩ 40', '♩ 45', '♩ 50', '♩ 55', '♩ 60'].every((x) => pb.textContent.includes(x)));
       verifie('lien vers l’écran Métronome et boîte à rythmes', [...$('pageEntrainement').querySelectorAll('button')].some((x) => /Métronome et boîte à rythmes/.test(x.textContent)));
       $('metroSon').value = 'clic';
+    }
+    // Interrupteur « 🎤 Micro » : seulement sur les morceaux qu'on joue, pas sur le travail ni les exercices.
+    {
+      const micro = () => [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /🎤 Micro/.test(x.textContent));
+      verifie('travail : pas de micro sur les exercices', ![...$('pageEntrainement').querySelectorAll('button')].some((x) => /🎤/.test(x.textContent)));
+      w.AppGuitare.ouvrirMorceau('ent-riff-la-2');
+      const exo = !!micro();
+      w.AppGuitare.ouvrirMorceau('ch-come-as-you-are');
+      const grille = !!micro();
+      w.AppGuitare.ouvrirMorceau('au-clair');
+      verifie('« 🎤 Micro » sur un morceau joué note à note, pas sur un exercice ni une grille d’accords', !!micro() && !exo && !grille, [exo, grille].join());
+      micro().click();
+      const pan = $('detailMorceau').querySelector('.ecoute-panneau');
+      // Pas de micro dans jsdom : l'app le dit clairement, sans planter.
+      verifie('micro absent : l’app explique qu’il n’y a pas de micro, l’interrupteur reste éteint', pan && !pan.hidden && /accès au micro/.test(pan.textContent) &&
+              micro().getAttribute('aria-pressed') === 'false', pan && pan.textContent);
+      // Un faux micro qui « joue ».
+      const vrai = w.Ecoute.demarrer, vraiArret = w.Ecoute.arreter;
+      let jouer = null, ouvert = false;
+      w.Ecoute.demarrer = (surNote) => { jouer = surNote; ouvert = true; return Promise.resolve(true); };
+      w.Ecoute.arreter = () => { ouvert = false; };
+      w.Ecoute.enMarche = () => ouvert;
+      w.AppGuitare.ouvrirMorceau('au-clair');
+      micro().click();
+      const pan2 = () => $('detailMorceau').querySelector('.ecoute-panneau');
+      const notesM = w.Morceaux.get('au-clair').notes, temps = [...new Set(notesM.map((n) => n.temps))];
+      verifie('micro allumé : interrupteur enfoncé, première note du morceau annoncée', ouvert && micro().getAttribute('aria-pressed') === 'true' &&
+              /Micro allumé/.test(micro().textContent) && new RegExp('note 1 / ' + temps.length).test(pan2().textContent), pan2().textContent.slice(0, 120));
+      jouer(notesM[0].midi + 1);
+      verifie('fausse note : signalée, on attend la bonne', /J’entends .*, il faut /.test(pan2().textContent));
+      temps.forEach((t) => jouer(notesM.find((n) => n.temps === t).midi));
+      const fin = pan2().textContent;
+      verifie('fin du morceau : score et faute de la mesure 1, le micro RESTE allumé', new RegExp((temps.length - 1) + ' / ' + temps.length + ' notes justes du premier coup').test(fin) &&
+              /Mesure 1 : /.test(fin) && ouvert && /reste allumé/.test(fin), fin.slice(0, 160));
+      verifie('fin du morceau : « 💡 Mes recommandations », avec la mesure 1 à retravailler', /Mes recommandations/.test(fin) && /mesure 1/.test(fin) &&
+              !![...pan2().querySelectorAll('button')].find((x) => /Mesure.* en boucle à 60 %/.test(x.textContent)), fin.slice(-300));
+      verifie('le score du tour est retenu pour le prochain', w.Store.scoreEcoute('au-clair') === Math.round((temps.length - 1) / temps.length * 100));
+      jouer(notesM[temps.length > 1 ? 1 : 0].midi + 2);
+      const encoreFin = /notes justes du premier coup/.test(pan2().textContent);
+      jouer(notesM[0].midi);
+      verifie('micro toujours allumé : une autre note ne fait rien, la première note relance un tour', encoreFin && new RegExp('note 2 / ' + temps.length).test(pan2().textContent), pan2().textContent.slice(0, 120));
+      [...pan2().querySelectorAll('button')].find((x) => /Éteindre le micro/.test(x.textContent)).click();
+      verifie('« Éteindre le micro » : micro fermé, interrupteur relevé', !ouvert && micro().getAttribute('aria-pressed') === 'false' && pan2().hidden);
+      // Tour suivant, fini : le bouton de la recommandation règle la boucle et éteint le micro.
+      micro().click();
+      jouer(notesM[0].midi + 1);
+      temps.forEach((tt) => jouer(notesM.find((n) => n.temps === tt).midi));
+      const finB = pan2().textContent;
+      verifie('2e tour : la comparaison avec le tour précédent', /même score|Même score|progresses|contre/i.test(finB), finB.slice(-300));
+      let lance = null; const jouerAvant = w.Tablature.jouer; w.Tablature.jouer = (pp, o) => { lance = o; };
+      [...pan2().querySelectorAll('button')].find((x) => /Mesure.* en boucle à 60 %/.test(x.textContent)).click();
+      verifie('bouton de la recommandation : micro éteint, mesure 1 en boucle lancée à 60 %', !ouvert && lance && lance.de === 0 &&
+              /60 %/.test($('detailMorceau').textContent), lance && JSON.stringify({ de: lance.de, a: lance.a }));
+      w.Tablature.jouer = jouerAvant; w.Tablature.arreter();
+      w.Ecoute.demarrer = vrai; w.Ecoute.arreter = vraiArret; w.Ecoute.enMarche = () => false;
+      w.AppGuitare.aller('entrainement');
     }
     // Révision quotidienne : série, bouton qui enchaîne les tablatures, rappels.
     verifie('travail : série de jours d’affilée affichée', /1 jour d’affilée/.test($('pageEntrainement').textContent));

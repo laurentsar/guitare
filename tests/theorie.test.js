@@ -55,10 +55,10 @@ ctx.AudioContext = function () {
   this.resume = () => {};
 };
 
-['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', '../tests/detecteur-hauteur.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js', 'entrainement.js']
+['theorie.js', 'accords.js', 'tablature.js', 'repertoire.js', 'chansons.js', 'morceaux.js', 'lecons.js', 'oreille.js', 'ecoute.js', 'illustrations.js', 'audio.js', 'manche.js', 'gammes.js', 'programme.js', 'entrainement.js']
   .forEach(f => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8'), ctx, { filename: f }));
 
-const { Theorie, Accords, Morceaux, Lecons, Tablature, Accordeur, Illustrations, Audio5, Manche, Gammes, Programme, Entrainement } = ctx;
+const { Theorie, Accords, Morceaux, Lecons, Tablature, Ecoute, Illustrations, Audio5, Manche, Gammes, Programme, Entrainement } = ctx;
 
 let ok = 0, ko = 0;
 function verifie(nom, cond, detail) {
@@ -97,11 +97,11 @@ console.log('\n— Détection de hauteur sur signal connu —');
            + 0.25 * Math.sin(2 * Math.PI * 2 * f * i / sr)
            + 0.12 * Math.sin(2 * Math.PI * 3 * f * i / sr);
   }
-  const r = Accordeur.detecter(buf, sr);
+  const r = Ecoute.detecter(buf, sr);
   verifie(f + ' Hz détecté à moins de 2 centièmes',
           r && Math.abs(Theorie.cents(r.freq, f)) < 2, r ? r.freq.toFixed(2) : 'rien');
 });
-verifie('le silence ne renvoie rien', Accordeur.detecter(new Float32Array(4096), 44100) === null);
+verifie('le silence ne renvoie rien', Ecoute.detecter(new Float32Array(4096), 44100) === null);
 
 console.log('\n— Accords —');
 const ATTENDU_NOTES = {
@@ -449,6 +449,88 @@ verifie('chaque leçon a un texte et une validation',
 verifie('la première leçon non faite est la première de la liste',
         Lecons.suivante([]).id === Lecons.tous()[0].id);
 
+console.log('\n— Écoute au micro : notes synthétisées, écoutées comme au micro —');
+{
+  // Un « enregistrement » : chaque note synthétisée par l'app, posée à son
+  // instant ; la note précédente s'arrête quand la suivante commence (main
+  // gauche qui change, ou pouce qui revient sur la corde).
+  function enregistrement(suite, sec) {
+    const sr = 44100, total = Math.ceil((suite.length * sec + 1) * sr), out = new Float32Array(total);
+    suite.forEach(([corde, frette], k) => {
+      buffersProduits.length = 0;
+      Audio5.jouerCase(corde, frette, { duree: sec + 0.5, timbre: 'nylon' });
+      const b = buffersProduits[0].getChannelData(0), debut = Math.round(k * sec * sr), fin = Math.round((k + 1) * sec * sr);
+      for (let i = 0; i < b.length && debut + i < total; i++) {
+        const g = debut + i < fin ? 1 : Math.max(0, 1 - (debut + i - fin) / 400);   // étouffée en 10 ms
+        out[debut + i] += b[i] * g * 0.5;
+      }
+    });
+    return out;
+  }
+  function ecouter(signal) {
+    const seg = new Ecoute.Segmenteur(), notes = [], pas = Math.round(0.06 * 44100);
+    for (let i = 0; i + 2048 <= signal.length; i += pas) {
+      const n = seg.mesure(Ecoute.analyser(signal.subarray(i, i + 2048), 44100));
+      if (n != null) notes.push(n);
+    }
+    return notes;
+  }
+  const riff = [[6, 5], [6, 5], [6, 8], [5, 5], [6, 5], [6, 5], [6, 8], [5, 5]];
+  const entendu = ecouter(enregistrement(riff, 0.75));
+  verifie('écoute : riff n° 2 joué juste → La La Do Ré, deux fois, notes répétées comprises',
+          entendu.join(' ') === riff.map(([c, f]) => Theorie.midiDeCase(c, f)).join(' '), entendu.map((m) => Theorie.nom(m)).join(' '));
+  const pouce = ecouter(enregistrement([[6, 0], [6, 0], [6, 0], [6, 0], [5, 0], [5, 0], [5, 0], [5, 0]], 0.6));
+  verifie('écoute : pouce buté, 4 fois la même corde à vide → 4 notes, puis 4', pouce.join(' ') === '40 40 40 40 45 45 45 45', pouce.join(' '));
+  const vite = [[6, 5], [6, 5], [6, 8], [5, 5], [5, 5], [5, 5], [5, 8], [4, 5]];
+  const eVite = ecouter(enregistrement(vite, 0.32));
+  verifie('écoute : même riff, plus vite (croches à ♩ ≈ 94)', eVite.join(' ') === vite.map(([c, f]) => Theorie.midiDeCase(c, f)).join(' '), eVite.map((m) => Theorie.nom(m)).join(' '));
+  const aigu = [[2, 0], [2, 7], [2, 0], [2, 7], [1, 0], [1, 7], [1, 0], [1, 7]];
+  const eAigu = ecouter(enregistrement(aigu, 0.5));
+  verifie('écoute : 0 3 0 3 en Ve position sur les cordes aiguës', eAigu.join(' ') === aigu.map(([c, f]) => Theorie.midiDeCase(c, f)).join(' '), eAigu.map((m) => Theorie.nom(m)).join(' '));
+  // De bout en bout : une fausse note jouée (case 7 au lieu de 8) est repérée.
+  const joue = ecouter(enregistrement([[6, 5], [6, 5], [6, 7], [6, 8], [5, 5]], 0.6));
+  const s2 = new Ecoute.Suivi(Morceaux.get('ent-riff-la-2').notes.slice(0, 4));
+  const verdicts = joue.map((m) => s2.entendu(m).resultat);
+  verifie('écoute + suivi : Si (case 7) au lieu de Do (case 8) → signalé, puis le Do et le Ré justes', verdicts.join(' ') === 'juste juste faux juste juste' && s2.fini() && s2.bilan().justes === 3, verdicts.join(' '));
+  const tenues = [[6, 0], [5, 2], [3, 0], [1, 5]].map((n) => ecouter(enregistrement([n], 2.5)).length);
+  verifie('écoute : une note tenue 2,5 s (grave ou aiguë) ne compte qu’une fois', tenues.every((x) => x === 1), tenues.join(','));
+  const silence = ecouter(new Float32Array(44100 * 2));
+  verifie('écoute : le silence ne donne aucune note', silence.length === 0);
+
+  // Suivi : la note attendue, une fausse note signalée, on attend la bonne.
+  const r2 = Morceaux.get('ent-riff-la-2');
+  const suivi = new Ecoute.Suivi(r2.notes.slice(0, 4));
+  const r = [45, 47, 45, 48, 50].map((m) => suivi.entendu(m).resultat);
+  verifie('suivi : juste, faux (Si au lieu de La), puis juste — la fausse note ne fait pas avancer', r.join(' ') === 'juste faux juste juste juste' && suivi.fini());
+  const bilan = suivi.bilan();
+  verifie('suivi : bilan 3 / 4 du premier coup, la faute notée (La attendu, Si entendu)', bilan.justes === 3 && bilan.total === 4 &&
+          bilan.erreurs.length === 1 && bilan.erreurs[0].attendu === 45 && bilan.erreurs[0].entendu === 47);
+  // Recommandations après un tour : genre des fautes, mesures à retravailler, hésitations.
+  {
+    const r2n = Morceaux.get('ent-riff-la-2').notes, su = new Ecoute.Suivi(r2n);
+    let t = 0;
+    su.etapes.forEach((e, k) => {
+      if (k === 2) su.entendu(47, t);            // Si au lieu de Do : une case trop bas
+      if (k === 3) su.entendu(45, t);            // Ré (5e corde, case 5) → La (6e corde, case 5) : corde voisine
+      if (k === 6) su.entendu(60, t);            // Do une octave trop haut
+      t += k === 12 ? 6000 : 1000;               // hésitation avant la 13e note
+      su.entendu(e[0].midi, t);
+    });
+    const cs = Ecoute.conseils(su, 4, 70), txt = cs.map((c) => c.texte).join('\n');
+    verifie('recommandations : progrès depuis le tour précédent (70 % → ' + su.bilan().pct + ' %)', /Tu progresses : 70 %/.test(txt), txt.split('\n')[0]);
+    verifie('recommandations : une case près, la corde voisine, l’octave', /à une case près/.test(txt) && /corde voisine \(ex\. mesure 1 : 6e corde au lieu de la 5e\)/.test(txt) && /une octave à côté/.test(txt), txt);
+    const boucle = cs.find((c) => c.action && c.action.boucle);
+    verifie('recommandations : les mesures 1 et 2 en boucle à 60 %', boucle && boucle.action.de === 1 && boucle.action.a === 2 && boucle.action.pct === 60, boucle && boucle.texte);
+    verifie('recommandations : l’hésitation repérée (mesure 4, 6 s)', /Tu hésites mesure 4/.test(txt) && /6,0 s/.test(txt), txt);
+    const parfait = new Ecoute.Suivi(r2n.slice(0, 8));
+    parfait.etapes.forEach((e, k) => parfait.entendu(e[0].midi, k * 1000));
+    const cp = Ecoute.conseils(parfait, 4, null);
+    verifie('tour parfait : passer au tempo, guitare muette', cp.length === 1 && cp[0].action && cp[0].action.muet && cp[0].action.pct === 100, cp.map((c) => c.texte).join(' | '));
+  }
+  const accord = new Ecoute.Suivi([{ temps: 0, midi: 40 }, { temps: 0, midi: 47 }, { temps: 0, midi: 52 }, { temps: 1, midi: 45 }]);
+  verifie('suivi : notes pincées ensemble = une étape, n’importe laquelle compte', accord.etapes.length === 2 && accord.entendu(52).resultat === 'juste');
+}
+
 console.log('\n— Synthèse des cordes —');
 [[6, 0], [5, 0], [3, 0], [1, 0], [1, 5]].forEach(([corde, frette]) => {
   buffersProduits.length = 0;
@@ -458,7 +540,7 @@ console.log('\n— Synthèse des cordes —');
   if (!buf) { verifie('corde ' + corde + ' case ' + frette + ' : buffer produit', false); return; }
   // On analyse une fenêtre prise après l'attaque, là où la corde est établie.
   const fenetre = buf.slice(4096, 4096 + 4096);
-  const mesure = Accordeur.detecter(fenetre, 44100);
+  const mesure = Ecoute.detecter(fenetre, 44100);
   verifie('corde ' + corde + ' case ' + frette + ' sonne à la bonne hauteur',
           mesure && Math.abs(Theorie.cents(mesure.freq, attendue)) < 15,
           mesure ? mesure.freq.toFixed(1) + ' Hz au lieu de ' + attendue.toFixed(1) : 'aucune hauteur détectée');

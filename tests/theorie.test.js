@@ -910,6 +910,12 @@ console.log('\n— TikTok —');
           si.notes.filter((n) => n.main === 'p').map((n) => n.midi).slice(0, 8).join(' ') === '47 47 45 45 43 43 40 40' &&
           si.notes.filter((n) => n.corde === 4).every((n) => n.frette === 4 && n.doigt === 3) && si.notes.filter((n) => n.corde === 2).every((n) => n.frette === 0) &&
           Tablature.duree_totale(si) === 36);
+  const th = Morceaux.get('tiktok-thibault'), ry = Morceaux.get('tiktok-deux-cordes-mi');
+  verifie('@thibaultguitar : mélodie sur la 1re corde relevée (Do Do Si Do · La La Sol Sol · Mi Mi Ré Ré · Si Do Si Sol), deux tours', th &&
+          th.notes.filter((n) => n.corde === 1).map((n) => n.frette).join(' ') === Array(2).fill('8 8 7 8 5 5 3 3 12 12 10 10 7 8 7 3').join(' ') &&
+          Tablature.duree_totale(th) === 32 && th.notes.every((n) => n.corde <= 3 && n.doigt >= 1 && n.doigt <= 4 || n.frette === 0));
+  verifie('@ryo_easy_guitar1976 : cordes 1 et 2 seulement, cases de la vidéo, 5 mesures', ry && ry.notes.every((n) => n.corde <= 2) &&
+          ry.notes.map((n) => n.frette).join(' ') === '0 3 0 0 5 0 3 0 7 0 0 8 7 8 0 7 12 0 3 3 0 2 0 3 5 3 5' && Tablature.duree_totale(ry) === 20);
   const elvis = Morceaux.get('ch-cant-help-falling');
   verifie('Can’t Help Falling in Love : grille seule à trois temps, capo 2, pas de mélodie relevée', elvis && elvis.categorie === 'tiktok' &&
           elvis.signature[0] === 3 && elvis.notes.every((n) => n.accord) && !Morceaux.get('tiktok-une-corde-mi'));
@@ -928,13 +934,13 @@ console.log('\n— TikTok —');
   verifie('TikTok, titre non indiqué : grilles Em C Am D et C G Am F, sans mélodie', ['tiktok-grille-em-c-am-d', 'tiktok-grille-c-g-am-f'].every((id) => {
     const g = Morceaux.get(id); return g && g.categorie === 'tiktok' && /ni mélodie ni paroles/.test(g.description) && g.notes.every((n) => n.accord); }) &&
     Morceaux.get('tiktok-grille-c-g-am-f').mains.gauche.map((a) => a.id).join(' ') === 'C G Am F');
-  verifie('vu sur TikTok : 11 grilles d’accords, ni mélodie ni paroles', tt.length === 11 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
+  verifie('vu sur TikTok : 13 grilles d’accords, ni mélodie ni paroles', tt.length === 13 && tt.every((p) => /ni mélodie ni paroles/.test(p.description)),
           tt.map((p) => p.id).join(','));
   verifie('capos : Feel Good 6, Do I Wanna Know 3, Dance Monkey 2, Where Is My Mind 4, Hit the Road Jack 4',
           Morceaux.get('ch-feel-good-inc').capo === 6 && Morceaux.get('ch-do-i-wanna-know').capo === 3 && Morceaux.get('ch-dance-monkey').capo === 2 &&
           Morceaux.get('ch-where-is-my-mind').capo === 4 && Morceaux.get('ch-hit-the-road-jack').capo === 4);
   const longues = Morceaux.tous().filter((p) => p.versionDe);
-  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 32 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
+  verifie('versions longues : chansons TikTok, Top 20 et Bella Ciao (×2)', longues.length === 35 && longues.every((l) => Morceaux.get(l.versionDe).longue === l.id), longues.length);
   verifie('version longue plus longue que la courte, mêmes accords', longues.every((l) => {
     const c = Morceaux.get(l.versionDe);
     return Tablature.duree_totale(l) > Tablature.duree_totale(c) &&

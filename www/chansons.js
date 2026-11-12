@@ -260,7 +260,8 @@
       ] },
     { id: 'ch-teen-spirit', titre: 'Smells Like Teen Spirit', artiste: 'Nirvana', annee: 1991,
       capo: 0, tempo: 116, groupe: 'rock',
-      note: 'Quatre power chords, deux par mesure, qui ne changent jamais (Fa, Si♭, La♭, Ré♭). La main gauche glisse le long du manche sans changer de forme.',
+      structure: ['Grille:Intro:1', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Solo', 'Grille:Refrain', 'Grille:Fin'],
+      note: 'Quatre power chords, deux par mesure, qui ne changent jamais (Fa, Si♭, La♭, Ré♭). La main gauche glisse le long du manche sans changer de forme. Le riff, vu aussi sur TikTok (@jouedirect, sur deux cordes), est la mélodie de la chanson, sous droits : ici la grille seule.',
       sections: [
         { titre: 'Grille', motif: 'rock', tours: 4, grille: ['F5|Bb5', 'Ab5|Db5'] }
       ] },
@@ -484,7 +485,7 @@
     { id: 'ch-beat-it', titre: 'Beat It', artiste: 'Michael Jackson', annee: 1982,
       capo: 0, tempo: 138, groupe: 'tiktok',
       structure: ['Couplet:Intro:1', 'Couplet', 'Pré-refrain', 'Refrain', 'Couplet', 'Pré-refrain', 'Refrain', 'Refrain:Solo', 'Refrain:Fin'],
-      note: 'En Mi mineur, tout en power chords au pouce. Le disque sonne un demi-ton plus bas (Mi♭ mineur, guitares accordées un demi-ton en dessous) ; ici on garde l’accordage normal. Le riff célèbre tourne sur Mi – Ré ; pré-refrain Do – Ré, refrain Mi – Ré – Do – Ré. La vidéo (@playguitarquick) montre le riff, une mélodie sous droits : ici la grille seule.',
+      note: 'En Mi mineur, tout en power chords au pouce. Le disque sonne un demi-ton plus bas (Mi♭ mineur, guitares accordées un demi-ton en dessous) ; ici on garde l’accordage normal. Le riff célèbre tourne sur Mi – Ré ; pré-refrain Do – Ré, refrain Mi – Ré – Do – Ré. Deux vidéos (@playguitarquick, @fretreel) montrent le riff, une mélodie sous droits : ici la grille seule.',
       sections: [
         { titre: 'Couplet', motif: 'rock', tours: 2, grille: ['E5', 'D5', 'E5', 'D5'] },
         { titre: 'Pré-refrain', motif: 'rock', grille: ['C5', 'D5', 'C5', 'D5'] },
@@ -498,6 +499,22 @@
         { titre: 'Couplet', motif: 'arpege', grille: ['Em', 'D', 'G', 'G', 'C', 'G', 'D', 'D'] },
         { titre: 'Refrain', motif: 'balade', grille: ['Am', 'D', 'G', 'Em', 'Am', 'D', 'G', 'G'] },
         { titre: 'Shallow', motif: 'plaque', grille: ['C', 'G', 'D', 'Em', 'C', 'G', 'D', 'D'] }
+      ] },
+    { id: 'ch-smooth-criminal', titre: 'Smooth Criminal', artiste: 'Michael Jackson', annee: 1987,
+      capo: 0, tempo: 118, groupe: 'tiktok',
+      structure: ['Couplet:Intro:1', 'Couplet', 'Refrain', 'Couplet', 'Refrain', 'Pont', 'Refrain', 'Refrain:Fin'],
+      note: 'En La mineur, grille simplifiée : le couplet tourne sur La m (la basse célèbre y court), le refrain « Annie, are you OK ? » alterne Ré m et Mi m, le pont monte Fa – Sol – La m. La vidéo (@jouedirect) montre le riff sur deux cordes, la mélodie de la chanson, sous droits : ici la grille seule.',
+      sections: [
+        { titre: 'Couplet', motif: 'rock', tours: 2, grille: ['Am', 'Am', 'Am', 'Am'] },
+        { titre: 'Refrain', motif: 'plaque', tours: 2, grille: ['Dm', 'Em', 'Dm', 'Em'] },
+        { titre: 'Pont', motif: 'plaque', grille: ['F', 'G', 'Am', 'Am'] }
+      ] },
+    { id: 'ch-sweet-dreams', titre: 'Sweet Dreams (Are Made of This)', artiste: 'Eurythmics (repris par Marilyn Manson)', annee: 1983,
+      capo: 3, tempo: 120, groupe: 'tiktok',
+      structure: ['Grille:Intro:2', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Couplet', 'Grille:Refrain', 'Grille:Fin'],
+      note: 'Capo case 3 : Do m – La♭ – Sol du disque se jouent La m – Fa – Mi, la même boucle du début à la fin (une mesure de La m, puis Fa et Mi dans la mesure suivante). Fa est barré. La vidéo (@jouedirect, version de Marilyn Manson) montre le riff sur deux cordes, la mélodie de la chanson, sous droits : ici la grille seule.',
+      sections: [
+        { titre: 'Grille', motif: 'balade', tours: 4, grille: ['Am', 'F|E'] }
       ] },
     /* Top 20 de la guitare acoustique, par niveau (top : 1 débutant, 2
      * intermédiaire, 3 confirmé, 4 avancé). Grilles d'après Hooktheory,

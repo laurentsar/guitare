@@ -1461,6 +1461,68 @@
     }), { alterne: true })
   });
 
+  /* @thibaultguitar : quatre mesures en fingerstyle, relevées sur la
+   * tablature qui défile dans la vidéo (titre non indiqué). Trois voix par
+   * mesure : une note sur la 3e corde, un motif de deux notes sur la 2e, la
+   * mélodie sur la 1re (Do Do Si Do · La La Sol Sol · Mi Mi Ré Ré · Si Do Si
+   * Sol). La 2e note de la 4e mesure est cachée par le nom du créateur :
+   * case 8 (Do) d'après le son. Pouls mesuré à ~0,46 s (♩ ≈ 130) ; le
+   * rythme fin est écrit pour l'app. Barres de reprise : deux tours. */
+  var THIBAULT = [
+    { c3: 7, c2: [5, 9], c1: [8, 8, 7, 8] },
+    { c3: 3, c2: [2, 5], c1: [5, 5, 3, 3] },
+    { c3: 10, c2: [9, 12], c1: [12, 12, 10, 10] },
+    { c3: 5, c2: [4, 7], c1: [7, 8, 7, 3] }
+  ];
+  function mesureThibault(m, debut) {
+    var cases = [m.c3].concat(m.c2, m.c1.filter(function (f) { return f >= 4; }));
+    var base = Math.min.apply(null, cases);
+    var doigt = function (f) { return f < base ? 1 : Math.min(4, f - base + 1); };
+    var note = function (corde, f, t, d, main) {
+      return { corde: corde, frette: f, temps: debut + t, duree: d, main: main, doigt: doigt(f), midi: Theorie.midiDeCase(corde, f) };
+    };
+    return [note(3, m.c3, 0, 2, 'p'), note(2, m.c2[0], 0.5, 0.5, 'i'), note(2, m.c2[1], 1, 0.5, 'i'),
+            note(2, m.c2[0], 1.5, 0.25, 'i'), note(2, m.c2[1], 1.75, 0.25, 'i')]
+      .concat(m.c1.map(function (f, k) { return note(1, f, 2 + k * 0.5, 0.5, k % 2 ? 'a' : 'm'); }));
+  }
+  ajoute({
+    id: 'tiktok-thibault', titre: 'Arpèges et mélodie qui descend (trois voix)', sous_titre: 'TikTok · @thibaultguitar · fingerstyle, cordes 3 à 1 · titre non indiqué',
+    niveau: 4, tempo: 130, signature: [4, 4], categorie: 'tiktok',
+    sections: [{ titre: 'Premier tour', de: 1, a: 4 }, { titre: 'Reprise', de: 5, a: 8 }],
+    description: 'Relevé de la tablature qui défile dans une vidéo TikTok (@thibaultguitar). Trois voix dans chaque mesure : le pouce sur la 3e corde, un motif de deux notes sur la 2e (index), et la mélodie sur la 1re (majeur et annulaire en alternance), qui descend de mesure en mesure : Do Do Si Do, La La Sol Sol, Mi Mi Ré Ré, Si Do Si Sol. Les accords sont ceux de La mineur harmonique (Mi7, La7, Mi7, Si7, avec une neuvième mineure) : d’où ce parfum un peu oriental. La main gauche se déplace à chaque mesure (cases 7, puis 2, puis 9 à 12, puis 4 à 8), un doigt par case. La 2e note de la 4e mesure est cachée par le nom du créateur dans la vidéo : case 8 (Do), d’après le son. Le pouls de la vidéo est relevé (♩ ≈ 130) ; le rythme fin est écrit pour l’app. La vidéo ne donne pas le titre.',
+    notes: (function () {
+      var n = [];
+      for (var tour = 0; tour < 2; tour++) THIBAULT.forEach(function (m, k) { n = n.concat(mesureThibault(m, (tour * 4 + k) * 4)); });
+      return n;
+    })()
+  });
+
+  /* @ryo_easy_guitar1976 : « Just 2 strings! », une mélodie en Mi mineur sur
+   * les cordes 1 et 2, cases lues à l'écran (titre non indiqué). [corde,
+   * case, durée en noires, doigt] ; rythme écrit pour l'app, ♩ ≈ 100. */
+  var RYO = [
+    [1, 0, .75], [1, 3, .75, 1], [1, 0, .5], [1, 0, .5], [1, 5, .5, 3], [1, 0, .5], [2, 3, .5, 1],
+    [1, 0, .75], [1, 7, .75, 1], [1, 0, .5], [1, 0, .5], [1, 8, .5, 2], [1, 7, .5, 1], [2, 8, .5, 2],
+    [1, 0, .75], [1, 7, .75, 1], [1, 12, .5, 1], [1, 0, .5], [2, 3, .5, 1], [2, 3, .5, 1], [2, 0, .5],
+    [1, 2, .5, 1], [1, 0, 3.5],
+    [2, 3, .5, 1], [2, 5, 1.5, 3], [2, 3, .5, 1], [2, 5, 1.5, 3]
+  ];
+  ajoute({
+    id: 'tiktok-deux-cordes-mi', titre: 'Mélodie en Mi mineur sur deux cordes', sous_titre: 'TikTok · @ryo_easy_guitar1976 · cordes 1 et 2 · titre non indiqué',
+    niveau: 3, tempo: 100, signature: [4, 4], categorie: 'tiktok',
+    sections: [{ titre: 'Phrases 1 et 2', de: 1, a: 2 }, { titre: 'Phrase 3', de: 3, a: 4 }, { titre: 'Fin : 3 → 5 sur la 2e corde', de: 5, a: 5 }],
+    description: 'Relevé d’une vidéo TikTok (@ryo_easy_guitar1976, « Just 2 strings! ») : toute la mélodie sur la 1re et la 2e corde, avec les cases affichées à l’écran. Chaque phrase repart du Mi aigu à vide : Mi Sol Mi Mi La Mi Ré · Mi Si Mi Mi Do Si Sol · Mi Si Mi Mi Ré Ré Si Fa♯ Mi, et pour finir Ré → Mi deux fois sur la 2e corde (3 puis 5 ; dans la vidéo, la 2e note est liée, sans la repincer). La main gauche saute d’une position à l’autre (cases 3-5, 7-8, puis 12) : l’index se pose sur la case la plus basse de chaque phrase, et la corde à vide laisse le temps de se déplacer. Notes de Mi mineur. Le rythme est écrit pour l’app. La vidéo ne donne pas le titre.',
+    notes: (function () {
+      var t = 0, k = 0;
+      return RYO.map(function (x) {
+        var n = { corde: x[0], frette: x[1], temps: t, duree: x[2], main: (k++ % 2) ? 'm' : 'i', midi: Theorie.midiDeCase(x[0], x[1]) };
+        if (x[1]) n.doigt = x[3] || 1;
+        t += x[2];
+        return n;
+      });
+    })()
+  });
+
   /* Bella Ciao, version longue : la chanson a plusieurs strophes sur la
    * même mélodie ; trois strophes à la suite, la dernière note tenue
    * seulement à la fin. */

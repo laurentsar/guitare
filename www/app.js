@@ -482,6 +482,35 @@
 
   var ETATS_ENTRAINEMENT = { nouveau: 'NOUVEAU', continuer: 'à continuer', pasvu: 'pas encore vu en cours', idee: '💡 idée de l’app', semaine: '📅 semaines précédentes' };
 
+  function texteSerie(bilan) {
+    return bilan.serie ? '🔥 ' + bilan.serie + ' jour' + (bilan.serie > 1 ? 's' : '') + ' d’affilée : continue demain !'
+      : 'Le travail de Françoise se révise chaque jour : coche au moins un exercice pour lancer ta série.';
+  }
+  // Après une case cochée : seulement les compteurs du haut, sans toucher au reste.
+  function majCompteursTravail() {
+    var h = $('pageEntrainement'), b = bilanTravail();
+    var jours = Store.joursEntrainement().length;
+    var barre = h.querySelector('.travail-barre'), compte = h.querySelector('.travail-compte'), serie = h.querySelector('.serie-travail');
+    if (barre) barre.style.width = Math.round(b.faites / b.total * 100) + '%';
+    if (compte) compte.textContent = 'Aujourd’hui : ' + b.faites + ' / ' + b.total + ' · ' + jours + ' jour' + (jours > 1 ? 's' : '') + ' d’entraînement en tout';
+    if (serie) serie.textContent = texteSerie(b);
+    // Le bouton « Réviser » change de texte et de liste, sans être remplacé :
+    // remplacer un élément en haut de page la ferait bouger.
+    var ancien = h.querySelector('.travail-reviser');
+    if (ancien) { var nb = boutonReviserTravail(); ancien.textContent = nb.textContent; ancien.onclick = nb.onclick; }
+  }
+  // Reconstruire la page en gardant la position et la sélection.
+  function rafraichirTravail() {
+    var y = window.scrollY || window.pageYOffset || 0;
+    var f = document.activeElement, cle = f && f.getAttribute && f.getAttribute('aria-label');
+    rendreEntrainement();
+    if (window.scrollTo) { try { window.scrollTo(0, y); } catch (e) {} }
+    if (cle) {
+      var cible = [].filter.call($('pageEntrainement').querySelectorAll('[aria-label]'), function (x) { return x.getAttribute('aria-label').replace(/^(Arrêter|Lancer) /, '') === cle.replace(/^(Arrêter|Lancer) /, ''); })[0];
+      if (cible && cible.focus) cible.focus();
+    }
+  }
+
   function rendreEntrainement() {
     var h = vide($('pageEntrainement'));
     var jour = Store.entrainementJour();
@@ -493,15 +522,16 @@
     tete.appendChild(el('h2', null, '💪 Travail récurrent'));
     tete.appendChild(el('p', 'aide', 'Le travail donné en cours, à refaire chaque jour, en commençant par ce qui est à travailler en priorité. Coche-le au fur et à mesure : les cases repartent à zéro demain.'));
     var barre = el('div', 'barre-objectif');
-    var i = el('i'); i.style.width = Math.round(faites / total * 100) + '%';
+    var i = el('i', 'travail-barre'); i.style.width = Math.round(faites / total * 100) + '%';
     barre.appendChild(i);
     tete.appendChild(barre);
-    tete.appendChild(el('p', 'aide', 'Aujourd’hui : ' + faites + ' / ' + total + ' · ' + jours.length + ' jour' + (jours.length > 1 ? 's' : '') + ' d’entraînement en tout'));
+    tete.appendChild(el('p', 'aide travail-compte', 'Aujourd’hui : ' + faites + ' / ' + total + ' · ' + jours.length + ' jour' + (jours.length > 1 ? 's' : '') + ' d’entraînement en tout'));
     var bilan = bilanTravail();
-    tete.appendChild(el('p', 'serie-travail', bilan.serie ? '🔥 ' + bilan.serie + ' jour' + (bilan.serie > 1 ? 's' : '') + ' d’affilée : continue demain !'
-      : 'Le travail de Françoise se révise chaque jour : coche au moins un exercice pour lancer ta série.'));
+    tete.appendChild(el('p', 'serie-travail', texteSerie(bilan)));
     var actT = el('div', 'actions');
-    actT.appendChild(boutonReviserTravail());
+    var bRev = boutonReviserTravail();
+    bRev.classList.add('travail-reviser');
+    actT.appendChild(bRev);
     var bM = el('button', 'btn', '🥁 Métronome et boîte à rythmes');
     bM.onclick = function () { aller('metronome'); };
     actT.appendChild(bM);
@@ -528,7 +558,14 @@
           var cb = document.createElement('input');
           cb.type = 'checkbox';
           cb.checked = (jour[e.id] || []).indexOf(k) !== -1;
-          cb.onchange = function () { Store.cocherEntrainement(e.id, k, cb.checked); rendreEntrainement(); };
+          // Mise à jour sur place (la carte et les compteurs) : reconstruire
+          // la page la faisait remonter en haut, et perdait la sélection à la
+          // télécommande.
+          cb.onchange = function () {
+            Store.cocherEntrainement(e.id, k, cb.checked);
+            c.classList.toggle('fait', (Store.entrainementJour()[e.id] || []).length >= Entrainement.cases(e));
+            majCompteursTravail();
+          };
           l.appendChild(cb);
           l.appendChild(document.createTextNode(e.variantes ? (k + 1) + '. ' + v : v));
           coches.appendChild(l);
@@ -569,7 +606,7 @@
         b.setAttribute('aria-label', (actif ? 'Arrêter ' : 'Lancer ') + libelle + ' à ' + t);
         b.onclick = function () {
           if (actif) arreterMetro(); else lancerTempo(t, style);
-          rendreEntrainement();
+          rafraichirTravail();
         };
         l.appendChild(b);
       });

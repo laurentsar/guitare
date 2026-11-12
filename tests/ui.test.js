@@ -681,7 +681,10 @@ function verifie(nom, cond, detail) {
     verifie('compteur du jour à zéro', new RegExp('Aujourd’hui : 0 / ' + total).test(txt));
     const carte = [...page.querySelectorAll('.exercice')].find((c) => /Pouce buté : 4 fois/.test(c.textContent));
     verifie('pouce buté : deux variantes (en regardant, yeux fermés)', carte.querySelectorAll('input[type=checkbox]').length === 2 && /yeux fermés/.test(carte.textContent));
-    carte.querySelector('input').click();
+    const caseAvant = carte.querySelector('input');
+    caseAvant.focus();
+    caseAvant.click();
+    verifie('cocher ne reconstruit pas la page : même carte, la case garde la sélection', carte.isConnected && w.document.activeElement === caseAvant);
     verifie('case cochée : compteur à 1 et mémorisée pour aujourd’hui',
             new RegExp('Aujourd’hui : 1 / ' + total).test($('pageEntrainement').textContent) && w.Store.entrainementJour()['pouce-bute-4'].join() === '0');
     const quiz = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Les noms par cœur/.test(c.textContent));

@@ -345,6 +345,7 @@ console.log('\n— Entraînement (tablatures du cours) —');
           Entrainement.facultatifs().map((e) => e.id).join() === 'sd-pouce-bute-1,sd-main-droite,noms-cordes' &&
           Entrainement.facultatifs().every((e) => e.etat === 'semaine') && Entrainement.tous().some((e) => e.id === 'riff-la-2') &&
           Entrainement.facultatifs()[0].variantes.join() === '♩ = 40,♩ = 45,♩ = 50,♩ = 55,♩ = 60');
+  verifie('volume du métronome et de la boîte à rythmes : réglable, borné', Audio5.volumeMetronome() === 2.5 && Audio5.volumeMetronome(9) === 4 && Audio5.volumeMetronome(0) === 0.3 && Audio5.volumeMetronome(2.5) === 2.5);
   const R = Audio5.ROCK, coups = (f) => [0, 1, 2, 3].map((t) => [0, 1].map((x) => f(t, x, 4) ? 'x' : '.').join('')).join('|');
   verifie('boîte à rythmes rock : grosse caisse 1, 3 et « 3 et », caisse claire 2 et 4', coups(R.grosse) === 'x.|..|xx|..' && coups(R.claire) === '..|x.|..|x.');
   verifie('travail : les tempos du cours (pouce buté jusqu’à 60, riff n° 1 en rock groove à 55)', Entrainement.tous().find((e) => e.id === 'pouce-bute-4').tempos.join() === '40,45,50,55,60' &&
@@ -494,6 +495,48 @@ console.log('\n— Écoute au micro : notes synthétisées, écoutées comme au 
   verifie('écoute + suivi : Si (case 7) au lieu de Do (case 8) → signalé, puis le Do et le Ré justes', verdicts.join(' ') === 'juste juste faux juste juste' && s2.fini() && s2.bilan().justes === 3, verdicts.join(' '));
   const tenues = [[6, 0], [5, 2], [3, 0], [1, 5]].map((n) => ecouter(enregistrement([n], 2.5)).length);
   verifie('écoute : une note tenue 2,5 s (grave ou aiguë) ne compte qu’une fois', tenues.every((x) => x === 1), tenues.join(','));
+  // Conditions plus proches d'une vraie guitare dans une pièce : attaque douce
+  // au pouce (aigus atténués), bruit de fond, et l'app qui sait quelle note
+  // elle attend. On mesure le délai entre l'attaque et la note validée.
+  function ambiance(signal, graine) {
+    let y = 0, g = graine || 7;
+    const out = new Float32Array(signal.length);
+    for (let i = 0; i < signal.length; i++) {
+      y += 0.35 * (signal[i] - y);                               // passe-bas doux : moins d'aigus
+      g = (g * 1103515245 + 12345) & 0x7fffffff;
+      out[i] = y + (g / 0x7fffffff - 0.5) * 0.006;               // bruit de fond (~ -50 dB)
+    }
+    return out;
+  }
+  function suivreAuMicro(signal, notes, sec) {
+    const su = new Ecoute.Suivi(notes), seg = new Ecoute.Segmenteur(), pas = Math.round(0.04 * 44100), delais = [];
+    for (let i = 0; i + 2048 <= signal.length && !su.fini(); i += pas) {
+      const k = su.i, att = su.attendue().map((n) => n.midi);
+      const m = Ecoute.analyser(signal.subarray(i, i + 2048), 44100);
+      const n = seg.mesure(m, att);
+      if (n != null && su.entendu(n, i).resultat === 'juste') delais.push((i + 2048) / 44100 - k * sec);
+    }
+    return { su, delais };
+  }
+  {
+    const riffN = Morceaux.get('ent-riff-la-2').notes, sec = 0.5;
+    const sig = ambiance(enregistrement(riffN.map((n) => [n.corde, n.frette]), sec));
+    const { su, delais } = suivreAuMicro(sig, riffN, sec);
+    const moyen = delais.reduce((a, d) => a + d, 0) / delais.length, pire = Math.max(...delais);
+    verifie('micro, attaque douce + bruit : riff n° 2 entier suivi, 33 / 33 justes', su.fini() && su.bilan().justes === 33, su.i + ' / 33, ' + su.bilan().justes + ' justes');
+    if (process.env.DELAIS) console.log('délais', moyen.toFixed(3), pire.toFixed(3));
+    verifie('micro : la note juste fait passer à la suivante vite (moyenne < 0,15 s, pire < 0,25 s)', moyen < 0.15 && pire < 0.25,
+            'moyenne ' + moyen.toFixed(3) + ' s, pire ' + pire.toFixed(3) + ' s');
+    const pouceN = Morceaux.get('ent-pouce-bute-4').notes;
+    const r = suivreAuMicro(ambiance(enregistrement(pouceN.map((n) => [n.corde, n.frette]), 0.5)), pouceN, 0.5);
+    verifie('micro, attaque douce : pouce buté 4 fois sur chaque corde, chaque attaque comptée', r.su.fini() && r.su.bilan().justes === pouceN.length, r.su.i + ' / ' + pouceN.length);
+    const fauxN = riffN.slice(0, 8), joueFaux = [[6, 5], [6, 5], [6, 7], [6, 8], [5, 5], [6, 5], [6, 5], [6, 8], [5, 5]];
+    const rf = suivreAuMicro(ambiance(enregistrement(joueFaux, 0.5)), fauxN, 0.5);
+    verifie('micro, attaque douce + bruit : la vraie fausse note (Si au lieu de Do) est signalée, et elle seule', rf.su.fini() && rf.su.bilan().justes === 7 &&
+            rf.su.bilan().erreurs.length === 1 && rf.su.bilan().erreurs[0].entendu === 47, JSON.stringify(rf.su.bilan().erreurs));
+    const tenue = suivreAuMicro(ambiance(enregistrement([[5, 0]], 3)), [{ temps: 0, midi: 45 }, { temps: 1, midi: 45 }], 3);
+    verifie('micro : une note tenue 3 s ne valide pas la même note suivante toute seule', tenue.su.i === 1, 'étapes validées : ' + tenue.su.i);
+  }
   const silence = ecouter(new Float32Array(44100 * 2));
   verifie('écoute : le silence ne donne aucune note', silence.length === 0);
 

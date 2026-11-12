@@ -2185,6 +2185,10 @@
         suiviE = null; vide(panneauE);
         panneauE.appendChild(el('p', 'ecoute-verdict faux', '🎤 ' + msg));
         majBoutonMicro(false);
+      }, function () {
+        // La note attendue : validée dès qu'on l'entend nettement.
+        var e = suiviE && !suiviE.fini() ? suiviE.attendue() : null;
+        return e ? e.map(function (n) { return n.midi; }) : (suiviE ? new Ecoute.Suivi(notesEcoute()).attendue().map(function (n) { return n.midi; }) : null);
       });
     }
     // La note attendue juste sous le panneau collé en haut.
@@ -2889,6 +2893,9 @@
     $('metroMesure').onchange = function () { pointsMetro(parseInt(this.value, 10)); if (Audio5.metronomeActif()) demarrerMetro(); };
     $('metroSub').onchange = function () { if (Audio5.metronomeActif()) demarrerMetro(); };
     $('metroSon').onchange = function () { if (Audio5.metronomeActif()) demarrerMetro(); };
+    var vol = Store.reglages().volumeMetro;
+    if (vol) { Audio5.volumeMetronome(vol); $('metroVolume').value = vol; }
+    $('metroVolume').oninput = function () { Store.reglage('volumeMetro', Audio5.volumeMetronome(parseFloat(this.value))); };
     Array.prototype.forEach.call(document.querySelectorAll('[data-tempo]'), function (b) {
       b.onclick = function () { reglerTempo(parseInt($('metroSlider').value, 10) + parseInt(b.dataset.tempo, 10)); };
     });

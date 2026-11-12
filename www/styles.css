@@ -456,6 +456,7 @@ html.en-pupitre body { padding-bottom: 0; }
 .etat-continuer { background: var(--fond-3); color: var(--texte-2); border: 1px solid var(--trait); }
 .etat-pasvu { background: var(--presque); color: #22180C; }
 .apres-travail { margin-top: 18px; }
+.metro-volume { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; font-size: 14px; color: var(--texte-2); }
 .tempos-exercice { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
 .tempos-ligne { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .tempos-libelle { font-size: 13px; color: var(--texte-2); margin-right: 4px; }

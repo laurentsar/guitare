@@ -235,7 +235,7 @@
     g.gain.setValueAtTime(0.0001, quand);
     g.gain.exponentialRampToValueAtTime(accentue ? 0.5 : (faible ? 0.12 : 0.28), quand + 0.002);
     g.gain.exponentialRampToValueAtTime(0.0001, quand + (accentue ? 0.09 : 0.05));
-    osc.connect(g).connect(maitre);
+    osc.connect(g).connect(sortieBatterie());
     osc.start(quand);
     osc.stop(quand + 0.12);
   }
@@ -244,7 +244,42 @@
    * Grosse caisse = sinus qui plonge de 140 à 45 Hz ; caisse claire = bruit
    * filtré + un peu de corps ; charleston = bruit aigu très court. Chaque son
    * est enregistré comme une note, pour que « Arrêter » le coupe. */
-  var bruit = null;
+  var bruit = null, batterie = null, volumeBatterie = 2.5;
+  /* Sortie propre à la batterie et au clic : PAS la caisse de résonance de la
+   * guitare, qui finit par un passe-bas à 4,8 kHz — il coupait tout le
+   * charleston (au-dessus de 7 kHz) et la moitié de la caisse claire. Un
+   * compresseur permet de monter le volume sans saturer. */
+  var volumeNoeud = null;
+  function sortieBatterie() {
+    var c = contexte();
+    if (!batterie) {
+      // Compresseur d'abord (il resserre les crêtes), volume ensuite : le
+      // volume n'est pas écrasé par le compresseur, et il reste de la marge
+      // avant la saturation même au maximum.
+      batterie = c.createGain();
+      volumeNoeud = c.createGain();
+      volumeNoeud.gain.value = volumeBatterie;
+      if (c.createDynamicsCompressor) {
+        var comp = c.createDynamicsCompressor();
+        comp.threshold.value = -20; comp.knee.value = 4; comp.ratio.value = 8;
+        comp.attack.value = 0.001; comp.release.value = 0.1;
+        batterie.connect(comp); comp.connect(volumeNoeud);
+      } else batterie.connect(volumeNoeud);
+      // Limiteur en sortie : jamais de saturation, même volume au maximum.
+      if (c.createDynamicsCompressor) {
+        var lim = c.createDynamicsCompressor();
+        lim.threshold.value = -4; lim.knee.value = 0; lim.ratio.value = 20;
+        lim.attack.value = 0.0005; lim.release.value = 0.08;
+        volumeNoeud.connect(lim); lim.connect(c.destination);
+      } else volumeNoeud.connect(c.destination);
+    }
+    return batterie;
+  }
+  // Volume du métronome et de la boîte à rythmes, de 0,3 à 4 (2,5 par défaut).
+  function volumeMetronome(v) {
+    if (v != null) { volumeBatterie = Math.max(0.3, Math.min(4, v)); if (volumeNoeud) volumeNoeud.gain.value = volumeBatterie; }
+    return volumeBatterie;
+  }
   function bufferBruit(c) {
     if (bruit) return bruit;
     bruit = c.createBuffer(1, c.sampleRate * 0.5, c.sampleRate);
@@ -257,33 +292,45 @@
     enCours.push(entree);
     src.onended = function () { var i = enCours.indexOf(entree); if (i !== -1) enCours.splice(i, 1); };
   }
+  // Un haut-parleur de téléphone ne rend presque rien sous 150 Hz : la
+  // grosse caisse part plus haut (220 Hz) et porte un petit « clic » de
+  // frappe, qui s'entend partout, avant de plonger vers 50 Hz.
   function grosseCaisse(quand, fort) {
-    var c = contexte(), o = c.createOscillator(), g = c.createGain();
-    o.frequency.setValueAtTime(140, quand);
-    o.frequency.exponentialRampToValueAtTime(45, quand + 0.12);
+    var c = contexte(), o = c.createOscillator(), g = c.createGain(), out = sortieBatterie();
+    o.frequency.setValueAtTime(220, quand);
+    o.frequency.exponentialRampToValueAtTime(50, quand + 0.11);
     g.gain.setValueAtTime(0.0001, quand);
-    g.gain.exponentialRampToValueAtTime(fort ? 0.95 : 0.8, quand + 0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001, quand + 0.3);
-    o.connect(g).connect(maitre);
-    suivre(o, quand + 0.32);
-    o.start(quand); o.stop(quand + 0.32);
+    g.gain.exponentialRampToValueAtTime(fort ? 1 : 0.85, quand + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, quand + 0.32);
+    o.connect(g).connect(out);
+    suivre(o, quand + 0.34);
+    o.start(quand); o.stop(quand + 0.34);
+    var n = c.createBufferSource(), f = c.createBiquadFilter(), gn = c.createGain();
+    n.buffer = bufferBruit(c);
+    f.type = 'bandpass'; f.frequency.value = 3000; f.Q.value = 1;
+    gn.gain.setValueAtTime(0.0001, quand);
+    gn.gain.exponentialRampToValueAtTime(fort ? 0.5 : 0.4, quand + 0.001);
+    gn.gain.exponentialRampToValueAtTime(0.0001, quand + 0.015);
+    n.connect(f).connect(gn).connect(out);
+    suivre(n, quand + 0.02);
+    n.start(quand); n.stop(quand + 0.02);
   }
   function caisseClaire(quand) {
     var c = contexte(), n = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
     n.buffer = bufferBruit(c);
     f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 0.8;
     g.gain.setValueAtTime(0.0001, quand);
-    g.gain.exponentialRampToValueAtTime(0.5, quand + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.9, quand + 0.002);
     g.gain.exponentialRampToValueAtTime(0.0001, quand + 0.18);
-    n.connect(f).connect(g).connect(maitre);
+    n.connect(f).connect(g).connect(sortieBatterie());
     suivre(n, quand + 0.2);
     n.start(quand); n.stop(quand + 0.2);
     var o = c.createOscillator(), go = c.createGain();
     o.frequency.value = 190;
     go.gain.setValueAtTime(0.0001, quand);
-    go.gain.exponentialRampToValueAtTime(0.3, quand + 0.002);
+    go.gain.exponentialRampToValueAtTime(0.45, quand + 0.002);
     go.gain.exponentialRampToValueAtTime(0.0001, quand + 0.08);
-    o.connect(go).connect(maitre);
+    o.connect(go).connect(sortieBatterie());
     suivre(o, quand + 0.1);
     o.start(quand); o.stop(quand + 0.1);
   }
@@ -292,9 +339,9 @@
     n.buffer = bufferBruit(c);
     f.type = 'highpass'; f.frequency.value = 7000;
     g.gain.setValueAtTime(0.0001, quand);
-    g.gain.exponentialRampToValueAtTime(accent ? 0.22 : 0.12, quand + 0.001);
+    g.gain.exponentialRampToValueAtTime(accent ? 0.45 : 0.28, quand + 0.001);
     g.gain.exponentialRampToValueAtTime(0.0001, quand + 0.05);
-    n.connect(f).connect(g).connect(maitre);
+    n.connect(f).connect(g).connect(sortieBatterie());
     suivre(n, quand + 0.06);
     n.start(quand); n.stop(quand + 0.06);
   }
@@ -404,7 +451,7 @@
     jouerFreq: jouerFreq, jouerNote: jouerNote, jouerCase: jouerCase, jouerAccord: jouerAccord,
     couperTout: couperTout, jouerClic: jouerClic,
     demarrerMetronome: demarrerMetronome, arreterMetronome: arreterMetronome,
-    tempoMetronome: tempoMetronome, metronomeActif: metronomeActif, styleMetronome: styleMetronome,
+    tempoMetronome: tempoMetronome, metronomeActif: metronomeActif, styleMetronome: styleMetronome, volumeMetronome: volumeMetronome,
     ROCK: ROCK
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -24,7 +24,9 @@
 (function (global) {
   'use strict';
 
-  function detecter(buf, sr) {
+  // `exigence` : corrélation minimale pour croire à une hauteur (0,9 par
+  // défaut ; l'écoute d'une vraie guitare dans une pièce se contente de 0,8).
+  function detecter(buf, sr, exigence) {
     var n = buf.length;
     // Volume efficace : en dessous, il n'y a rien à analyser.
     var somme = 0;
@@ -57,7 +59,7 @@
       corr[tau] = c / (Math.sqrt(a * b) || 1);
       if (corr[tau] > max) max = corr[tau];
     }
-    if (max < 0.9) return null;
+    if (max < (exigence || 0.9)) return null;
 
     /* Choix du pic : le PREMIER pic assez haut, pas le plus haut.
      *
@@ -102,23 +104,40 @@
     this.candidat = null; this.nb = 0;
     this.derniere = null;       // midi de la dernière note rendue
     this.precedentRms = 0; this.aigusAvant = [0, 0];   // aigus des deux mesures précédentes
+    this.depuis = 99;           // mesures depuis la dernière note rendue
   }
-  Segmenteur.prototype.mesure = function (m) {
+  // `attendus` (facultatif) : les notes que l'élève doit jouer maintenant. Si
+  // c'est l'une d'elles qu'on entend, une seule mesure nette suffit : la note
+  // est validée tout de suite, sans attendre confirmation.
+  Segmenteur.prototype.mesure = function (m, attendus) {
     var rms = m.rms || 0;
     var aigus = m.aigus || 0;
+    this.depuis++;
     if (rms < 0.008) { this.creux = Math.min(this.creux, rms); this.candidat = null; this.nb = 0; this.arme = true; this.precedentRms = rms; this.aigusAvant = [this.aigusAvant[1], aigus]; return null; }
     // Plus bas des deux mesures précédentes : une attaque à cheval sur deux
     // mesures fait monter les aigus en deux fois, sans franchir ×1,6 d'un coup.
-    var attaqueAigus = aigus > Math.min(this.aigusAvant[0], this.aigusAvant[1]) * 1.6 && aigus > 0.002;
-    var attaqueVolume = rms > Math.max(0.012, this.creux * 1.6) && rms > this.precedentRms * 1.25;
-    if ((attaqueAigus || attaqueVolume) && !this.arme) { this.arme = true; this.candidat = null; this.nb = 0; }
+    // Seuils assez bas pour une attaque douce au pouce, sur du nylon.
+    // Le volume ne doit pas baisser : une vraie attaque ajoute de l'énergie,
+    // une note tenue décline (et son bruit de fond ne fait que fluctuer).
+    var attaqueAigus = aigus > Math.min(this.aigusAvant[0], this.aigusAvant[1]) * 1.3 && aigus > 0.002 && rms >= this.precedentRms * 1.02;
+    var attaqueVolume = rms > 0.012 && (rms > this.creux * 1.5 || rms > this.precedentRms * 1.3);
+    // Temps mort de 3 mesures (~120 ms) après une note : la fin de son
+    // attaque, encore montante, n'est pas une nouvelle attaque.
+    if ((attaqueAigus || attaqueVolume) && !this.arme && this.depuis >= 3) { this.arme = true; this.candidat = null; this.nb = 0; }
     this.precedentRms = rms; this.aigusAvant = [this.aigusAvant[1], aigus];
     this.creux = Math.min(this.creux, rms);
     if (m.midi == null) return null;
     if (this.candidat === m.midi) this.nb++; else { this.candidat = m.midi; this.nb = 1; }
-    var lie = !this.arme && this.derniere != null && m.midi !== this.derniere && this.nb >= 3;
-    if ((this.arme && this.nb >= 2) || lie) {
+    var attendue = !!attendus && attendus.indexOf(m.midi) !== -1;
+    var lie = !this.arme && this.derniere != null && m.midi !== this.derniere && this.nb >= (attendue ? 1 : 3);
+    // Une note qui n'est PAS celle attendue doit tenir un peu plus (3 mesures
+    // si l'app sait ce qu'elle attend) : on ne crie pas à la fausse note sur
+    // l'hésitation de hauteur d'une attaque.
+    if ((this.arme && this.nb >= (attendue ? 1 : attendus ? 3 : 2)) || lie) {
+      // La note repart de zéro : creux et aigus de référence sont les siens,
+      // pas ceux du silence ou de la note d'avant.
       this.arme = false; this.derniere = m.midi; this.creux = rms; this.nb = 0;
+      this.aigusAvant = [aigus, aigus]; this.depuis = 0;
       return m.midi;
     }
     return null;
@@ -175,14 +194,15 @@
       if (i) diff += (buf[i] - buf[i - 1]) * (buf[i] - buf[i - 1]);
     }
     var rms = Math.sqrt(somme / buf.length), aigus = Math.sqrt(diff / buf.length);
-    var r = rms >= 0.008 ? detecter(buf, sr) : null;
+    var r = rms >= 0.008 ? detecter(buf, sr, 0.8) : null;
     var midi = r ? Theorie.midiDeFreq(r.freq) : null;
     return { rms: rms, aigus: aigus, freq: r ? r.freq : null, midi: midi == null ? null : Math.round(midi), ecart: midi == null ? 0 : Math.round((midi - Math.round(midi)) * 100) };
   }
 
   /* Ouvre le micro et appelle `surNote(midi)` à chaque note jouée, et
    * `surMesure(m)` à chaque mesure (affichage en direct). */
-  function demarrer(surNote, surMesure, surErreur) {
+  // `attendus()` (facultatif) : les notes attendues maintenant (voir Segmenteur).
+  function demarrer(surNote, surMesure, surErreur, attendus) {
     if (actif) return Promise.resolve(true);
     if (!global.navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       if (surErreur) surErreur('Cet appareil ne donne pas accès au micro.');
@@ -204,9 +224,9 @@
         analyseur.getFloatTimeDomainData(tampon);
         var m = analyser(tampon, ctx.sampleRate);
         if (surMesure) surMesure(m);
-        var note = seg.mesure(m);
+        var note = seg.mesure(m, attendus ? attendus() : null);
         if (note != null) surNote(note);
-      }, 60);
+      }, 40);
       return true;
     }).catch(function (e) {
       if (surErreur) {

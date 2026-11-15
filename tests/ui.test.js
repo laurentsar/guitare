@@ -728,7 +728,7 @@ function verifie(nom, cond, detail) {
       w.AppGuitare.ouvrirMorceau('ch-come-as-you-are');
       const grille = !!micro();
       w.AppGuitare.ouvrirMorceau('au-clair');
-      verifie('« 🎤 Micro » sur un morceau joué note à note, pas sur un exercice ni une grille d’accords', !!micro() && !exo && !grille, [exo, grille].join());
+      verifie('« 🎤 Micro » sur un morceau joué note à note et sur une grille d’accords, pas sur un exercice', !!micro() && !exo && grille, [exo, grille].join());
       micro().click();
       const pan = $('detailMorceau').querySelector('.ecoute-panneau');
       // Pas de micro dans jsdom : l'app le dit clairement, sans planter.
@@ -783,6 +783,27 @@ function verifie(nom, cond, detail) {
       verifie('bouton de la recommandation : micro éteint, mesure 1 en boucle lancée à 60 %', !ouvert && lance && lance.de === 0 &&
               /60 %/.test($('detailMorceau').textContent), lance && JSON.stringify({ de: lance.de, a: lance.a }));
       w.Tablature.jouer = jouerAvant; w.Tablature.arreter();
+      // Mode accords : une grille (Come As You Are), le micro reconnaît l'accord gratté.
+      let optsAccords = null;
+      w.Ecoute.demarrer = (surNote, surMesure, surErreur, attendus, opts) => { jouer = surNote; ouvert = true; optsAccords = opts; return Promise.resolve(true); };
+      w.Store.reglage('zoomMicro', null);
+      w.AppGuitare.ouvrirMorceau('ch-come-as-you-are');
+      micro().click();
+      verifie('grille : le micro passe en mode accords (un modèle par accord de la chanson)', ouvert && optsAccords && Object.keys(optsAccords.accords).sort().join() === 'Am,C,D,Em,G',
+              optsAccords && Object.keys(optsAccords.accords).join());
+      verifie('grille : « Gratte : Mi mineur (Em) — mesure 1 », compteur en accords', /Gratte : Mi mineur \(Em\) — mesure 1/.test(pan2().textContent) && /accord 1 \//.test(pan2().textContent), pan2().textContent.slice(0, 140));
+      jouer('Em'); jouer('Em');
+      verifie('grille : Mi m juste, le regratter ne fait rien, on attend Ré', /Juste : Mi mineur/.test(pan2().textContent) && /Gratte : Ré majeur \(D\)/.test(pan2().textContent), pan2().textContent.slice(0, 160));
+      jouer('G');
+      verifie('grille : un coup de Sol au lieu de Ré = un doute, pas une faute', /On dirait Sol majeur/.test(pan2().textContent) && /accord 2 \//.test(pan2().textContent));
+      jouer('G');
+      verifie('grille : deux coups de Sol = faute signalée, on attend toujours Ré', /J’entends Sol majeur \(G\), il faut Ré majeur \(D\)/.test(pan2().textContent), pan2().textContent.slice(0, 200));
+      const etapesG = new w.Ecoute.SuiviAccords(w.Morceaux.get('ch-come-as-you-are').notes).etapes.map((e) => e[0].accord);
+      etapesG.slice(1).forEach((a) => jouer(a));
+      const finG = pan2().textContent;
+      verifie('grille : fin du morceau, score en accords, faute et recommandations par accord', new RegExp((etapesG.length - 1) + ' / ' + etapesG.length + ' accords justes du premier coup').test(finG) &&
+              /Mesure 2 : Sol majeur \(G\) au lieu de Ré majeur \(D\)/.test(finG) && /Mes recommandations/.test(finG) && /au lieu de Ré majeur/.test(finG), finG.slice(0, 260));
+      [...pan2().querySelectorAll('button')].find((x) => /Éteindre/.test(x.textContent)).click();
       w.Ecoute.demarrer = vrai; w.Ecoute.arreter = vraiArret; w.Ecoute.enMarche = () => false;
       w.AppGuitare.aller('entrainement');
     }

@@ -2111,14 +2111,30 @@
      * tempo imposé) : on joue à son rythme. Le micro reste allumé jusqu'à ce
      * qu'on l'éteigne — à la fin, rejouer la première note relance un tour —
      * et se referme si on quitte la page. */
-    // Seulement sur les morceaux qu'on joue note à note : ni les exercices du
-    // cours (pouce buté, Ve position, riffs), ni les grilles d'accords
-    // grattées, que le micro ne sait pas suivre (plusieurs cordes à la fois).
-    var ecoutable = !p.chanson && p.categorie !== 'entrainement' && p.categorie !== 'accords' &&
-      p.notes.some(function (n) { return n.midi != null; });
+    // Deux modes, jamais sur les exercices du cours (pouce buté, Ve position,
+    // riffs) : note à note pour les morceaux joués note à note ; « accords »
+    // pour les grilles grattées (chansons, Zombie) — l'app reconnaît alors
+    // l'accord à chaque coup de gratte (Ecoute.SuiviAccords).
+    var horsExercices = p.categorie !== 'entrainement' && p.categorie !== 'accords';
+    var modeAccords = horsExercices && !!(p.mains && p.mains.gauche && p.mains.gauche.length > 1) &&
+      p.notes.some(function (n) { return n.accord; }) && (p.chanson || p.notes.some(function (n) { return n.accord && p.notes.filter(function (x) { return x.temps === n.temps; }).length > 2; }));
+    var ecoutable = horsExercices && (modeAccords || p.notes.some(function (n) { return n.midi != null; }));
     var bEcoute = el('button', 'btn', '🎤 Micro');
     bEcoute.setAttribute('aria-pressed', 'false');
     if (ecoutable) actions.appendChild(bEcoute);
+    function nomAccord(id) {
+      var a = (p.mains && p.mains.gauche || []).filter(function (x) { return x.id === id; })[0];
+      return a && a.fr ? a.fr.replace(/ \(barré\)$/, '') + ' (' + id + ')' : id;
+    }
+    // Ce qui change d'un mode à l'autre : le suivi, le nom affiché, la valeur comparée.
+    function nouveauSuivi() { return modeAccords ? new Ecoute.SuiviAccords(p.notes) : new Ecoute.Suivi(notesEcoute()); }
+    function nomE(x) { return modeAccords ? nomAccord(x) : Theorie.nomSansOctave(x); }
+    function valeurE(n) { return modeAccords ? n.accord : n.midi; }
+    function modelesAccords() {
+      var m = {};
+      p.mains.gauche.forEach(function (a) { m[a.id] = Ecoute.modeleAccord(a.frettes, etat.capo || 0); });
+      return m;
+    }
     function majBoutonMicro(allume) {
       bEcoute.textContent = allume ? '🎤 Micro allumé' : '🎤 Micro';
       bEcoute.classList.toggle('primaire', allume);
@@ -2129,7 +2145,7 @@
     // Placé dans la page elle-même (pas dans la barre de lecture, trop courte
     // pour qu'il reste collé en haut pendant que la tablature défile).
     hautLecture.appendChild(panneauE);
-    var suiviE = null, verdictE = null, entenduE = '…', zoomEcoute = null;
+    var suiviE = null, verdictE = null, entenduE = '…', zoomEcoute = null, dernierBrut = null, nbBrut = 0;
     var CORDES_NOM = ['', '1re corde (Mi aigu)', '2e corde (Si)', '3e corde (Sol)', '4e corde (Ré)', '5e corde (La)', '6e corde (Mi grave)'];
     // Tout le morceau, toujours : la section en boucle ne limite pas l'écoute.
     function notesEcoute() {
@@ -2138,6 +2154,7 @@
         .map(function (n) { return { temps: n.temps, midi: n.midi + capo, corde: n.corde, frette: n.frette, doigt: n.doigt }; });
     }
     function decrire(n) {
+      if (modeAccords) return nomAccord(n.accord) + ' — mesure ' + (Math.floor(n.temps / parMesure) + 1);
       return CORDES_NOM[n.corde] + ', ' + (n.frette ? 'case ' + n.frette + (n.doigt ? ' (doigt ' + n.doigt + ')' : '') : 'à vide') +
         ' — ' + Theorie.nomSansOctave(n.midi);
     }
@@ -2181,13 +2198,13 @@
       var b = suiviE.bilan();
       if (suiviE.fini()) {
         panneauE.appendChild(el('h3', null, b.pct >= 90 ? '🎉 Bravo !' : b.pct >= 70 ? '👍 Presque !' : '💪 Encore un peu de travail'));
-        panneauE.appendChild(el('p', 'ecoute-score', b.justes + ' / ' + b.total + ' notes justes du premier coup (' + b.pct + ' %)'));
+        panneauE.appendChild(el('p', 'ecoute-score', b.justes + ' / ' + b.total + (modeAccords ? ' accords justes' : ' notes justes') + ' du premier coup (' + b.pct + ' %)'));
         if (b.erreurs.length) {
           var ul = el('ul', 'ecoute-erreurs');
           b.erreurs.slice(0, 6).forEach(function (x) {
             var t = suiviE.etapes[x.etape][0].temps;
-            ul.appendChild(el('li', null, 'Mesure ' + (Math.floor(t / parMesure) + 1) + ' : ' + Theorie.nomSansOctave(x.entendu) + ' au lieu de ' +
-              Theorie.nomSansOctave(x.attendu) + ' (' + decrire(suiviE.etapes[x.etape][0]) + ')'));
+            ul.appendChild(el('li', null, 'Mesure ' + (Math.floor(t / parMesure) + 1) + ' : ' + nomE(x.entendu) + ' au lieu de ' +
+              nomE(x.attendu) + (modeAccords ? '' : ' (' + decrire(suiviE.etapes[x.etape][0]) + ')')));
           });
           if (b.erreurs.length > 6) ul.appendChild(el('li', null, '… et ' + (b.erreurs.length - 6) + ' autre(s).'));
           panneauE.appendChild(ul);
@@ -2195,7 +2212,8 @@
         // Recommandations : calculées une fois par tour, avec le score du tour
         // précédent, puis ce score est retenu pour le prochain.
         if (!suiviE.conseils) {
-          suiviE.conseils = Ecoute.conseils(suiviE, parMesure, Store.scoreEcoute(p.id));
+          suiviE.conseils = modeAccords ? Ecoute.conseilsAccords(suiviE, parMesure, Store.scoreEcoute(p.id), nomAccord)
+            : Ecoute.conseils(suiviE, parMesure, Store.scoreEcoute(p.id));
           Store.noterScoreEcoute(p.id, b.pct);
         }
         var rec = el('div', 'ecoute-conseils');
@@ -2229,10 +2247,10 @@
       var e = suiviE.attendue();
       var tete = el('p', 'aide ecoute-etat');
       // Court : sur un téléphone, la ligne tient sans être coupée.
-      tete.appendChild(document.createTextNode('🎤 note ' + (suiviE.i + 1) + ' / ' + b.total + ' · ' + b.justes + ' juste' + (b.justes > 1 ? 's' : '') + ' · '));
+      tete.appendChild(document.createTextNode('🎤 ' + (modeAccords ? 'accord ' : 'note ') + (suiviE.i + 1) + ' / ' + b.total + ' · ' + b.justes + ' juste' + (b.justes > 1 ? 's' : '') + ' · '));
       tete.appendChild(el('span', 'ecoute-entendu', 'j’entends : ' + entenduE));
       panneauE.appendChild(tete);
-      panneauE.appendChild(el('p', 'ecoute-attendue', (e.length > 1 ? 'Ensemble (une suffit) : ' : 'Joue : ') + decrire(e[0])));
+      panneauE.appendChild(el('p', 'ecoute-attendue', (modeAccords ? 'Gratte : ' : e.length > 1 ? 'Ensemble (une suffit) : ' : 'Joue : ') + decrire(e[0])));
       // La ligne du verdict a toujours sa place, même vide : le panneau garde
       // la même hauteur, et la tablature dessous ne saute pas.
       panneauE.appendChild(el('p', 'ecoute-verdict ' + (verdictE ? verdictE.classe : 'vide'), verdictE ? verdictE.texte : '\u00a0'));
@@ -2261,7 +2279,7 @@
       if (microZoom) { microZoom = false; dessiner(); }
     }
     function recommencer() {
-      suiviE = new Ecoute.Suivi(notesEcoute()); verdictE = null;
+      suiviE = nouveauSuivi(); verdictE = null;
       rendreEcoute(); amenerAttendue();
     }
     function demarrerEcoute() {
@@ -2271,17 +2289,27 @@
         if (Tablature.enLecture()) return;
         // Morceau fini, micro toujours allumé : la première note relance un tour.
         if (suiviE.fini()) {
-          var premier = new Ecoute.Suivi(notesEcoute());
-          if (!premier.attendue().some(function (n) { return n.midi === midi; })) return;
+          var premier = nouveauSuivi();
+          if (!premier.attendue().some(function (n) { return valeurE(n) === midi; })) return;
           suiviE = premier;
         }
         var att = suiviE.attendue();
         var r = suiviE.entendu(midi, Date.now());
-        if (r.resultat === 'juste') verdictE = { classe: 'juste', texte: '✓ Juste : ' + Theorie.nomSansOctave(midi) };
-        else if (r.resultat === 'faux') verdictE = { classe: 'faux', texte: '✗ J’entends ' + Theorie.nomSansOctave(midi) + ', il faut ' + Theorie.nomSansOctave(att[0].midi) + ' : rejoue-la.' };
+        if (r.resultat === 'juste') verdictE = { classe: 'juste', texte: '✓ Juste : ' + nomE(midi) };
+        else if (r.resultat === 'faux') verdictE = { classe: 'faux', texte: '✗ J’entends ' + nomE(midi) + ', il faut ' + nomE(valeurE(att[0])) + (modeAccords ? ' : regarde le dessin et regratte.' : ' : rejoue-la.') };
+        else if (r.resultat === 'doute') verdictE = { classe: 'doute', texte: '❔ On dirait ' + nomE(midi) + ' : regratte pour vérifier.' };
         rendreEcoute(); montrerAttendue();
       }, function (m) {
-        var t = m.midi == null ? '…' : Theorie.nomSansOctave(m.midi) + (Math.abs(m.ecart) > 25 ? (m.ecart > 0 ? ' (un peu haut)' : ' (un peu bas)') : '');
+        // Accords : l'affichage en direct ne change que si le même accord est
+        // entendu trois mesures de suite (~120 ms) : pendant un changement,
+        // l'accord qui s'éteint et celui qui arrive se mêlent un instant.
+        if (modeAccords) {
+          var brut = m.accord || null;
+          if (brut !== dernierBrut) { dernierBrut = brut; nbBrut = 1; return; }
+          if (++nbBrut < 3) return;
+        }
+        var t = modeAccords ? (m.accord || '…')
+          : m.midi == null ? '…' : Theorie.nomSansOctave(m.midi) + (Math.abs(m.ecart) > 25 ? (m.ecart > 0 ? ' (un peu haut)' : ' (un peu bas)') : '');
         if (t !== entenduE) { entenduE = t; var x = panneauE.querySelector('.ecoute-entendu'); if (x) x.textContent = 'j’entends : ' + t; }
       }, function (msg) {
         suiviE = null; vide(panneauE);
@@ -2291,8 +2319,8 @@
       }, function () {
         // La note attendue : validée dès qu'on l'entend nettement.
         var e = suiviE && !suiviE.fini() ? suiviE.attendue() : null;
-        return e ? e.map(function (n) { return n.midi; }) : (suiviE ? new Ecoute.Suivi(notesEcoute()).attendue().map(function (n) { return n.midi; }) : null);
-      });
+        return e ? e.map(valeurE) : (suiviE ? nouveauSuivi().attendue().map(valeurE) : null);
+      }, modeAccords ? { accords: modelesAccords() } : null);
     }
     // La note attendue juste sous le panneau collé en haut.
     function amenerAttendue() {
@@ -2305,9 +2333,9 @@
     bEcoute.onclick = function () {
       if (suiviE) { eteindreMicro(); return; }
       Tablature.arreter(); effacer();
-      var notesE = notesEcoute();
-      if (!notesE.length) return;
-      suiviE = new Ecoute.Suivi(notesE); verdictE = null; entenduE = '…';
+      var suiviNeuf = nouveauSuivi();
+      if (!suiviNeuf.etapes.length) return;
+      suiviE = suiviNeuf; verdictE = null; entenduE = '…';
       if (hautLecture.parentNode && panneauE.parentNode === hautLecture) hautLecture.parentNode.insertBefore(panneauE, hautLecture.nextSibling);
       panneauE.hidden = false;
       // Collé sous l'en-tête : le verdict reste à l'écran quand la tablature défile.

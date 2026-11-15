@@ -181,6 +181,210 @@
     return { total: total, justes: this.justes, pct: total ? Math.round(this.justes / total * 100) : 0, erreurs: this.erreurs };
   };
 
+  /* --- Mode « accords » : reconnaître un accord gratté ------------------------
+   * Une seule hauteur ne suffit pas quand six cordes sonnent : on mesure la
+   * « couleur » de l'accord, c'est-à-dire le poids de chacune des douze notes
+   * (chroma), par une FFT. Chaque accord de la chanson a son modèle, construit
+   * à partir de son doigté réel (corde par corde, capo comprise) et des
+   * premières harmoniques d'une corde. On compare le son aux modèles des
+   * accords de la chanson seulement : c'est ce qui rend la décision fiable. */
+  function fft(re, im) {
+    var n = re.length, i, j, k, l;
+    for (i = 1, j = 0; i < n; i++) {
+      var bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { var t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+    }
+    for (l = 2; l <= n; l <<= 1) {
+      var ang = -2 * Math.PI / l, wr = Math.cos(ang), wi = Math.sin(ang);
+      for (i = 0; i < n; i += l) {
+        var cr = 1, ci = 0;
+        for (k = 0; k < l / 2; k++) {
+          var a0 = i + k, b0 = i + k + l / 2;
+          var xr = re[b0] * cr - im[b0] * ci, xi = re[b0] * ci + im[b0] * cr;
+          re[b0] = re[a0] - xr; im[b0] = im[a0] - xi; re[a0] += xr; im[a0] += xi;
+          var ncr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = ncr;
+        }
+      }
+    }
+  }
+  /* Les 12 poids (Do = 0 … Si = 11) d'une fenêtre de son, normalisés :
+   * `c` sur toute la bande, `b` sur les graves seulement (70-260 Hz), où
+   * sonne la basse de l'accord — c'est elle qui sépare Do de La m, ou Sol
+   * de Mi m, qui partagent deux notes sur trois. */
+  function chroma(buf, sr) {
+    var n = 1; while (n * 2 <= buf.length && n < 8192) n *= 2;
+    var re = new Float64Array(n), im = new Float64Array(n), c = new Array(12), bas = new Array(12), i;
+    for (i = 0; i < 12; i++) { c[i] = 0; bas[i] = 0; }
+    for (i = 0; i < n; i++) re[i] = buf[i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)));
+    fft(re, im);
+    for (var k = 1; k < n / 2; k++) {
+      var f = k * sr / n;
+      if (f < 70 || f > 2100) continue;
+      var mag = Math.sqrt(re[k] * re[k] + im[k] * im[k]);
+      var m = 69 + 12 * Math.log(f / 440) / Math.LN2, pc = ((Math.round(m) % 12) + 12) % 12;
+      // Près du milieu entre deux demi-tons, la case compte moins.
+      var poids = mag * (1 - Math.abs(m - Math.round(m)));
+      c[pc] += poids;
+      if (f < 260) bas[pc] += poids;
+    }
+    return { c: normer(c), b: normer(bas) };
+  }
+  function normer(v) {
+    var t = 0; v.forEach(function (x) { t += x * x; }); t = Math.sqrt(t) || 1;
+    return v.map(function (x) { return x / t; });
+  }
+  // Modèle d'un accord : ses notes réelles (frettes de la 1re à la 6e corde,
+  // -1 = corde muette) et leurs harmoniques 2 à 4, plus faibles.
+  function modeleAccord(frettes, capo) {
+    var v = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bas = v.slice(), grave = null;
+    frettes.forEach(function (f, i) {
+      if (f < 0) return;
+      var midi = Theorie.midiDeCase(i + 1, f) + (capo || 0);
+      if (grave == null || midi < grave) grave = midi;
+      [[0, 1], [12, 0.5], [19, 0.35], [24, 0.25]].forEach(function (h) { v[(midi + h[0]) % 12] += h[1]; });
+      // Graves : les notes sous ~260 Hz (Do4), avec leur octave.
+      if (midi < 60) [[0, 1], [12, 0.5]].forEach(function (h) { if (midi + h[0] < 60) bas[(midi + h[0]) % 12] += h[1] * (midi === grave ? 1.5 : 1); });
+    });
+    return { c: normer(v), b: normer(bas) };
+  }
+  function ress(a, b) { var s = 0; for (var i = 0; i < 12; i++) s += a[i] * b[i]; return s; }
+  // Couleur d'ensemble, plus un tiers pour les graves (la basse).
+  function ressemblance(x, m) { return ress(x.c, m.c) + 0.35 * ress(x.b, m.b); }
+  /* Quel accord ? `modeles` : { id: modèle }. `attendu` : celui qu'on doit
+   * jouer ; il est retenu s'il ressemble au son à 7 % près du meilleur.
+   * Mesuré sur tous les accords grattés de l'app : refuser un bon accord
+   * décourage plus qu'en laisser passer un voisin (2 à 7 % de bons refusés,
+   * ~5 % de voisins acceptés), et le suivi pardonne un coup isolé. */
+  function reconnaitreAccord(c, modeles, attendu) {
+    var meilleur = null, sMax = -1, sAtt = -1;
+    Object.keys(modeles).forEach(function (id) {
+      var sc = ressemblance(c, modeles[id]);
+      if (sc > sMax) { sMax = sc; meilleur = id; }
+      if (id === attendu) sAtt = sc;
+    });
+    if (attendu && sAtt >= sMax * 0.93) return { accord: attendu, score: sAtt };
+    return { accord: meilleur, score: sMax };
+  }
+
+  /* Segmenteur d'accords : une décision par coup de gratte. Après une
+   * attaque (volume ou aigus qui bondissent), on moyenne la couleur de
+   * quelques mesures — l'attaque elle-même est un bruit sans couleur nette —
+   * puis on rend ce chroma moyen. Temps mort de 250 ms entre deux coups. */
+  function SegmenteurAccords() {
+    this.precedentRms = 0; this.aigusAvant = [0, 0]; this.depuis = 99; this.collecte = null; this.creux = Infinity;
+  }
+  SegmenteurAccords.prototype.mesure = function (m, chromaDe) {
+    var rms = m.rms || 0, aigus = m.aigus || 0;
+    this.depuis++;
+    var attaque = rms > 0.012 && this.depuis >= 6 && !this.collecte &&
+      ((aigus > Math.min(this.aigusAvant[0], this.aigusAvant[1]) * 1.3 && rms >= this.precedentRms * 1.02) || rms > this.creux * 1.5);
+    this.precedentRms = rms; this.aigusAvant = [this.aigusAvant[1], aigus];
+    // Pendant un coup de gratte, les cordes entrent l'une après l'autre : le
+    // volume de référence n'est pris qu'une fois l'accord complet (fin de la
+    // mesure), sinon la montée des dernières cordes ressemblerait à un 2e coup.
+    if (!this.collecte) this.creux = Math.min(this.creux, rms);
+    if (attaque) { this.collecte = { n: 0, c: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], b: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], attente: 3 }; this.depuis = 0; return null; }
+    if (!this.collecte) return null;
+    // Laisser passer le coup lui-même (les cordes entrent en ~70 ms) et la
+    // fin de l'accord précédent, encore dans la fenêtre d'analyse (93 ms).
+    if (this.collecte.attente-- > 0) return null;
+    var x = chromaDe();
+    for (var i = 0; i < 12; i++) { this.collecte.c[i] += x.c[i]; this.collecte.b[i] += x.b[i]; }
+    if (++this.collecte.n < 3) return null;
+    var res = { c: normer(this.collecte.c), b: normer(this.collecte.b) };
+    this.collecte = null;
+    this.creux = rms;
+    return res;
+  };
+
+  /* Suivi d'une grille : une étape par CHANGEMENT d'accord (Mi m deux
+   * mesures de suite = une seule étape). Regratter l'accord qu'on vient de
+   * valider n'est pas une faute ; le bon accord suivant fait avancer. Un
+   * mauvais accord n'est une faute que s'il revient au coup suivant : un
+   * coup isolé mal reconnu (ça arrive) ne pénalise pas — on regratte. */
+  function SuiviAccords(notes) {
+    var etapes = [];
+    notes.slice().sort(function (a, b) { return a.temps - b.temps; }).forEach(function (n) {
+      if (!n.accord) return;
+      var der = etapes[etapes.length - 1];
+      if (!der || der[0].accord !== n.accord) etapes.push([{ temps: n.temps, accord: n.accord }]);
+    });
+    this.etapes = etapes;
+    this.i = 0; this.justes = 0; this.fautes = 0; this.fauteIci = false; this.erreurs = []; this.instants = [];
+    this.doute = null;          // un mauvais accord entendu une fois, à confirmer
+  }
+  SuiviAccords.prototype.attendue = Suivi.prototype.attendue;
+  SuiviAccords.prototype.fini = Suivi.prototype.fini;
+  SuiviAccords.prototype.passer = Suivi.prototype.passer;
+  SuiviAccords.prototype.bilan = Suivi.prototype.bilan;
+  SuiviAccords.prototype.entendu = function (accord, quand) {
+    var e = this.attendue();
+    if (!e) return { resultat: 'fini' };
+    if (accord === e[0].accord) {
+      if (!this.fauteIci) this.justes++;
+      this.instants[this.i] = quand == null ? Date.now() : quand;
+      this.fauteIci = false; this.doute = null; this.i++;
+      return { resultat: 'juste', attendu: e, entendu: accord, fini: this.fini() };
+    }
+    var prec = this.etapes[this.i - 1];
+    if (prec && prec[0].accord === accord) { this.doute = null; return { resultat: 'encore', attendu: e, entendu: accord }; }
+    if (this.doute !== accord) { this.doute = accord; return { resultat: 'doute', attendu: e, entendu: accord }; }
+    if (!this.fauteIci) { this.fautes++; this.erreurs.push({ etape: this.i, attendu: e[0].accord, entendu: accord }); }
+    this.fauteIci = true;
+    return { resultat: 'faux', attendu: e, entendu: accord };
+  };
+
+  /* Recommandations après un tour en mode accords : progrès, accords
+   * confondus, changement où l'on hésite, mesures à reprendre, la suite.
+   * `nom(id)` : le nom à afficher d'un accord. */
+  function conseilsAccords(suivi, parMesure, precedent, nom) {
+    var b = suivi.bilan(), out = [];
+    var mesureDe = function (k) { return Math.floor(suivi.etapes[k][0].temps / parMesure) + 1; };
+    if (precedent != null) {
+      var d = b.pct - precedent;
+      out.push({ texte: d > 0 ? '📈 Tu progresses : ' + precedent + ' % au tour précédent, ' + b.pct + ' % maintenant.'
+        : d < 0 ? '📉 ' + b.pct + ' % contre ' + precedent + ' % au tour précédent : fais une pause, puis reprends plus lentement.'
+        : '➡️ Même score qu’au tour précédent (' + b.pct + ' %).' });
+    }
+    // Les confusions : quel accord sort à la place de quel autre.
+    var conf = {};
+    b.erreurs.forEach(function (x) { var c = x.attendu + '→' + x.entendu; conf[c] = (conf[c] || 0) + 1; });
+    var pire = Object.keys(conf).sort(function (x, y) { return conf[y] - conf[x]; })[0];
+    if (pire) {
+      var ab = pire.split('→');
+      out.push({ texte: '🎸 ' + (conf[pire] > 1 ? conf[pire] + ' fois ' : '') + nom(ab[1]) + ' au lieu de ' + nom(ab[0]) +
+        ' : regarde le dessin de ' + nom(ab[0]) + ' (« Position des mains »), pose les doigts un par un, puis travaille-le « en pompes » : poser, lever, poser.' });
+    }
+    // Le changement le plus lent.
+    var ecarts = [];
+    for (var k = 1; k < suivi.instants.length; k++) {
+      if (suivi.instants[k] != null && suivi.instants[k - 1] != null) ecarts.push({ k: k, d: suivi.instants[k] - suivi.instants[k - 1] });
+    }
+    if (ecarts.length >= 3) {
+      var tri = ecarts.map(function (e) { return e.d; }).sort(function (x, y) { return x - y; }), med = tri[Math.floor(tri.length / 2)];
+      var lents = ecarts.filter(function (e) { return e.d > Math.max(1.8 * med, med + 1500); }).sort(function (x, y) { return y.d - x.d; });
+      if (lents.length) {
+        var l = lents[0], av = suivi.etapes[l.k - 1][0].accord, ap = suivi.etapes[l.k][0].accord;
+        out.push({ texte: '⏱ Le passage ' + nom(av) + ' → ' + nom(ap) + ' (mesure ' + mesureDe(l.k) + ') te prend du temps (' + sec(l.d) + ' s, contre ' + sec(med) +
+          ' s d’habitude) : répète ce seul changement, sans gratter, jusqu’à poser tous les doigts d’un coup.' });
+      }
+    }
+    var parM = {};
+    b.erreurs.forEach(function (x) { var m = mesureDe(x.etape); parM[m] = (parM[m] || 0) + 1; });
+    var pires = Object.keys(parM).map(Number).sort(function (x, y) { return parM[y] - parM[x] || x - y; });
+    if (pires.length) {
+      var m0 = pires[0], de = Math.max(1, m0 - 1), a = m0;
+      out.push({ texte: '🔁 Reprends la mesure ' + m0 + ' avec celle d’avant, en boucle et lentement, pour enchaîner le changement.',
+                 action: { type: 'section', de: de, a: a, pct: 60, boucle: true }, bouton: '🔁 Mesures ' + de + '–' + a + ' en boucle à 60 %' });
+    }
+    if (b.pct >= 95) out.push({ texte: '🚀 Les changements sont en place : joue la grille au tempo, guitare muette — l’app bat la mesure, toi tu grattes.', action: { type: 'section', de: 1, a: null, pct: 100, muet: true }, bouton: '▶ Jouer au tempo, guitare muette' });
+    else if (b.pct >= 80) out.push({ texte: '👍 Encore un tour au micro, puis passe au tempo lent (60 %) avec la lecture.' });
+    else out.push({ texte: '🐢 Un accord à la fois : pose-le, gratte, vérifie que chaque corde sonne, puis passe au suivant. La vitesse viendra.' });
+    return out;
+  }
+
   /* --- Micro ----------------------------------------------------------------- */
   var flux = null, analyseur = null, tampon = null, boucle = null, actif = false;
 
@@ -202,7 +406,10 @@
   /* Ouvre le micro et appelle `surNote(midi)` à chaque note jouée, et
    * `surMesure(m)` à chaque mesure (affichage en direct). */
   // `attendus()` (facultatif) : les notes attendues maintenant (voir Segmenteur).
-  function demarrer(surNote, surMesure, surErreur, attendus) {
+  // `opts.accords` : { id: modèle } — mode « accords » : surNote reçoit alors
+  // l'accord reconnu à chaque coup de gratte, et surMesure l'accord entendu.
+  function demarrer(surNote, surMesure, surErreur, attendus, opts) {
+    opts = opts || {};
     if (actif) return Promise.resolve(true);
     if (!global.navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       if (surErreur) surErreur('Cet appareil ne donne pas accès au micro.');
@@ -215,13 +422,24 @@
       flux = f;
       var src = ctx.createMediaStreamSource(f);
       analyseur = ctx.createAnalyser();
-      analyseur.fftSize = 2048;      // ~46 ms : deux périodes de la corde la plus grave
+      var modeAccords = !!opts.accords;
+      // Accords : une fenêtre plus longue (~93 ms) pour séparer les notes graves.
+      analyseur.fftSize = modeAccords ? 4096 : 2048;
       src.connect(analyseur);
       tampon = new Float32Array(analyseur.fftSize);
       actif = true;
-      var seg = new Segmenteur();
+      var seg = modeAccords ? new SegmenteurAccords() : new Segmenteur();
       boucle = setInterval(function () {
         analyseur.getFloatTimeDomainData(tampon);
+        if (modeAccords) {
+          var court = tampon.subarray(tampon.length - 2048), ma = analyser(court, ctx.sampleRate);
+          var att = attendus ? attendus() : null;
+          var cAct = null, chromaDe = function () { return cAct || (cAct = chroma(tampon, ctx.sampleRate)); };
+          if (surMesure) surMesure({ rms: ma.rms, accord: ma.rms > 0.012 ? reconnaitreAccord(chromaDe(), opts.accords, att && att[0]).accord : null });
+          var c = seg.mesure(ma, chromaDe);
+          if (c) surNote(reconnaitreAccord(c, opts.accords, att && att[0]).accord);
+          return;
+        }
         var m = analyser(tampon, ctx.sampleRate);
         if (surMesure) surMesure(m);
         var note = seg.mesure(m, attendus ? attendus() : null);
@@ -326,7 +544,9 @@
   }
 
   global.Ecoute = {
-    conseils: conseils,
+    conseils: conseils, conseilsAccords: conseilsAccords,
+    chroma: chroma, modeleAccord: modeleAccord, reconnaitreAccord: reconnaitreAccord,
+    SegmenteurAccords: SegmenteurAccords, SuiviAccords: SuiviAccords,
     detecter: detecter, analyser: analyser, Segmenteur: Segmenteur, Suivi: Suivi,
     demarrer: demarrer, arreter: arreter, enMarche: enMarche
   };

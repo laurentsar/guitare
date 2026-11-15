@@ -37,6 +37,8 @@
     ecranAllume: true,     // l'écran ne s'éteint pas pendant qu'on joue (ecran.js)
     aides: false,          // aides débutant sur la fiche morceau (mains, pas à pas, lecture)
     zoomPartition: null,   // échelle de la partition ; null = ajustée à la largeur
+    zoomMicro: null,       // échelle pendant l'écoute au micro ; null = 200 %, -1 = ajustée
+    volumeMetro: null,     // volume du métronome et de la boîte à rythmes ; null = 2,5
     rangementMorceaux: 'rubrique'   // liste des morceaux : 'rubrique' | 'artiste'
   };
 

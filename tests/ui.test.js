@@ -712,6 +712,10 @@ function verifie(nom, cond, detail) {
       }
       const pb = [...$('pageEntrainement').querySelectorAll('.exercice')].find((c) => /Pouce buté : 4 fois/.test(c.textContent));
       verifie('pouce buté : métronome de 40 à 60', ['♩ 40', '♩ 45', '♩ 50', '♩ 55', '♩ 60'].every((x) => pb.textContent.includes(x)));
+      const vol = $('metroVolume');
+      vol.value = '3.2'; vol.dispatchEvent(new w.Event('input'));
+      verifie('volume du métronome et de la boîte à rythmes : mémorisé', w.Store.reglages().volumeMetro === 3.2 && w.Audio5.volumeMetronome() === 3.2, w.Store.reglages().volumeMetro);
+      w.Store.reglage('volumeMetro', null); w.Audio5.volumeMetronome(2.5);
       verifie('lien vers l’écran Métronome et boîte à rythmes', [...$('pageEntrainement').querySelectorAll('button')].some((x) => /Métronome et boîte à rythmes/.test(x.textContent)));
       $('metroSon').value = 'clic';
     }
@@ -740,6 +744,10 @@ function verifie(nom, cond, detail) {
       micro().click();
       const pan2 = () => $('detailMorceau').querySelector('.ecoute-panneau');
       const notesM = w.Morceaux.get('au-clair').notes, temps = [...new Set(notesM.map((n) => n.temps))];
+      const zoomVal = () => $('detailMorceau').querySelector('.zoom-val').textContent;
+      verifie('micro allumé : la tablature passe à 200 %, sans toucher au zoom habituel', zoomVal() === '200 %' && w.Store.reglages().zoomPartition == null, zoomVal());
+      [...$('detailMorceau').querySelectorAll('button')].find((x) => x.getAttribute('aria-label') === 'Zoomer').click();
+      verifie('zoom pendant l’écoute : mémorisé à part (zoom micro)', zoomVal() === '230 %' && w.Store.reglages().zoomMicro === 2.3 && w.Store.reglages().zoomPartition == null, zoomVal());
       verifie('micro allumé : interrupteur enfoncé, première note du morceau annoncée', ouvert && micro().getAttribute('aria-pressed') === 'true' &&
               /Micro allumé/.test(micro().textContent) && new RegExp('note 1 / ' + temps.length).test(pan2().textContent), pan2().textContent.slice(0, 120));
       jouer(notesM[0].midi + 1);
@@ -755,8 +763,10 @@ function verifie(nom, cond, detail) {
       const encoreFin = /notes justes du premier coup/.test(pan2().textContent);
       jouer(notesM[0].midi);
       verifie('micro toujours allumé : une autre note ne fait rien, la première note relance un tour', encoreFin && new RegExp('note 2 / ' + temps.length).test(pan2().textContent), pan2().textContent.slice(0, 120));
-      [...pan2().querySelectorAll('button')].find((x) => /Éteindre le micro/.test(x.textContent)).click();
+      [...pan2().querySelectorAll('button')].find((x) => /Éteindre/.test(x.textContent)).click();
       verifie('« Éteindre le micro » : micro fermé, interrupteur relevé', !ouvert && micro().getAttribute('aria-pressed') === 'false' && pan2().hidden);
+      verifie('micro éteint : le zoom habituel revient', zoomVal() === 'Ajusté', zoomVal());
+      w.Store.reglage('zoomMicro', null);
       // Tour suivant, fini : le bouton de la recommandation règle la boucle et éteint le micro.
       micro().click();
       jouer(notesM[0].midi + 1);

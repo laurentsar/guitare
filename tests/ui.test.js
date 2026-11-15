@@ -747,6 +747,11 @@ function verifie(nom, cond, detail) {
       const zoomVal = () => $('detailMorceau').querySelector('.zoom-val').textContent;
       verifie('micro allumé : la tablature passe à 200 %, sans toucher au zoom habituel', zoomVal() === '200 %' && w.Store.reglages().zoomPartition == null, zoomVal());
       [...$('detailMorceau').querySelectorAll('button')].find((x) => x.getAttribute('aria-label') === 'Zoomer').click();
+      const zp = pan2().querySelector('.ecoute-zoom');
+      verifie('panneau d’écoute : son propre zoom 🔍− / % / 🔍+', !!zp && /230 %/.test(zp.textContent) && zp.querySelectorAll('button').length === 3, zp && zp.textContent);
+      zp.querySelector('[aria-label="Dézoomer"]').click();
+      verifie('🔍− du panneau : la tablature revient à 200 % (zoom micro mémorisé)', /200 %/.test(pan2().querySelector('.ecoute-zoom').textContent) && w.Store.reglages().zoomMicro === 2);
+      pan2().querySelector('.ecoute-zoom [aria-label="Zoomer"]').click();
       verifie('zoom pendant l’écoute : mémorisé à part (zoom micro)', zoomVal() === '230 %' && w.Store.reglages().zoomMicro === 2.3 && w.Store.reglages().zoomPartition == null, zoomVal());
       verifie('micro allumé : interrupteur enfoncé, première note du morceau annoncée', ouvert && micro().getAttribute('aria-pressed') === 'true' &&
               /Micro allumé/.test(micro().textContent) && new RegExp('note 1 / ' + temps.length).test(pan2().textContent), pan2().textContent.slice(0, 120));

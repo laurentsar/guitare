@@ -1678,7 +1678,7 @@
      * 13 px lus à trois mètres. Sinon une échelle fixe du dessin, et la mise
      * en page met autant de mesures qu'il en tient à cette échelle. */
     var PAS_ZOOM = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2, 2.3, 2.6, 3, 3.5, 4];
-    var zoomLabels = [];
+    var zoomLabels = [], zoomPlus = [];
     /* Micro allumé : la tablature passe en grand (200 % par défaut), pour la
      * lire de loin, guitare en main. Ce zoom-là est mémorisé à part (les
      * boutons 🔍 le règlent pendant l'écoute) ; éteindre le micro rend le
@@ -1708,15 +1708,32 @@
         s.style.width = w ? Math.round(w * z) + 'px' : '';
         s.style.maxWidth = w ? '100%' : '';
       });
-      var t = z ? Math.round(z * 100) + ' %' : 'Ajusté';
+      var t = texteZoom();
       zoomLabels.forEach(function (x) { x.textContent = t; });
+      var auMax = zoomAuMax();
+      zoomPlus.forEach(function (b) { b.disabled = auMax; b.title = auMax ? 'Déjà au plus grand : une mesure occupe toute la largeur' : ''; });
+    }
+    /* Échelle vraiment appliquée : une mesure ne dépasse jamais la largeur
+     * de l'écran (max-width 100 %), donc au-delà, zoomer ne change rien. */
+    function echelleReelle() {
+      var s0 = zone && zone.querySelector('svg.tab, svg.portee');
+      var w = s0 && largeurSvg(s0), r = s0 && s0.getBoundingClientRect().width;
+      return w && r ? r / w : null;
+    }
+    function zoomAuMax() {
+      var z = zoomRegle(), e = echelleReelle();
+      return !!(z && e && e < z * 0.97);
+    }
+    function texteZoom() {
+      var z = zoomRegle();
+      if (!z) return 'Ajusté';
+      var e = echelleReelle();
+      return e && e < z * 0.97 ? Math.round(e * 100) + ' % (max)' : Math.round(z * 100) + ' %';
     }
     function echelleActuelle() {
-      var z = zoomRegle();
-      if (z) return z;
-      var s = zone.querySelector('svg.tab, svg.portee');
-      var w = s && largeurSvg(s), r = s && s.getBoundingClientRect().width;
-      return w && r ? r / w : 1;
+      var z = zoomRegle(), e = echelleReelle();
+      if (z) return e ? Math.min(z, e) : z;
+      return e || 1;
     }
     function zoomer(sens) {
       var c = echelleActuelle();
@@ -1724,16 +1741,18 @@
                        : (PAS_ZOOM.filter(function (x) { return x < c / 1.04; }).pop() || PAS_ZOOM[0]);
       noterZoom(z);
       dessiner();
+      if (typeof suiviE !== 'undefined' && suiviE && !suiviE.fini()) { montrerAttendue(); }
     }
     function groupeZoom() {
       var g = el('span', 'zoom-groupe');
-      var m = el('button', 'btn', '🔍−'), t = el('button', 'btn zoom-val', 'Ajusté'), pl = el('button', 'btn', '🔍+');
+      var m = el('button', 'btn', '🔍−'), t = el('button', 'btn zoom-val', texteZoom()), pl = el('button', 'btn', '🔍+');
       m.setAttribute('aria-label', 'Dézoomer'); pl.setAttribute('aria-label', 'Zoomer');
       t.setAttribute('aria-label', 'Ajuster à la largeur');
       m.onclick = function () { zoomer(-1); };
       pl.onclick = function () { zoomer(1); };
-      t.onclick = function () { noterZoom(null); dessiner(); };
-      zoomLabels.push(t);
+      t.onclick = function () { noterZoom(null); dessiner(); if (typeof suiviE !== 'undefined' && suiviE && !suiviE.fini()) montrerAttendue(); };
+      zoomLabels.push(t); zoomPlus.push(pl);
+      pl.disabled = zoomAuMax();
       g.appendChild(m); g.appendChild(t); g.appendChild(pl);
       return g;
     }
@@ -2110,7 +2129,7 @@
     // Placé dans la page elle-même (pas dans la barre de lecture, trop courte
     // pour qu'il reste collé en haut pendant que la tablature défile).
     hautLecture.appendChild(panneauE);
-    var suiviE = null, verdictE = null, entenduE = '…';
+    var suiviE = null, verdictE = null, entenduE = '…', zoomEcoute = null;
     var CORDES_NOM = ['', '1re corde (Mi aigu)', '2e corde (Si)', '3e corde (Sol)', '4e corde (Ré)', '5e corde (La)', '6e corde (Mi grave)'];
     // Tout le morceau, toujours : la section en boucle ne limite pas l'écoute.
     function notesEcoute() {
@@ -2228,6 +2247,11 @@
       act2.className = 'actions ecoute-boutons';
       act2.appendChild(bP); act2.appendChild(bD); act2.appendChild(bA);
       panneauE.appendChild(act2);
+      // Le zoom à portée de main pendant l'écoute : les boutons du haut de
+      // la page sont loin quand la tablature a défilé. Le même groupe est
+      // réutilisé d'un affichage à l'autre.
+      if (!zoomEcoute) { zoomEcoute = el('div', 'actions ecoute-zoom'); zoomEcoute.appendChild(groupeZoom()); }
+      panneauE.appendChild(zoomEcoute);
     }
     function eteindreMicro() {
       Ecoute.arreter();

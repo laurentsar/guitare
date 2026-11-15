@@ -472,6 +472,8 @@ html.en-pupitre body { padding-bottom: 0; }
 .ecoute-verdict.juste { background: var(--ok); color: #0C2416; }
 .ecoute-boutons { flex-wrap: nowrap; gap: 6px; }
 .ecoute-boutons .btn { padding: 6px 10px; font-size: 14px; white-space: nowrap; }
+.ecoute-zoom { margin: 4px 0 0; justify-content: center; }
+.ecoute-zoom .btn { padding: 4px 10px; font-size: 14px; }
 .ecoute-verdict.vide { visibility: hidden; }
 .ecoute-verdict { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ecoute-verdict.faux { background: var(--presque); color: #22180C; }

@@ -1678,8 +1678,17 @@
      * 13 px lus à trois mètres. Sinon une échelle fixe du dessin, et la mise
      * en page met autant de mesures qu'il en tient à cette échelle. */
     var PAS_ZOOM = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2, 2.3, 2.6, 3, 3.5, 4];
-    var zoomLabels = [];
-    function zoomRegle() { return Store.reglages().zoomPartition; }
+    var zoomLabels = [], zoomPlus = [];
+    /* Micro allumé : la tablature passe en grand (200 % par défaut), pour la
+     * lire de loin, guitare en main. Ce zoom-là est mémorisé à part (les
+     * boutons 🔍 le règlent pendant l'écoute) ; éteindre le micro rend le
+     * zoom habituel. -1 = « Ajusté » choisi pendant l'écoute. */
+    var ZOOM_MICRO = 2, microZoom = false;
+    function zoomRegle() {
+      if (microZoom) { var zm = Store.reglages().zoomMicro; return zm === -1 ? null : (zm || ZOOM_MICRO); }
+      return Store.reglages().zoomPartition;
+    }
+    function noterZoom(z) { Store.reglage(microZoom ? 'zoomMicro' : 'zoomPartition', microZoom && z == null ? -1 : z); }
     function largeurSvg(s) { return +((s.getAttribute('viewBox') || '').split(' ')[2]) || 0; }
     /* Vue choisie, ou par défaut selon l'écran : sur un téléphone en
      * portrait, la portée doublerait la longueur d'une tablature déjà faite
@@ -1699,32 +1708,51 @@
         s.style.width = w ? Math.round(w * z) + 'px' : '';
         s.style.maxWidth = w ? '100%' : '';
       });
-      var t = z ? Math.round(z * 100) + ' %' : 'Ajusté';
+      var t = texteZoom();
       zoomLabels.forEach(function (x) { x.textContent = t; });
+      var auMax = zoomAuMax();
+      zoomPlus.forEach(function (b) { b.disabled = auMax; b.title = auMax ? 'Déjà au plus grand : une mesure occupe toute la largeur' : ''; });
+    }
+    /* Échelle vraiment appliquée : une mesure ne dépasse jamais la largeur
+     * de l'écran (max-width 100 %), donc au-delà, zoomer ne change rien. */
+    function echelleReelle() {
+      var s0 = zone && zone.querySelector('svg.tab, svg.portee');
+      var w = s0 && largeurSvg(s0), r = s0 && s0.getBoundingClientRect().width;
+      return w && r ? r / w : null;
+    }
+    function zoomAuMax() {
+      var z = zoomRegle(), e = echelleReelle();
+      return !!(z && e && e < z * 0.97);
+    }
+    function texteZoom() {
+      var z = zoomRegle();
+      if (!z) return 'Ajusté';
+      var e = echelleReelle();
+      return e && e < z * 0.97 ? Math.round(e * 100) + ' % (max)' : Math.round(z * 100) + ' %';
     }
     function echelleActuelle() {
-      var z = zoomRegle();
-      if (z) return z;
-      var s = zone.querySelector('svg.tab, svg.portee');
-      var w = s && largeurSvg(s), r = s && s.getBoundingClientRect().width;
-      return w && r ? r / w : 1;
+      var z = zoomRegle(), e = echelleReelle();
+      if (z) return e ? Math.min(z, e) : z;
+      return e || 1;
     }
     function zoomer(sens) {
       var c = echelleActuelle();
       var z = sens > 0 ? (PAS_ZOOM.filter(function (x) { return x > c * 1.04; })[0] || PAS_ZOOM[PAS_ZOOM.length - 1])
                        : (PAS_ZOOM.filter(function (x) { return x < c / 1.04; }).pop() || PAS_ZOOM[0]);
-      Store.reglage('zoomPartition', z);
+      noterZoom(z);
       dessiner();
+      if (typeof suiviE !== 'undefined' && suiviE && !suiviE.fini()) { montrerAttendue(); }
     }
     function groupeZoom() {
       var g = el('span', 'zoom-groupe');
-      var m = el('button', 'btn', '🔍−'), t = el('button', 'btn zoom-val', 'Ajusté'), pl = el('button', 'btn', '🔍+');
+      var m = el('button', 'btn', '🔍−'), t = el('button', 'btn zoom-val', texteZoom()), pl = el('button', 'btn', '🔍+');
       m.setAttribute('aria-label', 'Dézoomer'); pl.setAttribute('aria-label', 'Zoomer');
       t.setAttribute('aria-label', 'Ajuster à la largeur');
       m.onclick = function () { zoomer(-1); };
       pl.onclick = function () { zoomer(1); };
-      t.onclick = function () { Store.reglage('zoomPartition', null); dessiner(); };
-      zoomLabels.push(t);
+      t.onclick = function () { noterZoom(null); dessiner(); if (typeof suiviE !== 'undefined' && suiviE && !suiviE.fini()) montrerAttendue(); };
+      zoomLabels.push(t); zoomPlus.push(pl);
+      pl.disabled = zoomAuMax();
       g.appendChild(m); g.appendChild(t); g.appendChild(pl);
       return g;
     }
@@ -2101,7 +2129,7 @@
     // Placé dans la page elle-même (pas dans la barre de lecture, trop courte
     // pour qu'il reste collé en haut pendant que la tablature défile).
     hautLecture.appendChild(panneauE);
-    var suiviE = null, verdictE = null, entenduE = '…';
+    var suiviE = null, verdictE = null, entenduE = '…', zoomEcoute = null;
     var CORDES_NOM = ['', '1re corde (Mi aigu)', '2e corde (Si)', '3e corde (Sol)', '4e corde (Ré)', '5e corde (La)', '6e corde (Mi grave)'];
     // Tout le morceau, toujours : la section en boucle ne limite pas l'écoute.
     function notesEcoute() {
@@ -2118,7 +2146,33 @@
       Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) {
         g.classList.toggle('en-cours', !!e && parseFloat(g.dataset.temps) === e[0].temps);
       });
-      if (e) { if (etat.manche) majManche(e[0].temps); guide.suivre(e[0].temps); suivreLigne(); }
+      if (e) { if (etat.manche) majManche(e[0].temps); guide.suivre(e[0].temps); suivreDoux(); }
+    }
+    /* Pendant l'écoute, la tablature avance tranquillement : à chaque
+     * nouvelle ligne, la page glisse en douceur (~0,7 s) pour garder la note
+     * attendue juste sous le panneau, au lieu de sauter. */
+    var animDoux = null;
+    function defilerDoux(d, ms) {
+      if (!d) return;
+      if (animDoux) animDoux.stop = true;
+      var raf = window.requestAnimationFrame;
+      if (!raf || !window.scrollTo) { defilerDe(d); return; }
+      var a = { stop: false }, y0 = window.scrollY || window.pageYOffset || 0, t0 = null, duree = ms || 700;
+      animDoux = a;
+      raf(function pas(t) {
+        if (a.stop) return;
+        if (t0 == null) t0 = t;
+        var k = Math.min(1, (t - t0) / duree), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        window.scrollTo(0, y0 + d * e);
+        if (k < 1) raf(pas); else if (animDoux === a) animDoux = null;
+      });
+    }
+    function suivreDoux() {
+      var n = zone.querySelector('.en-cours');
+      var ligne = n && n.closest('.systeme, .tab-ligne, .portee-ligne-bloc');
+      if (!ligne || ligne === ligneSuivie) return;
+      ligneSuivie = ligne;
+      defilerDoux(ligne.getBoundingClientRect().top - (bornesVisibles().haut + 8));
     }
     function rendreEcoute() {
       vide(panneauE);
@@ -2174,26 +2228,37 @@
       }
       var e = suiviE.attendue();
       var tete = el('p', 'aide ecoute-etat');
-      tete.appendChild(document.createTextNode('🎤 J’écoute tout le morceau, à ton rythme · note ' + (suiviE.i + 1) + ' / ' + b.total + ' · ' + b.justes + ' juste' + (b.justes > 1 ? 's' : '') + ' du 1er coup · '));
+      // Court : sur un téléphone, la ligne tient sans être coupée.
+      tete.appendChild(document.createTextNode('🎤 note ' + (suiviE.i + 1) + ' / ' + b.total + ' · ' + b.justes + ' juste' + (b.justes > 1 ? 's' : '') + ' · '));
       tete.appendChild(el('span', 'ecoute-entendu', 'j’entends : ' + entenduE));
       panneauE.appendChild(tete);
       panneauE.appendChild(el('p', 'ecoute-attendue', (e.length > 1 ? 'Ensemble (une suffit) : ' : 'Joue : ') + decrire(e[0])));
-      if (verdictE) panneauE.appendChild(el('p', 'ecoute-verdict ' + verdictE.classe, verdictE.texte));
+      // La ligne du verdict a toujours sa place, même vide : le panneau garde
+      // la même hauteur, et la tablature dessous ne saute pas.
+      panneauE.appendChild(el('p', 'ecoute-verdict ' + (verdictE ? verdictE.classe : 'vide'), verdictE ? verdictE.texte : '\u00a0'));
       var act2 = el('div', 'actions');
       var bP = el('button', 'btn', 'Passer ›');
       bP.onclick = function () { suiviE.passer(); verdictE = null; rendreEcoute(); montrerAttendue(); };
       var bD = el('button', 'btn', '⏮ Début');
       bD.onclick = recommencer;
-      var bA = el('button', 'btn', '■ Éteindre le micro');
+      var bA = el('button', 'btn', '■ Éteindre');
+      bA.setAttribute('aria-label', 'Éteindre le micro');
       bA.onclick = eteindreMicro;
+      act2.className = 'actions ecoute-boutons';
       act2.appendChild(bP); act2.appendChild(bD); act2.appendChild(bA);
       panneauE.appendChild(act2);
+      // Le zoom à portée de main pendant l'écoute : les boutons du haut de
+      // la page sont loin quand la tablature a défilé. Le même groupe est
+      // réutilisé d'un affichage à l'autre.
+      if (!zoomEcoute) { zoomEcoute = el('div', 'actions ecoute-zoom'); zoomEcoute.appendChild(groupeZoom()); }
+      panneauE.appendChild(zoomEcoute);
     }
     function eteindreMicro() {
       Ecoute.arreter();
       suiviE = null; panneauE.hidden = true; vide(panneauE);
       majBoutonMicro(false);
       effacer();
+      if (microZoom) { microZoom = false; dessiner(); }
     }
     function recommencer() {
       suiviE = new Ecoute.Suivi(notesEcoute()); verdictE = null;
@@ -2222,6 +2287,7 @@
         suiviE = null; vide(panneauE);
         panneauE.appendChild(el('p', 'ecoute-verdict faux', '🎤 ' + msg));
         majBoutonMicro(false);
+        if (microZoom) { microZoom = false; dessiner(); }
       }, function () {
         // La note attendue : validée dès qu'on l'entend nettement.
         var e = suiviE && !suiviE.fini() ? suiviE.attendue() : null;
@@ -2233,7 +2299,7 @@
       var e0 = suiviE && suiviE.attendue();
       var cible = e0 && zone.querySelector('.tab-note[data-temps="' + e0[0].temps + '"]');
       var ligneC = cible && cible.closest('.systeme, .tab-ligne, .portee-ligne-bloc');
-      if (ligneC) { ligneSuivie = ligneC; amener(ligneC, bornesVisibles().haut + 8); }
+      if (ligneC) { ligneSuivie = ligneC; defilerDoux(ligneC.getBoundingClientRect().top - (bornesVisibles().haut + 8), 500); }
       montrerAttendue();
     }
     bEcoute.onclick = function () {
@@ -2248,6 +2314,8 @@
       var ent = document.querySelector('.entete');
       panneauE.style.top = (ent ? ent.offsetHeight : 0) + 'px';
       majBoutonMicro(true);
+      // Zoom de lecture : la tablature en grand pendant l'écoute.
+      microZoom = true; dessiner();
       rendreEcoute();
       demarrerEcoute();
       // Une seconde fois un peu plus tard : à l'ouverture, la tablature se

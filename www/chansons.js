@@ -516,6 +516,14 @@
       sections: [
         { titre: 'Grille', motif: 'balade', tours: 4, grille: ['Am', 'F|E'] }
       ] },
+    { id: 'ch-home-alone', titre: 'Somewhere in My Memory (Maman, j’ai raté l’avion)', artiste: 'John Williams', annee: 1990,
+      capo: 0, tempo: 80, groupe: 'tiktok',
+      structure: ['Phrase 1', 'Phrase 2', 'Phrase 1', 'Phrase 2:Fin'],
+      note: 'Harmonie APPROXIMATIVE, à vérifier : déduite des notes de la mélodie montrée dans la vidéo (@guitarcoachingonline), faute de grille officielle — la mélodie (La Fa♯ La Fa♯, Ré La…) se pose sur Ré, Si m, Mi m, La, puis Sol et Ré. En Ré majeur, sans capo. La mélodie, sous droits, n’est pas reproduite : ici la grille seule.',
+      sections: [
+        { titre: 'Phrase 1', motif: 'arpege', grille: ['D', 'Bm', 'Em|A', 'D'] },
+        { titre: 'Phrase 2', motif: 'arpege', grille: ['D', 'Bm', 'G|D', 'A'] }
+      ] },
     /* Top 20 de la guitare acoustique, par niveau (top : 1 débutant, 2
      * intermédiaire, 3 confirmé, 4 avancé). Grilles d'après Hooktheory,
      * simplifiées et transposées au capo vers des formes ouvertes. */

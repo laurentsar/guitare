@@ -574,6 +574,84 @@ console.log('\n— Écoute au micro : notes synthétisées, écoutées comme au 
   verifie('suivi : notes pincées ensemble = une étape, n’importe laquelle compte', accord.etapes.length === 2 && accord.entendu(52).resultat === 'juste');
 }
 
+console.log('\n— Micro, mode accords : accords grattés synthétisés, reconnus —');
+{
+  // Un accord gratté : chaque corde de l'accord, de la plus grave à la plus
+  // aiguë, à 12 ms d'écart (un coup de pouce) ; `coups` coups par accord.
+  function gratter(suite, sec, coups, capo) {
+    const sr = 44100, total = Math.ceil((suite.length * coups * sec + 1) * sr), out = new Float32Array(total);
+    let k = 0;
+    suite.forEach((frettes) => {
+      for (let c = 0; c < coups; c++, k++) {
+        const t0 = Math.round(k * sec * sr), fin = Math.round((k + 1) * sec * sr);
+        [6, 5, 4, 3, 2, 1].forEach((corde, j) => {
+          const f = frettes[corde - 1];
+          if (f < 0) return;
+          buffersProduits.length = 0;
+          Audio5.jouerCase(corde, f + (capo || 0), { duree: sec + 0.4, timbre: 'nylon' });
+          const b = buffersProduits[0].getChannelData(0), d = t0 + Math.round(j * 0.012 * sr);
+          for (let i = 0; i < b.length && d + i < total; i++) out[d + i] += b[i] * (d + i < fin ? 1 : Math.max(0, 1 - (d + i - fin) / 400)) * 0.3;
+        });
+      }
+    });
+    return out;
+  }
+  function reconnaitre(signal, modeles, suivi) {
+    const seg = new Ecoute.SegmenteurAccords(), pas = Math.round(0.04 * 44100), entendus = [];
+    for (let i = 0; i + 4096 <= signal.length; i += pas) {
+      const w = signal.subarray(i, i + 4096), m = Ecoute.analyser(w.subarray(2048), 44100);
+      const c = seg.mesure(m, () => Ecoute.chroma(w, 44100));
+      if (c) {
+        const att = suivi && suivi.attendue();
+        const a = Ecoute.reconnaitreAccord(c, modeles, att && att[0].accord).accord;
+        entendus.push(a);
+        if (suivi) suivi.entendu(a, i);
+      }
+    }
+    return entendus;
+  }
+  const modelesDe = (p) => { const o = {}; p.mains.gauche.forEach((a) => { o[a.id] = Ecoute.modeleAccord(a.frettes, p.capo || 0); }); return o; };
+  const doigte = (p, id) => p.mains.gauche.find((a) => a.id === id).frettes;
+
+  const z = Morceaux.get('zombie'), mz = modelesDe(z);
+  const suiteZ = ['Em', 'Cmaj7', 'G', 'D', 'Em', 'Cmaj7', 'G', 'D'];
+  // Sans aide, Mi m et Do maj7 ne se départagent pas (toutes les notes de
+  // Mi m sont dans Do maj7) : en vrai, l'app sait quel accord est attendu.
+  const eZ = reconnaitre(gratter(suiteZ.map((id) => doigte(z, id)), 0.6, 2), mz);
+  verifie('mode accords : Zombie, deux coups par accord = 16 coups, Sol et Ré reconnus sans aide',
+          eZ.length === 16 &&
+          [4, 5, 6, 7, 12, 13, 14, 15].every((k) => eZ[k] === suiteZ[k >> 1]), eZ.join(' '));
+  const sz = new Ecoute.SuiviAccords(z.notes);
+  reconnaitre(gratter(suiteZ.map((id) => doigte(z, id)), 0.6, 2), mz, sz);
+  verifie('mode accords : la grille suivie, regratter le même accord n’est pas une faute', sz.i === 8 && sz.bilan().erreurs.length === 0 && sz.justes === 8, sz.i + ' étapes, ' + JSON.stringify(sz.bilan().erreurs));
+
+  const g = Morceaux.get('tiktok-grille-c-g-am-f'), mg = modelesDe(g);
+  const suiteG = ['C', 'G', 'Am', 'F', 'C', 'Am', 'G', 'F'];
+  const eG = reconnaitre(gratter(suiteG.map((id) => doigte(g, id)), 0.6, 1), mg);
+  verifie('mode accords : Do, Sol, La m, Fa (Do et La m se ressemblent) reconnus sans aide', eG.join(' ') === suiteG.join(' '), eG.join(' '));
+
+  const sd = Morceaux.get('ch-sweet-dreams'), msd = modelesDe(sd);
+  const suiteS = ['Am', 'F', 'E', 'Am'];
+  const eS = reconnaitre(gratter(suiteS.map((id) => doigte(sd, id)), 0.6, 1, 3), msd);
+  verifie('mode accords : capo 3 (Sweet Dreams) pris en compte', eS.join(' ') === suiteS.join(' '), eS.join(' '));
+
+  // Une faute jouée : Do au lieu de Sol dans la grille de Zombie.
+  const sf = new Ecoute.SuiviAccords(z.notes), cmaj = doigte(z, 'Cmaj7');
+  const fauxSig = gratter([doigte(z, 'Em'), doigte(z, 'Cmaj7'), cmaj, doigte(z, 'G'), doigte(z, 'D')], 0.6, 1);
+  const eF = reconnaitre(fauxSig, mz, sf);
+  verifie('mode accords : un accord resté en place (Do maj7 au lieu de Sol) = regratté, pas une faute ; puis Sol et Ré justes', sf.i === 4 && sf.bilan().erreurs.length === 0, eF.join(' ') + ' / ' + sf.i);
+  const sf2 = new Ecoute.SuiviAccords(z.notes);
+  reconnaitre(gratter([doigte(z, 'Em'), doigte(z, 'D'), doigte(z, 'D'), doigte(z, 'Cmaj7'), doigte(z, 'G')], 0.6, 1), mz, sf2);
+  verifie('mode accords : Ré au lieu de Do maj7, deux coups → faute signalée (Ré entendu), puis on attend Do maj7', sf2.bilan().erreurs.length === 1 && sf2.bilan().erreurs[0].entendu === 'D' &&
+          sf2.bilan().erreurs[0].attendu === 'Cmaj7' && sf2.i === 3, JSON.stringify(sf2.bilan().erreurs) + ' / ' + sf2.i);
+  const sf3 = new Ecoute.SuiviAccords(z.notes);
+  const r3 = ['Em', 'D', 'Cmaj7'].map((a) => sf3.entendu(a, 0).resultat);
+  verifie('mode accords : un seul coup mal reconnu n’est pas une faute (doute), le bon accord ensuite compte juste du premier coup',
+          r3.join(' ') === 'juste doute juste' && sf3.bilan().erreurs.length === 0 && sf3.justes === 2, r3.join(' '));
+  const tenu = reconnaitre(gratter([doigte(z, 'G')], 3, 1), mz);
+  verifie('mode accords : un accord qui sonne 3 s ne compte qu’une fois', tenu.length === 1, tenu.join(' '));
+}
+
 console.log('\n— Synthèse des cordes —');
 [[6, 0], [5, 0], [3, 0], [1, 0], [1, 5]].forEach(([corde, frette]) => {
   buffersProduits.length = 0;

@@ -476,6 +476,7 @@ html.en-pupitre body { padding-bottom: 0; }
 .ecoute-zoom .btn { padding: 4px 10px; font-size: 14px; }
 .ecoute-verdict.vide { visibility: hidden; }
 .ecoute-verdict { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ecoute-verdict.doute { background: var(--fond-3); color: var(--texte); }
 .ecoute-verdict.faux { background: var(--presque); color: #22180C; }
 .ecoute-score { font-size: 20px; font-weight: 700; }
 .ecoute-conseils { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: var(--fond-3); }

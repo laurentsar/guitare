@@ -319,6 +319,14 @@ function verifie(nom, cond, detail) {
     const ct = () => $('detailMorceau').querySelector('.compteur-tours');
     verifie('Apprendre : en plein écran, le choix fixé sous la barre du plein écran', part().classList.contains('plein-ecran') && part().contains(ct()) && ct().classList.contains('en-pe'));
     choix(/Automatique/);
+    {
+      const z = $('detailMorceau').querySelector('.partition').querySelectorAll('svg.tab, .systeme');
+      const visibles = [...z].filter((l) => !l.hidden && !l.closest('[hidden]'));
+      // Les lignes visibles sont les premières, et couvrent juste les mesures 1 à 4.
+      const k = visibles.length, rangs = visibles.map((l) => [...z].indexOf(l));
+      verifie('Apprendre : seules les lignes de la partie 1 (mesures 1 à 4) restent affichées', k >= 1 && k <= 4 && k < z.length && rangs.every((r, i) => r === i),
+              k + ' lignes visibles sur ' + z.length);
+    }
     verifie('Apprendre : démarre tout de suite sur la partie 1, une seule ligne (1 / 7 · partie 1 · tour 1 / 3)', /🎯 1 \/ 7 · Partie 1 · mesures 1 à 4 · tour 1 \/ 3/.test(cpt()) && de === 0, cpt());
     fin(); fin(); fin();
     verifie('après 3 tours : partie 1 cochée, la partie 2 démarre seule', /🎯 2 \/ 7 · Partie 2 · mesures 5 à 8 · tour 1 \/ 3/.test(cpt()) && de === 4 * w.Tablature.noiresParMesure(w.Morceaux.get('carulli-andantino')) &&
@@ -332,6 +340,7 @@ function verifie(nom, cond, detail) {
     verifie('plein écran fermé : la ligne d’apprentissage revient sur la page', !part().classList.contains('plein-ecran') && !part().contains(ct()) && !ct().classList.contains('en-pe') && /🎯 4 \/ 7/.test(ct().textContent));
     bA.click();
     verifie('« ■ Arrêter d’apprendre » : le parcours s’arrête', $('detailMorceau').querySelector('.compteur-tours').hidden && /🎯 Apprendre/.test(bA.textContent));
+    verifie('arrêt : toutes les lignes réapparaissent', [...$('detailMorceau').querySelector('.partition').querySelectorAll('svg.tab, .systeme')].every((l) => !l.hidden));
     part().querySelector('[aria-label="Apprendre par parties"]').click();
     verifie('le bouton 🎯 de la barre du plein écran propose aussi le choix', part().classList.contains('plein-ecran') && /⚡ Automatique/.test(cpt()), cpt());
     choix(/Automatique/);

@@ -2107,7 +2107,9 @@
     var bJouer = el('button', 'btn primaire', '▶ Écouter');
     var bStop = el('button', 'btn', '■ Arrêter');
     var bMetro = el('button', 'btn', '🥁 Métronome seul');
-    actions.appendChild(bJouer); actions.appendChild(bStop); actions.appendChild(bMetro);
+    var bApprendre = el('button', 'btn', '🎯 Apprendre');
+    bApprendre.setAttribute('aria-label', 'Apprendre ce morceau par parties');
+    actions.appendChild(bJouer); actions.appendChild(bStop); actions.appendChild(bApprendre); actions.appendChild(bMetro);
     hautLecture.insertBefore(actions, hautLecture.firstChild);
 
     /* Interrupteur « 🎤 Micro » : une fois allumé, l'app écoute TOUT le
@@ -2485,7 +2487,7 @@
           if (enListe && session && !etat.boucle && zone.isConnected) { suite(false); return; }
           if (!etat.boucle || (ecranCourant !== 'morceau' && ecranCourant !== 'pupitre')) { if (window.CasqueVR) CasqueVR.fin(); return; }
           if (etat.entraineur && etat.pct < 100) { etat.pct = Math.min(100, etat.pct + 5); majTempo(); pupitre.maj(); }
-          tourFini();
+          if (tourFini()) return;   // parcours « Apprendre » : il a pris la suite
           lancer(false);
         }
       });
@@ -2500,9 +2502,32 @@
     hautLecture.appendChild(compteurTours);
     function majCompteur() {
       vide(compteurTours);
+      if (parcours && parcours.fini) {
+        compteurTours.hidden = false;
+        compteurTours.appendChild(el('span', 'compteur-texte', '🎉 Toutes les parties sont apprises.'));
+        var kv = etapesM.map(function (e, k) { return k; }).filter(function (k) { return etapesM[k].action.entraineur; })[0];
+        if (kv != null) {
+          var bV = el('button', 'btn primaire', '📈 Monter en vitesse');
+          bV.onclick = function () { parcours = null; appliquerEtape(etapesM[kv].action, kv); };
+          compteurTours.appendChild(bV);
+        }
+        return;
+      }
       if (!etat.objectif) { compteurTours.hidden = true; return; }
       compteurTours.hidden = false;
       var fait = etat.tours >= etat.objectif;
+      if (parcours) {
+        // Une seule ligne : où on en est. Pas d'explication à lire.
+        var e = etapesM[etat.etapeK], rang = parcours.liste.indexOf(etat.etapeK) + 1;
+        compteurTours.appendChild(el('span', 'compteur-texte', '🎯 ' + rang + ' / ' + parcours.liste.length + ' · ' +
+          e.titre.replace(/ — mesures? .*$/, '') + ' · mesures ' + etat.de + ' à ' + etat.a + ' · tour ' + Math.min(etat.tours + 1, etat.objectif) + ' / ' + etat.objectif));
+        var bEnc = el('button', 'btn', '↺ Encore');
+        bEnc.onclick = function () { etat.tours = 0; majCompteur(); };
+        var bSuiv = el('button', 'btn', '⏭ Suivante');
+        bSuiv.onclick = function () { etapeSuivanteParcours(false); };
+        compteurTours.appendChild(bEnc); compteurTours.appendChild(bSuiv);
+        return;
+      }
       compteurTours.appendChild(el('span', 'compteur-texte', (fait ? '✓ ' : '🔁 ') + 'Tour ' + Math.min(etat.tours + 1, etat.objectif) + ' / ' + etat.objectif +
         (fait ? ' fait' : '') + ' · mesures ' + etat.de + ' à ' + etat.a + ' · ' + etat.pct + ' %'));
       if (fait && etat.etapeK != null && blocPasAPas) {
@@ -2521,7 +2546,53 @@
         compteurTours.appendChild(bOk); compteurTours.appendChild(bEncore);
       }
     }
-    function tourFini() { if (etat.objectif) { etat.tours++; majCompteur(); } }
+    function tourFini() {
+      if (!etat.objectif) return false;
+      etat.tours++;
+      // Parcours « Apprendre » : l'objectif atteint, l'étape est cochée et la
+      // suivante démarre d'elle-même.
+      if (parcours && etat.tours >= etat.objectif) { etapeSuivanteParcours(true); return true; }
+      majCompteur();
+      return false;
+    }
+
+    /* « 🎯 Apprendre » : directement les parties du morceau, dans l'ordre du
+     * pas à pas (parties, enchaînements, tout lentement), sans texte à lire.
+     * On reprend à la première étape pas encore faite. */
+    var etapesM = Morceaux.etapes(p, nbMesures), parcours = null;
+    function listeParcours() {
+      return etapesM.map(function (e, k) { return k; }).filter(function (k) {
+        var e = etapesM[k]; return e.partie || e.chaine || (e.action.type === 'section' && e.action.objectif);
+      });
+    }
+    function lancerParcours() {
+      var liste = listeParcours(), faites = Store.etapesFaites(p.id);
+      if (!liste.length) return;
+      var k = liste.filter(function (x) { return faites.indexOf(x) === -1; })[0];
+      if (k == null) k = liste[0];               // tout est fait : on repart du début
+      parcours = { liste: liste };
+      bApprendre.textContent = '■ Arrêter d’apprendre'; bApprendre.classList.add('primaire');
+      appliquerEtape(etapesM[k].action, k);
+    }
+    function arreterParcours() {
+      parcours = null;
+      bApprendre.textContent = '🎯 Apprendre'; bApprendre.classList.remove('primaire');
+      etat.objectif = 0; majCompteur();
+    }
+    function etapeSuivanteParcours(reussie) {
+      if (!parcours) return;
+      var k = etat.etapeK;
+      if (reussie && k != null) { Store.marquerEtape(p.id, k, true); if (blocPasAPas) blocPasAPas.rafraichir(); }
+      var i = parcours.liste.indexOf(k), suivante = parcours.liste[i + 1];
+      if (suivante == null) {
+        Tablature.arreter(); effacer();
+        parcours.fini = true; etat.objectif = 0;
+        bApprendre.textContent = '🎯 Apprendre'; bApprendre.classList.remove('primaire');
+        majCompteur();
+        return;
+      }
+      appliquerEtape(etapesM[suivante].action, suivante);
+    }
 
     function appliquerEtape(action, k) {
       if (action.type === 'reference') { jouerReference(); return; }
@@ -2554,12 +2625,13 @@
     }
 
     // « Écouter » à la main : plus d'objectif de tours en cours.
-    bJouer.onclick = function () { if (etat.objectif) { etat.objectif = 0; majCompteur(); } lancer(true); pupitre.maj(); };
+    bJouer.onclick = function () { if (parcours) arreterParcours(); if (etat.objectif) { etat.objectif = 0; majCompteur(); } lancer(true); pupitre.maj(); };
+    bApprendre.onclick = function () { if (parcours && !parcours.fini) bStop.onclick(); else lancerParcours(); };
     peJouer.onclick = function () { bJouer.onclick(); };
     peStop.onclick = function () { bStop.onclick(); };
     peMoins.onclick = function () { moins.onclick(); };
     pePlus.onclick = function () { plus.onclick(); };
-    bStop.onclick = function () { Tablature.arreter(); effacer(); if (window.CasqueVR) CasqueVR.fin(); pupitre.maj(); };
+    bStop.onclick = function () { if (parcours && !parcours.fini) arreterParcours(); Tablature.arreter(); effacer(); if (window.CasqueVR) CasqueVR.fin(); pupitre.maj(); };
     bMetro.onclick = function () { reglerTempo(tempoEffectif()); aller('metronome'); demarrerMetro(); };
 
     if (window.CasqueVR) CasqueVR.brancher(h, p, { jouer: function () { lancer(true); }, arreter: bStop.onclick });

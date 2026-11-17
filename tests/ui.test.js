@@ -303,6 +303,35 @@ function verifie(nom, cond, detail) {
     w.Store.marquerEtape('mary-agneau', 0, false);
   }
 
+  // « 🎯 Apprendre » : directement les parties, enchaînées seules après 3 tours.
+  {
+    ['carulli-andantino'].forEach((id) => (w.Store.etapesFaites(id).forEach((k) => w.Store.marquerEtape(id, k, false))));
+    let fin = null, de = null; const jouerAvant = w.Tablature.jouer;
+    w.Tablature.jouer = (pp, o) => { fin = o.surFin; de = o.de; };
+    w.AppGuitare.ouvrirMorceau('carulli-andantino');
+    const bA = [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /🎯 Apprendre/.test(x.textContent));
+    verifie('« 🎯 Apprendre » à côté de « Écouter »', !!bA);
+    bA.click();
+    const cpt = () => $('detailMorceau').querySelector('.compteur-tours').textContent;
+    verifie('Apprendre : démarre tout de suite sur la partie 1, une seule ligne (1 / 7 · partie 1 · tour 1 / 3)', /🎯 1 \/ 7 · Partie 1 · mesures 1 à 4 · tour 1 \/ 3/.test(cpt()) && de === 0, cpt());
+    fin(); fin(); fin();
+    verifie('après 3 tours : partie 1 cochée, la partie 2 démarre seule', /🎯 2 \/ 7 · Partie 2 · mesures 5 à 8 · tour 1 \/ 3/.test(cpt()) && de === 4 * w.Tablature.noiresParMesure(w.Morceaux.get('carulli-andantino')) &&
+            w.Store.etapesFaites('carulli-andantino').length === 1, cpt());
+    fin(); fin(); fin();
+    verifie('puis l’enchaînement 1 + 2 (mesures 1 à 8, 70 %)', /🎯 3 \/ 7 · Enchaîne.* · mesures 1 à 8 · tour 1 \/ 3/.test(cpt()) && /♩ = /.test($('detailMorceau').textContent), cpt());
+    [...$('detailMorceau').querySelectorAll('.compteur-tours button')].find((x) => /Suivante/.test(x.textContent)).click();
+    verifie('« ⏭ Suivante » : passe sans cocher', /🎯 4 \/ 7/.test(cpt()) && w.Store.etapesFaites('carulli-andantino').length === 2, cpt());
+    bA.click();
+    verifie('« ■ Arrêter d’apprendre » : le parcours s’arrête', $('detailMorceau').querySelector('.compteur-tours').hidden && /🎯 Apprendre/.test(bA.textContent));
+    bA.click();
+    verifie('relancer : reprend à la première étape pas faite (l’enchaînement 1 + 2)', /🎯 3 \/ 7/.test(cpt()), cpt());
+    for (let i = 0; i < 5 * 3; i++) fin();
+    verifie('toutes les étapes faites : « Toutes les parties sont apprises », proposition de monter en vitesse', /Toutes les parties sont apprises/.test(cpt()) &&
+            [...$('detailMorceau').querySelectorAll('.compteur-tours button')].some((x) => /Monter en vitesse/.test(x.textContent)), cpt());
+    w.Store.etapesFaites('carulli-andantino').forEach((k) => w.Store.marquerEtape('carulli-andantino', k, false));
+    w.Tablature.jouer = jouerAvant; w.Tablature.arreter();
+  }
+
   w.AppGuitare.ouvrirMorceau('sor-35-14');
   {
     const g = $('detailMorceau').querySelector('.guide-mains');

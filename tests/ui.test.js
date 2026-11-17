@@ -303,6 +303,54 @@ function verifie(nom, cond, detail) {
     w.Store.marquerEtape('mary-agneau', 0, false);
   }
 
+  // « 🎯 Apprendre » : directement les parties, enchaînées seules après 3 tours.
+  {
+    ['carulli-andantino'].forEach((id) => (w.Store.etapesFaites(id).forEach((k) => w.Store.marquerEtape(id, k, false))));
+    let fin = null, de = null; const jouerAvant = w.Tablature.jouer;
+    w.Tablature.jouer = (pp, o) => { fin = o.surFin; de = o.de; };
+    w.AppGuitare.ouvrirMorceau('carulli-andantino');
+    const bA = [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /🎯 Apprendre/.test(x.textContent));
+    verifie('« 🎯 Apprendre » à côté de « Écouter »', !!bA);
+    bA.click();
+    const cpt = () => $('detailMorceau').querySelector('.compteur-tours').textContent;
+    const choix = (re) => [...$('detailMorceau').querySelectorAll('.compteur-tours button')].find((x) => re.test(x.textContent)).click();
+    verifie('Apprendre : choix automatique ou manuel, rien ne joue encore', /⚡ Automatique/.test(cpt()) && /✋ Manuel/.test(cpt()) && fin === null, cpt());
+    choix(/Automatique/);
+    verifie('Apprendre : démarre tout de suite sur la partie 1, une seule ligne (1 / 7 · partie 1 · tour 1 / 3)', /🎯 1 \/ 7 · Partie 1 · mesures 1 à 4 · tour 1 \/ 3/.test(cpt()) && de === 0, cpt());
+    fin(); fin(); fin();
+    verifie('après 3 tours : partie 1 cochée, la partie 2 démarre seule', /🎯 2 \/ 7 · Partie 2 · mesures 5 à 8 · tour 1 \/ 3/.test(cpt()) && de === 4 * w.Tablature.noiresParMesure(w.Morceaux.get('carulli-andantino')) &&
+            w.Store.etapesFaites('carulli-andantino').length === 1, cpt());
+    fin(); fin(); fin();
+    verifie('puis l’enchaînement 1 + 2 (mesures 1 à 8, 70 %)', /🎯 3 \/ 7 · Enchaîne.* · mesures 1 à 8 · tour 1 \/ 3/.test(cpt()) && /♩ = /.test($('detailMorceau').textContent), cpt());
+    [...$('detailMorceau').querySelectorAll('.compteur-tours button')].find((x) => /Suivante/.test(x.textContent)).click();
+    verifie('« ⏭ Suivante » : passe sans cocher', /🎯 4 \/ 7/.test(cpt()) && w.Store.etapesFaites('carulli-andantino').length === 2, cpt());
+    bA.click();
+    verifie('« ■ Arrêter d’apprendre » : le parcours s’arrête', $('detailMorceau').querySelector('.compteur-tours').hidden && /🎯 Apprendre/.test(bA.textContent));
+    bA.click(); choix(/Automatique/);
+    verifie('relancer : reprend à la première étape pas faite (l’enchaînement 1 + 2)', /🎯 3 \/ 7/.test(cpt()), cpt());
+    for (let i = 0; i < 5 * 3; i++) fin();
+    verifie('toutes les étapes faites : « Toutes les parties sont apprises », proposition de monter en vitesse', /Toutes les parties sont apprises/.test(cpt()) &&
+            [...$('detailMorceau').querySelectorAll('.compteur-tours button')].some((x) => /Monter en vitesse/.test(x.textContent)), cpt());
+    w.Store.etapesFaites('carulli-andantino').forEach((k) => w.Store.marquerEtape('carulli-andantino', k, false));
+    // Manuel : la boucle continue au-delà de 3 tours ; c'est l'élève qui passe.
+    w.AppGuitare.ouvrirMorceau('carulli-andantino');
+    const bA2 = [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /🎯 Apprendre/.test(x.textContent));
+    bA2.click(); choix(/Manuel/);
+    verifie('manuel : partie 1, objectif 3, « Précédente » grisée', /🎯 1 \/ 7 · Partie 1 · mesures 1 à 4 · tour 1 · objectif 3/.test(cpt()) &&
+            [...$('detailMorceau').querySelectorAll('.compteur-tours button')].find((x) => /Précédente/.test(x.textContent)).disabled, cpt());
+    fin(); fin(); fin(); fin();
+    verifie('manuel : après 4 tours, toujours la partie 1 (tour 5, objectif atteint), rien n’est coché tout seul', /🎯 1 \/ 7 · Partie 1 · .*tour 5 · ✓ objectif atteint/.test(cpt()) &&
+            w.Store.etapesFaites('carulli-andantino').length === 0, cpt());
+    choix(/Réussie, la suivante/);
+    verifie('manuel : « Réussie, la suivante » coche et lance la partie 2', /🎯 2 \/ 7 · Partie 2/.test(cpt()) && w.Store.etapesFaites('carulli-andantino').length === 1, cpt());
+    choix(/Précédente/);
+    verifie('manuel : « Précédente » revient à la partie 1', /🎯 1 \/ 7 · Partie 1/.test(cpt()), cpt());
+    choix(/Passer/);
+    verifie('manuel : « Passer » va à la partie 2 sans cocher de plus', /🎯 2 \/ 7/.test(cpt()) && w.Store.etapesFaites('carulli-andantino').length === 1, cpt());
+    w.Store.etapesFaites('carulli-andantino').forEach((k) => w.Store.marquerEtape('carulli-andantino', k, false));
+    w.Tablature.jouer = jouerAvant; w.Tablature.arreter();
+  }
+
   w.AppGuitare.ouvrirMorceau('sor-35-14');
   {
     const g = $('detailMorceau').querySelector('.guide-mains');
@@ -322,6 +370,19 @@ function verifie(nom, cond, detail) {
             !d.querySelector('.mains-morceau') && d.querySelector('.etapes-morceau') && !d.querySelector('.etapes-morceau').open && !d.querySelector('.guide-mains') &&
             ![...d.querySelectorAll('summary')].some((x) => /Comment lire/.test(x.textContent)));
     verifie('la tablature est dessinée en entier', d.querySelectorAll('.tab-note').length === w.Morceaux.get('zombie').notes.length);
+    // Aides éteintes : les boutons du pas à pas font apparaître ce qu'ils montrent.
+    w.AppGuitare.ouvrirMorceau('acc-am-e');
+    let pa = $('detailMorceau').querySelector('.etapes-morceau');
+    [...pa.querySelectorAll('.etape')].find((x) => /Apprends les 2 accords/.test(x.textContent)).querySelector('button').click();
+    const mm = $('detailMorceau').querySelector('.mains-morceau');
+    verifie('aides éteintes : « Voir les accords » du pas à pas affiche la position des mains (La m, Mi)', !!mm && mm.open && /Am/.test(mm.textContent) && /E/.test(mm.textContent));
+    [...pa.querySelectorAll('.etape')].find((x) => /Passe d’un accord/.test(x.textContent)).querySelector('button').click();
+    verifie('« Voir les passages » : le même bloc, sans doublon', $('detailMorceau').querySelectorAll('.mains-morceau').length === 1);
+    w.AppGuitare.ouvrirMorceau('mary-agneau');
+    pa = $('detailMorceau').querySelector('.etapes-morceau');
+    [...pa.querySelectorAll('.etape')].find((x) => /Place chaque note/.test(x.textContent)).querySelector('button').click();
+    verifie('aides éteintes : « Note par note » du pas à pas affiche le guide des mains', !!$('detailMorceau').querySelector('.guide-mains') && $('detailMorceau').querySelector('.guide-mains').isConnected);
+    w.AppGuitare.ouvrirMorceau('zombie');
     const css = fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8');
     verifie('plus de largeur minimale qui fait déborder tablature et portée', !/\.tab\s*\{[^}]*min-width:\s*420px/.test(css) && !/\.portee\s*\{[^}]*min-width:\s*420px/.test(css));
     const z = w.Morceaux.get('zombie');

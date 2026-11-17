@@ -2425,6 +2425,13 @@
         var t = parseFloat(g.dataset.temps);
         g.classList.toggle('hors-section', t < de || t >= a);
       });
+      // Pendant « 🎯 Apprendre », seules les lignes de la partie en cours
+      // restent affichées (mesures 1 à 4 : les lignes 1 et 3, pas les autres).
+      var seule = typeof parcours !== 'undefined' && parcours && !parcours.fini, mpl = page.mesuresParLigne;
+      Array.prototype.forEach.call(zone.children, function (l, i) {
+        var m1 = i * mpl + 1, m2 = (i + 1) * mpl;
+        l.hidden = seule && (m2 < etat.de || m1 > etat.a);
+      });
     }
     dessiner();
 
@@ -2650,6 +2657,7 @@
     function arreterParcours() {
       if (parcours && parcours.micro) arreterMicroParcours();
       parcours = null;
+      marquerSection();
       bApprendre.textContent = '🎯 Apprendre'; bApprendre.classList.remove('primaire');
       etat.objectif = 0; majCompteur();
     }
@@ -2666,6 +2674,7 @@
         Tablature.arreter(); effacer();
         if (parcours.micro) arreterMicroParcours();
         parcours.fini = true; etat.objectif = 0;
+        marquerSection();
         bApprendre.textContent = '🎯 Apprendre'; bApprendre.classList.remove('primaire');
         majCompteur();
         return;

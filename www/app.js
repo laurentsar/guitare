@@ -1343,11 +1343,12 @@
         li.appendChild(tete);
         li.appendChild(el('p', 'aide', e.texte));
         var b = el('button', 'btn' + (k === prochaine ? ' primaire' : ''), e.bouton);
-        b.onclick = function () { appliquer(e.action); };
+        b.onclick = function () { appliquer(e.action, k); };
         li.appendChild(b);
         liste.appendChild(li);
       });
     }
+    d.rafraichir = function () { rendre(); };
     rendre();
     // Ouvert tant que le morceau n'est pas appris : c'est par là qu'on commence.
     d.open = Store.etapesFaites(p.id).length < etapes.length;
@@ -1638,7 +1639,11 @@
     // une fois qu'on sait, elles repoussaient la tablature à 5 000 px.
     var aides = !!Store.reglages().aides;
     if (aides && p.mains) h.appendChild(blocMains(p.mains));
-    if (aides) h.appendChild(blocEtapes(p, nbMesures, function (action) { appliquerEtape(action); }));
+    // Le pas à pas (apprendre par parties) est sur chaque morceau ; sans les
+    // aides débutant, il reste replié : un bandeau, qu'on ouvre au besoin.
+    var blocPasAPas = blocEtapes(p, nbMesures, function (action, k) { appliquerEtape(action, k); });
+    if (!aides) blocPasAPas.open = false;
+    h.appendChild(blocPasAPas);
     if (p.source) {
       // Mention exigée par la licence (CC-BY) et due dans tous les cas.
       var credit = el('p', 'aide credit');
@@ -2480,13 +2485,45 @@
           if (enListe && session && !etat.boucle && zone.isConnected) { suite(false); return; }
           if (!etat.boucle || (ecranCourant !== 'morceau' && ecranCourant !== 'pupitre')) { if (window.CasqueVR) CasqueVR.fin(); return; }
           if (etat.entraineur && etat.pct < 100) { etat.pct = Math.min(100, etat.pct + 5); majTempo(); pupitre.maj(); }
+          tourFini();
           lancer(false);
         }
       });
     }
     /* Une étape du parcours règle le lecteur comme un professeur le ferait :
      * section, tempo, boucle, guitare muette — puis lance la lecture. */
-    function appliquerEtape(action) {
+    /* Répétitions comptées : une étape du pas à pas fixe un objectif de tours
+     * (3 sans t'arrêter) ; la barre affiche le tour en cours, et au tour
+     * visé propose de cocher l'étape et de passer à la suivante. */
+    var compteurTours = el('div', 'compteur-tours');
+    compteurTours.hidden = true;
+    hautLecture.appendChild(compteurTours);
+    function majCompteur() {
+      vide(compteurTours);
+      if (!etat.objectif) { compteurTours.hidden = true; return; }
+      compteurTours.hidden = false;
+      var fait = etat.tours >= etat.objectif;
+      compteurTours.appendChild(el('span', 'compteur-texte', (fait ? '✓ ' : '🔁 ') + 'Tour ' + Math.min(etat.tours + 1, etat.objectif) + ' / ' + etat.objectif +
+        (fait ? ' fait' : '') + ' · mesures ' + etat.de + ' à ' + etat.a + ' · ' + etat.pct + ' %'));
+      if (fait && etat.etapeK != null && blocPasAPas) {
+        compteurTours.appendChild(el('span', 'aide', ' — joués sans t’arrêter ? '));
+        var bOk = el('button', 'btn primaire', '✓ Étape réussie, la suivante');
+        bOk.onclick = function () {
+          Store.marquerEtape(p.id, etat.etapeK, true);
+          etat.objectif = 0; majCompteur();
+          bStop.onclick();
+          blocPasAPas.rafraichir(); blocPasAPas.open = true;
+          var prochaine = blocPasAPas.querySelector('.etape.prochaine');
+          defiler(prochaine || blocPasAPas);
+        };
+        var bEncore = el('button', 'btn', 'Encore 3 tours');
+        bEncore.onclick = function () { etat.tours = 0; majCompteur(); };
+        compteurTours.appendChild(bOk); compteurTours.appendChild(bEncore);
+      }
+    }
+    function tourFini() { if (etat.objectif) { etat.tours++; majCompteur(); } }
+
+    function appliquerEtape(action, k) {
       if (action.type === 'reference') { jouerReference(); return; }
       if (action.type === 'accords') {
         var bloc = h.querySelector('.mains-morceau');
@@ -2505,13 +2542,15 @@
       etat.boucle = !!action.boucle;
       etat.muet = !!action.muet;
       if (action.clic) etat.clic = true;
+      etat.objectif = action.objectif || 0; etat.tours = 0; etat.etapeK = k == null ? null : k;
       majs.forEach(function (f) { f(); });
-      majTempo(); marquerSection();
+      majTempo(); marquerSection(); majCompteur();
       defiler(zone);
       lancer(true); pupitre.maj();
     }
 
-    bJouer.onclick = function () { lancer(true); pupitre.maj(); };
+    // « Écouter » à la main : plus d'objectif de tours en cours.
+    bJouer.onclick = function () { if (etat.objectif) { etat.objectif = 0; majCompteur(); } lancer(true); pupitre.maj(); };
     peJouer.onclick = function () { bJouer.onclick(); };
     peStop.onclick = function () { bStop.onclick(); };
     peMoins.onclick = function () { moins.onclick(); };

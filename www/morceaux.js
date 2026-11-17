@@ -1752,6 +1752,129 @@
    *
    * Découpage : les `sections` du morceau s'il en a (Zombie), sinon des
    * phrases de 4 mesures. */
+  /* Découpage logique d'un morceau, pour l'apprendre par morceaux.
+   *  - Les parties écrites (couplet, refrain…) sont gardées ; trop longues
+   *    (plus de 8 mesures), elles sont redécoupées en phrases.
+   *  - Une phrase fait 2 à 6 mesures, 4 de préférence, et finit là où la
+   *    musique respire : une note longue qui va jusqu'au bout de la mesure,
+   *    ou un silence à la fin de la mesure (la « cadence »).
+   *  - Une partie identique à une précédente (mêmes notes, même rythme) est
+   *    signalée : elle n'est pas à réapprendre. Une partie qui commence
+   *    pareil (même première moitié) aussi : seule la fin change.
+   * Rend [{ titre, de, a, identique?: n° de partie, commeDebut?: n° }]. */
+  function decouper(p, nbMesures) {
+    var parM = Tablature.noiresParMesure(p);
+    var notesDe = function (m) {
+      var t0 = (m - 1) * parM, t1 = m * parM;
+      return p.notes.filter(function (n) { return n.temps >= t0 - 1e-6 && n.temps < t1 - 1e-6; });
+    };
+    // La mesure m finit-elle une phrase ? Note longue jusqu'au bout, ou silence final.
+    function cadence(m) {
+      var ns = notesDe(m);
+      if (!ns.length) return 1;
+      var fin = m * parM, derniere = Math.max.apply(null, ns.map(function (n) { return n.temps; }));
+      var dernieres = ns.filter(function (n) { return n.temps === derniere; });
+      var tenue = dernieres.some(function (n) { return (n.duree || 1) >= Math.min(1.5, parM / 2) && n.temps + (n.duree || 1) >= fin - 1e-6; });
+      var silence = Math.max.apply(null, ns.map(function (n) { return n.temps + (n.duree || 1); })) <= fin - 1 + 1e-6;
+      return tenue || silence ? 1 : 0;
+    }
+    function phrases(de, a) {
+      var out = [], m = de;
+      while (m <= a) {
+        var reste = a - m + 1;
+        if (reste <= 6) { out.push([m, a]); break; }
+        var meilleur = 4, sc = -99;
+        for (var L = 2; L <= 6 && L <= reste - 2; L++) {
+          var v = cadence(m + L - 1) * 2 - Math.abs(L - 4) * 0.6 + (L === 4 ? 0.4 : 0);
+          if (v > sc) { sc = v; meilleur = L; }
+        }
+        out.push([m, m + meilleur - 1]);
+        m += meilleur;
+      }
+      return out;
+    }
+    // Parties écrites, triées ; les mesures qu'elles ne couvrent pas (une
+    // grille qui tourne deux fois, par exemple) deviennent des phrases.
+    var ecrites = (p.sections || []).filter(function (s) { return s.de <= nbMesures; })
+      .map(function (s) { return { titre: s.titre, de: s.de, a: Math.min(s.a || nbMesures, nbMesures), texte: s.texte }; })
+      .sort(function (x, y) { return x.de - y.de; });
+    var bases = [], m0 = 1;
+    ecrites.forEach(function (s) {
+      if (s.de < m0) return;
+      if (s.de > m0) bases.push({ titre: null, de: m0, a: s.de - 1 });
+      bases.push(s); m0 = s.a + 1;
+    });
+    if (m0 <= nbMesures) bases.push({ titre: null, de: m0, a: nbMesures });
+    var parts = [];
+    bases.forEach(function (s) {
+      var de = s.de, a = s.a;
+      if (de > a) return;
+      // Une partie écrite se garde jusqu'à 8 mesures ; sans nom, on découpe dès 7.
+      var ph = (a - de + 1 > (s.titre ? 8 : 6)) ? phrases(de, a) : [[de, a]];
+      ph.forEach(function (x, k) {
+        parts.push({ titre: s.titre ? (ph.length > 1 ? s.titre + ' (' + (k + 1) + '/' + ph.length + ')' : s.titre) : null, de: x[0], a: x[1], texte: s.texte });
+      });
+    });
+    // Empreinte d'une partie : ses notes, relatives au début de la partie.
+    function empreinte(de, a) {
+      var t0 = (de - 1) * parM;
+      var l = [];
+      for (var m = de; m <= a; m++) notesDe(m).forEach(function (n) { l.push([(n.temps - t0).toFixed(3), n.corde, n.frette, n.duree || 1, n.accord || ''].join(':')); });
+      return l.sort().join('|');
+    }
+    /* Une partie dont les deux moitiés sont identiques (Am C D7 F, deux fois)
+     * se coupe en deux : le bloc à apprendre, puis sa reprise — et ainsi de
+     * suite jusqu'à 2 mesures (Mi m – Ré, Mi m – Ré). Une partie de 8 mesures
+     * dont les moitiés commencent pareil se coupe aussi : seule la fin change. */
+    function moities(x) {
+      var L = x.a - x.de + 1;
+      if (L < 4 || L % 2) return [x];
+      var h = L / 2, A = { titre: x.titre, de: x.de, a: x.de + h - 1, texte: x.texte }, B = { titre: x.titre, de: x.de + h, a: x.a, texte: x.texte };
+      var q = Math.max(1, Math.floor(h / 2));
+      var pareil = empreinte(A.de, A.a) === empreinte(B.de, B.a);
+      var memeDebut = L === 8 && empreinte(A.de, A.de + q - 1) === empreinte(B.de, B.de + q - 1);
+      if (!pareil && !memeDebut) return [x];
+      return pareil ? moities(A).concat(moities(B)) : [A, B];
+    }
+    var coupees = [];
+    parts.forEach(function (x) { coupees = coupees.concat(moities(x)); });
+    // Titres : « Couplet (1/2) »… quand une partie écrite a été coupée.
+    var parTitre = {};
+    coupees.forEach(function (x) { if (x.titre) parTitre[x.titre] = (parTitre[x.titre] || 0) + 1; });
+    var vus = {};
+    coupees.forEach(function (x) {
+      if (x.titre && parTitre[x.titre] > 1) { vus[x.titre] = (vus[x.titre] || 0) + 1; x.titre = x.titre.replace(/ \(\d+\/\d+\)$/, '') + ' (' + vus[x.titre] + '/' + parTitre[x.titre] + ')'; }
+    });
+    parts = coupees;
+    parts.forEach(function (x, k) {
+      x.num = k + 1;
+      if (!x.titre) x.titre = 'Partie ' + x.num;
+      x.empreinte = empreinte(x.de, x.a);
+      var moitie = Math.floor((x.a - x.de + 1) / 2);
+      x.debut = moitie >= 1 ? empreinte(x.de, x.de + moitie - 1) : null;
+      for (var j = 0; j < k; j++) {
+        var y = parts[j];
+        if (y.identique) continue;
+        if (y.empreinte === x.empreinte && y.a - y.de === x.a - x.de) { x.identique = y.num; break; }
+        if (!x.commeDebut && x.debut && y.debut === x.debut && y.a - y.de === x.a - x.de) x.commeDebut = y.num;
+      }
+    });
+    // Une reprise sans nom porte celui de la partie qu'elle répète.
+    parts.forEach(function (x) {
+      if (x.identique && /^Partie \d+$/.test(x.titre)) {
+        var o = parts[x.identique - 1];
+        if (!/^Partie \d+$/.test(o.titre)) x.titre = o.titre.replace(/ \(\d+\/\d+\)$/, '') + ' (reprise)';
+      }
+    });
+    return parts.map(function (x) {
+      var r = { titre: x.titre, de: x.de, a: x.a, num: x.num };
+      if (x.texte) r.texte = x.texte;
+      if (x.identique) r.identique = x.identique;
+      else if (x.commeDebut) r.commeDebut = x.commeDebut;
+      return r;
+    });
+  }
+
   function etapes(p, nbMesures) {
     var e = [];
     e.push({ titre: 'Accorde ta guitare',
@@ -1773,21 +1896,41 @@
                texte: 'Avec « Suivante », pose le doigt de la main gauche sur la case indiquée, pince avec le doigt de main droite indiqué, et dis le nom de la note. Aucune vitesse : seulement la bonne place.',
                bouton: '👣 Note par note', action: { type: 'guide' } });
     }
-    var parties = p.sections || [];
-    if (!parties.length) {
-      var taille = nbMesures <= 4 ? nbMesures : 4;
-      for (var de = 1; de <= nbMesures; de += taille) {
-        parties.push({ titre: 'Mesures ' + de + ' à ' + Math.min(nbMesures, de + taille - 1), de: de, a: Math.min(nbMesures, de + taille - 1) });
+    /* Apprendre par morceaux, en les raccrochant : la partie 1 ; la 2 ; puis
+     * 1 + 2 enchaînées ; la 3 ; puis 1 → 3… Chaque nouvelle partie est
+     * accrochée à ce qu'on sait déjà (la chaîne repart de la partie
+     * d'avant quand elle dépasserait 16 mesures). Les parties identiques à
+     * une précédente ne sont pas réapprises. 3 tours sans arrêt par étape. */
+    var parts = decouper(p, nbMesures), mesures = function (x, y) { return x === y ? 'mesure ' + x : 'mesures ' + x + ' à ' + y; };
+    var debutChaine = 1, apprises = 0;
+    parts.forEach(function (x, k) {
+      if (x.identique) return;
+      var deja = parts.filter(function (y) { return y.identique === x.num; }).map(function (y) { return y.titre; });
+      e.push({ titre: x.titre + ' — ' + mesures(x.de, x.a), partie: true, de: x.de, a: x.a,
+               texte: (x.texte ? x.texte + ' ' : '') +
+                      (x.commeDebut ? 'Elle commence comme « ' + parts[x.commeDebut - 1].titre + ' » : seule la fin change, concentre-toi dessus. ' : '') +
+                      'Écoute-la une fois, puis joue-la avec l’app, en boucle à 60 %. Objectif : 3 tours de suite sans t’arrêter.' +
+                      (deja.length ? ' Elle revient plus loin à l’identique (' + deja.join(', ') + ') : apprise une fois, c’est gagné.' : ''),
+               bouton: '🔁 ' + mesures(x.de, x.a).replace(/^m/, 'M') + ' · 60 %', action: { type: 'section', de: x.de, a: x.a, pct: 60, boucle: true, objectif: 3 } });
+      apprises++;
+      // L'enchaînement va jusqu'au bout des reprises qui suivent la partie.
+      var finChaine = x.a;
+      for (var j = k + 1; j < parts.length && parts[j].identique; j++) finChaine = parts[j].a;
+      if (apprises >= 2) {
+        if (finChaine - debutChaine + 1 > 16) debutChaine = parts[k - 1].de;
+        var toutLeMorceau = debutChaine === 1 && finChaine === nbMesures;
+        if (!toutLeMorceau) {
+          var dedans = parts.filter(function (y) { return y.identique && y.de >= debutChaine && y.a <= finChaine; }).map(function (y) { return y.titre; });
+          e.push({ titre: 'Enchaîne, jusqu’à « ' + x.titre + ' » — ' + mesures(debutChaine, finChaine), chaine: true, de: debutChaine, a: finChaine,
+                   texte: 'Raccroche la nouvelle partie à ce que tu sais déjà, sans t’arrêter entre les deux : en boucle à 70 %, 3 tours de suite.' +
+                          (dedans.length ? ' ' + dedans.join(', ') + ' : déjà appris (identique).' : ''),
+                   bouton: '🔗 ' + mesures(debutChaine, finChaine).replace(/^m/, 'M') + ' · 70 %', action: { type: 'section', de: debutChaine, a: finChaine, pct: 70, boucle: true, objectif: 3 } });
+        }
       }
-    }
-    parties.forEach(function (s) {
-      e.push({ titre: s.titre,
-               texte: (s.texte ? s.texte + ' ' : '') + 'Écoute une fois, puis joue avec l’app, lentement (60 %) et en boucle. Passe à la suite quand tu le joues trois fois de suite sans arrêt.',
-               bouton: '🔁 Mesures ' + s.de + ' à ' + s.a + ' · 60 %', action: { type: 'section', de: s.de, a: s.a, pct: 60, boucle: true } });
     });
     e.push({ titre: 'Tout le morceau, lentement',
-             texte: 'On recolle les morceaux, toujours à 60 %. Si un passage accroche, reviens à son étape quelques minutes.',
-             bouton: '🔁 Tout · 60 %', action: { type: 'section', de: 1, a: nbMesures, pct: 60, boucle: true } });
+             texte: 'On recolle les morceaux, à 60 %. Si un passage accroche, reviens à son étape quelques minutes.',
+             bouton: '🔁 Tout · 60 %', action: { type: 'section', de: 1, a: nbMesures, pct: 60, boucle: true, objectif: 2 } });
     e.push({ titre: 'Monte en vitesse',
              texte: 'L’entraîneur part de 60 % et ajoute 5 % à chaque tour. S’il va trop vite, arrête-toi au dernier tempo réussi et reprends demain.',
              bouton: '📈 Entraîneur de vitesse', action: { type: 'section', de: 1, a: nbMesures, entraineur: true, boucle: true } });
@@ -2015,7 +2158,7 @@
   function get(id) { for (var i = 0; i < PIECES.length; i++) if (PIECES[i].id === id) return PIECES[i]; return null; }
 
   global.Morceaux = {
-    tous: tous, get: get, simplifier: simplifier, mouvements: mouvements, melodie: melodie, arpeges: arpeges, etapes: etapes, completerDoigtes: completerDoigtes,
+    tous: tous, get: get, simplifier: simplifier, mouvements: mouvements, melodie: melodie, arpeges: arpeges, etapes: etapes, decouper: decouper, completerDoigtes: completerDoigtes,
     caseEnPremierePosition: caseEnPremierePosition, midiDeNom: midiDeNom
   };
 })(typeof window !== 'undefined' ? window : globalThis);

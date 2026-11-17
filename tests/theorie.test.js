@@ -244,11 +244,39 @@ console.log('\n— Apprendre pas à pas —');
   const z = Morceaux.get('zombie'), ez = Morceaux.etapes(z, nb(z));
   verifie('Zombie : accords, passages, couplet, refrain', /4 accords/.test(ez[2].titre) && /Em → Cmaj7 → G → D → Em/.test(ez[3].texte) &&
           ez.some((e) => /Couplet/.test(e.titre) && e.action.de === 1 && e.action.a === 4) && ez.some((e) => /Refrain/.test(e.titre) && e.action.de === 9));
-  verifie('chaque morceau : des étapes, toutes les mesures couvertes par les sections', Morceaux.tous().every((p) => {
-    const n = nb(p), e = Morceaux.etapes(p, n);
-    return e.length >= 7 && e.every((x) => x.titre && x.texte && x.bouton) &&
-           (p.sections || e.filter((x) => /^Mesures/.test(x.titre)).reduce((t, x) => t + x.action.a - x.action.de + 1, 0) === n);
-  }));
+  const malDecoupes = Morceaux.tous().filter((p) => {
+    const n = nb(p), d = Morceaux.decouper(p, n), e = Morceaux.etapes(p, n);
+    const vues = [];
+    d.forEach((x) => { for (let m = x.de; m <= x.a; m++) vues.push(m); });
+    const couvert = vues.length === n && vues.every((m, k) => m === k + 1);
+    const tailles = d.every((x) => x.a - x.de + 1 <= 8);
+    const etapesOk = e.length >= 6 && e.every((x) => x.titre && x.texte && x.bouton) &&
+      d.filter((x) => !x.identique).every((x) => e.some((y) => y.partie && y.de === x.de && y.a === x.a)) &&
+      !d.filter((x) => x.identique).some((x) => e.some((y) => y.partie && y.de === x.de));
+    return !(couvert && tailles && etapesOk);
+  });
+  verifie('chaque morceau : découpé en parties de 8 mesures au plus, chaque mesure une fois, une étape par partie nouvelle', malDecoupes.length === 0,
+          malDecoupes.slice(0, 5).map((p) => p.id).join(','));
+  const dz = Morceaux.decouper(z, nb(z));
+  verifie('Zombie : la grille qui revient est reconnue (mesures 5-8 = couplet, 13-16 = refrain), pas réapprise',
+          dz.length === 4 && dz[1].identique === 1 && dz[3].identique === 3 && !Morceaux.etapes(z, nb(z)).some((e) => e.partie && e.de === 5), JSON.stringify(dz));
+  const dj = Morceaux.decouper(Morceaux.get('ch-je-l-aime-a-mourir'), 20);
+  verifie('partie écrite trop longue (couplet de 16 mesures) : redécoupée en phrases de 4, les reprises reconnues',
+          dj.filter((x) => /^Couplet \(\d\/4\)/.test(x.titre)).length === 4 && dj[2].identique === 1 && dj[3].identique === 2, dj.map((x) => x.titre + (x.identique ? '=' + x.identique : '')).join(' | '));
+  const car = Morceaux.get('carulli-andantino'), ec = Morceaux.etapes(car, nb(car));
+  const ordre = ec.filter((e) => e.partie || e.chaine).map((e) => (e.chaine ? 'enchaîne ' : 'partie ') + e.de + '-' + e.a).join(', ');
+  verifie('apprendre par chaînage : partie 1, partie 2, enchaîne 1-2, partie 3, enchaîne 1-3 (jusqu’au bout de sa reprise)…',
+          ordre === 'partie 1-4, partie 5-8, enchaîne 1-8, partie 9-10, enchaîne 1-12, partie 13-16', ordre);
+  const ap = Morceaux.get('ch-en-apesanteur'), dap = Morceaux.decouper(ap, nb(ap));
+  verifie('En apesanteur : couplet Am C D7 F appris une fois puis repris, refrain idem (moitiés identiques coupées)',
+          dap.map((x) => x.de + '-' + x.a + (x.identique ? '=' + x.identique : '')).join(' ') === '1-4 5-8=1 9-12 13-16=3', JSON.stringify(dap));
+  const cy = Morceaux.decouper(Morceaux.get('ch-come-as-you-are'), 20);
+  verifie('Come As You Are : le couplet se réduit à un bloc de 2 mesures (Mi m – Ré) joué 4 fois', cy[0].de === 1 && cy[0].a === 2 && cy.slice(1, 4).every((x) => x.identique === 1), JSON.stringify(cy.slice(0, 4)));
+  verifie('reprise sans nom : elle porte le nom de la partie qu’elle répète', Morceaux.decouper(z, nb(z))[1].titre === 'Couplet : l’arpège (reprise)');
+  verifie('répétitions : 3 tours visés par étape de partie et d’enchaînement (60 %, puis 70 %)',
+          ec.filter((e) => e.partie).every((e) => e.action.objectif === 3 && e.action.pct === 60) && ec.filter((e) => e.chaine).every((e) => e.action.objectif === 3 && e.action.pct === 70));
+  const me = Morceaux.get('menuet-sol'), cm = Morceaux.etapes(me, nb(me)).filter((e) => e.chaine);
+  verifie('morceau long : la chaîne repart de la partie d’avant au-delà de 16 mesures', cm.every((e) => e.a - e.de + 1 <= 16) && cm.some((e) => e.de > 1), cm.map((e) => e.de + '-' + e.a).join(' '));
 }
 
 console.log('\n— Doigtés de tous les morceaux —');

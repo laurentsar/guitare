@@ -359,6 +359,39 @@ function verifie(nom, cond, detail) {
     w.Tablature.jouer = jouerAvant; w.Tablature.arreter();
   }
 
+  // « 🎯 Apprendre » au micro, sans tempo : rien ne joue, le micro écoute la partie.
+  {
+    w.Store.etapesFaites('mary-agneau').forEach((k) => w.Store.marquerEtape('mary-agneau', k, false));
+    let joue = 0; const jouerAvant = w.Tablature.jouer; w.Tablature.jouer = () => { joue++; };
+    const vrai = w.Ecoute.demarrer, vraiArret = w.Ecoute.arreter, vraiEnMarche = w.Ecoute.enMarche;
+    let entendre = null, ouvert = false;
+    w.Ecoute.demarrer = (surNote) => { entendre = surNote; ouvert = true; return Promise.resolve(true); };
+    w.Ecoute.arreter = () => { ouvert = false; }; w.Ecoute.enMarche = () => ouvert;
+    w.AppGuitare.ouvrirMorceau('mary-agneau');
+    [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /🎯 Apprendre/.test(x.textContent)).click();
+    const ct = () => $('detailMorceau').querySelector('.compteur-tours');
+    const bMic = [...ct().querySelectorAll('button')].find((x) => /Au micro, sans tempo/.test(x.textContent));
+    verifie('Apprendre : 3e choix « 🎤 Au micro, sans tempo »', !!bMic);
+    bMic.click();
+    verifie('au micro : rien ne joue, le micro écoute la partie 1, la note à jouer annoncée', joue === 0 && ouvert && /🎤 🎯 1 \/ 3 · Partie 1 · mesures 1 à 4 · tour 1 \/ 3/.test(ct().textContent) && /Joue : /.test(ct().textContent), ct().textContent);
+    const mary = w.Morceaux.get('mary-agneau'), pm = w.Tablature.noiresParMesure(mary);
+    const partie1 = [...new Set(mary.notes.filter((n) => n.temps < 4 * pm).map((n) => n.temps))].map((t) => mary.notes.find((n) => n.temps === t).midi);
+    partie1.forEach((m) => entendre(m));
+    verifie('au micro : partie jouée sans faute → tour compté (tour 2 / 3)', /tour 2 \/ 3/.test(ct().textContent) && /sans faute : tour compté/.test(ct().textContent), ct().textContent);
+    entendre(partie1[0] + 1); entendre(partie1[0]); entendre(partie1[1] + 1); partie1.slice(1).forEach((m) => entendre(m));
+    verifie('au micro : deux fautes → le tour ne compte pas, on recommence', /tour 2 \/ 3/.test(ct().textContent) && /2 fautes : ce tour ne compte pas/.test(ct().textContent), ct().textContent);
+    partie1.forEach((m) => entendre(m)); partie1.forEach((m) => entendre(m));
+    verifie('au micro : 3 tours comptés → partie 1 cochée, la partie 2 écoutée', /🎯 2 \/ 3 · Partie 2 · mesures 5 à 8 · tour 1 \/ 3/.test(ct().textContent) &&
+            w.Store.etapesFaites('mary-agneau').length === 1 && ouvert && joue === 0, ct().textContent);
+    [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /Arrêter d’apprendre/.test(x.textContent)).click();
+    verifie('arrêter : le micro se ferme', !ouvert);
+    w.Store.etapesFaites('mary-agneau').forEach((k) => w.Store.marquerEtape('mary-agneau', k, false));
+    w.Ecoute.demarrer = vrai; w.Ecoute.arreter = vraiArret; w.Ecoute.enMarche = vraiEnMarche;
+    w.Tablature.jouer = jouerAvant;
+    const part = $('detailMorceau').querySelector('.partition');
+    if (part.classList.contains('plein-ecran')) part.querySelector('[aria-label="Quitter le plein écran"]').click();
+  }
+
   w.AppGuitare.ouvrirMorceau('sor-35-14');
   {
     const g = $('detailMorceau').querySelector('.guide-mains');

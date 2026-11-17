@@ -2529,7 +2529,24 @@
         // Une seule ligne : où on en est. Pas d'explication à lire.
         var e = etapesM[etat.etapeK], rang = parcours.liste.indexOf(etat.etapeK) + 1;
         var debut = '🎯 ' + rang + ' / ' + parcours.liste.length + ' · ' + e.titre.replace(/ — mesures? .*$/, '') + ' · mesures ' + etat.de + ' à ' + etat.a + ' · ';
-        if (parcours.auto) {
+        if (parcours.micro && micP) {
+          // Au micro : la note à jouer, ce qu'on entend, le verdict.
+          compteurTours.appendChild(el('span', 'compteur-texte', '🎤 ' + debut + 'tour ' + Math.min(etat.tours + 1, etat.objectif) + ' / ' + etat.objectif));
+          var att = micP.suivi.attendue();
+          var ligne2 = el('div', 'p-micro');
+          ligne2.appendChild(el('b', 'p-joue', att ? (modeAccords ? 'Gratte : ' : 'Joue : ') + decrire(att[0]) : ''));
+          ligne2.appendChild(el('span', 'p-entendu', 'j’entends : ' + micP.entendu));
+          compteurTours.appendChild(ligne2);
+          compteurTours.appendChild(el('div', 'ecoute-verdict ' + (micP.verdict ? micP.verdict.classe : 'vide'), micP.verdict ? micP.verdict.texte : '\u00a0'));
+          var bPrecM = el('button', 'btn', '⏮');
+          bPrecM.setAttribute('aria-label', 'Partie précédente'); bPrecM.disabled = rang <= 1;
+          bPrecM.onclick = function () { allerEtapeParcours(-1); };
+          var bRecom = el('button', 'btn', '↺ Recommencer');
+          bRecom.onclick = function () { micP.suivi = suiviSection(); micP.verdict = null; majCompteur(); montrerP(); };
+          var bSuivM = el('button', 'btn', '⏭ Suivante');
+          bSuivM.onclick = function () { etapeSuivanteParcours(false); };
+          compteurTours.appendChild(bPrecM); compteurTours.appendChild(bRecom); compteurTours.appendChild(bSuivM);
+        } else if (parcours.auto) {
           compteurTours.appendChild(el('span', 'compteur-texte', debut + 'tour ' + Math.min(etat.tours + 1, etat.objectif) + ' / ' + etat.objectif));
           var bEnc = el('button', 'btn', '↺ Encore');
           bEnc.onclick = function () { etat.tours = 0; majCompteur(); };
@@ -2611,19 +2628,27 @@
       bMan.title = 'La partie tourne en boucle ; tu passes à la suivante quand tu veux';
       bMan.onclick = function () { lancerParcours(false); };
       compteurTours.appendChild(bAuto); compteurTours.appendChild(bMan);
+      if (ecoutable) {
+        var bMic = el('button', 'btn', '🎤 Au micro, sans tempo');
+        bMic.title = 'Rien ne joue : le micro t’écoute note après note, à ton rythme';
+        bMic.onclick = function () { lancerParcours(true, true); };
+        compteurTours.appendChild(bMic);
+      }
       placerCompteur();
       bAuto.focus();
     }
-    function lancerParcours(auto) {
+    function lancerParcours(auto, micro) {
       var liste = listeParcours(), faites = Store.etapesFaites(p.id);
       if (!liste.length) return;
       var k = liste.filter(function (x) { return faites.indexOf(x) === -1; })[0];
       if (k == null) k = liste[0];               // tout est fait : on repart du début
-      parcours = { liste: liste, auto: !!auto };
+      if (micro && suiviE) eteindreMicro();      // l'interrupteur 🎤 Micro laisse la place
+      parcours = { liste: liste, auto: !!auto, micro: !!micro };
       bApprendre.textContent = '■ Arrêter d’apprendre'; bApprendre.classList.add('primaire');
       appliquerEtape(etapesM[k].action, k);
     }
     function arreterParcours() {
+      if (parcours && parcours.micro) arreterMicroParcours();
       parcours = null;
       bApprendre.textContent = '🎯 Apprendre'; bApprendre.classList.remove('primaire');
       etat.objectif = 0; majCompteur();
@@ -2639,6 +2664,7 @@
       var i = parcours.liste.indexOf(k), suivante = parcours.liste[i + 1];
       if (suivante == null) {
         Tablature.arreter(); effacer();
+        if (parcours.micro) arreterMicroParcours();
         parcours.fini = true; etat.objectif = 0;
         bApprendre.textContent = '🎯 Apprendre'; bApprendre.classList.remove('primaire');
         majCompteur();
@@ -2676,8 +2702,63 @@
       // En plein écran, la première ligne de la partie juste sous les
       // bandeaux du haut (barre + ligne d'apprentissage), pas dessous.
       if (pleinEcranOuvert()) { ligneSuivie = null; amener(ligneDeMesure(action.de)); } else defiler(zone);
+      if (parcours && parcours.micro) { demarrerMicroParcours(); return; }
       lancer(true); pupitre.maj();
     }
+
+    /* Apprendre au micro, sans tempo : rien ne joue. La partie en cours est
+     * écoutée note après note (ou accord après accord, sur une grille) ; un
+     * tour compte quand on l'a jouée jusqu'au bout avec une faute au plus. */
+    var micP = null;    // { suivi, verdict, entendu, fautesTour }
+    function suiviSection() {
+      var t0 = (etat.de - 1) * parMesure, t1 = etat.a * parMesure;
+      if (modeAccords) return new Ecoute.SuiviAccords(p.notes.filter(function (n) { return n.temps >= t0 - 1e-6 && n.temps < t1 - 1e-6; }));
+      return new Ecoute.Suivi(notesEcoute().filter(function (n) { return n.temps >= t0 - 1e-6 && n.temps < t1 - 1e-6; }));
+    }
+    function montrerP() {
+      var e = micP && micP.suivi.attendue();
+      Array.prototype.forEach.call(zone.querySelectorAll('.tab-note, .portee-note'), function (g) {
+        g.classList.toggle('en-cours', !!e && parseFloat(g.dataset.temps) === e[0].temps);
+      });
+      if (e) { if (etat.manche) majManche(e[0].temps); suivreLigne(); }
+    }
+    function demarrerMicroParcours() {
+      var neuf = !micP;
+      micP = { suivi: suiviSection(), verdict: null, entendu: micP ? micP.entendu : '…' };
+      majCompteur(); montrerP();
+      if (!neuf && Ecoute.enMarche()) return;
+      Ecoute.demarrer(function (v) {
+        if (!micP || !parcours || !parcours.micro) return;
+        var att = micP.suivi.attendue();
+        if (!att) return;
+        var r = micP.suivi.entendu(v, Date.now());
+        if (r.resultat === 'juste') micP.verdict = { classe: 'juste', texte: '✓ ' + nomE(v) };
+        else if (r.resultat === 'faux') micP.verdict = { classe: 'faux', texte: '✗ ' + nomE(v) + ' → il faut ' + nomE(valeurE(att[0])) };
+        else if (r.resultat === 'doute') micP.verdict = { classe: 'doute', texte: '❔ ' + nomE(v) + ' ? regratte' };
+        if (micP.suivi.fini()) {
+          // Fin de la partie : un tour compte avec une faute au plus.
+          var fautes = micP.suivi.bilan().erreurs.length;
+          if (fautes <= 1) etat.tours++;
+          micP.verdict = fautes <= 1 ? { classe: 'juste', texte: '✓ Partie jouée' + (fautes ? ' (1 faute)' : ' sans faute') + ' : tour compté' }
+            : { classe: 'faux', texte: '↺ ' + fautes + ' fautes : ce tour ne compte pas, on recommence' };
+          if (parcours.auto && etat.tours >= etat.objectif) { etapeSuivanteParcours(true); return; }
+          var v0 = micP.verdict;
+          micP.suivi = suiviSection(); micP.verdict = v0;
+        }
+        majCompteur(); montrerP();
+      }, function (m) {
+        if (!micP) return;
+        var t = modeAccords ? (m.accord || '…') : (m.midi == null ? '…' : Theorie.nomSansOctave(m.midi));
+        if (t !== micP.entendu) { micP.entendu = t; var x = compteurTours.querySelector('.p-entendu'); if (x) x.textContent = 'j’entends : ' + t; }
+      }, function (msg) {
+        micP = null;
+        vide(compteurTours); compteurTours.appendChild(el('span', 'compteur-texte', '🎤 ' + msg)); placerCompteur();
+      }, function () {
+        var e = micP && micP.suivi.attendue();
+        return e ? e.map(valeurE) : null;
+      }, modeAccords ? { accords: modelesAccords() } : null);
+    }
+    function arreterMicroParcours() { if (micP) { micP = null; Ecoute.arreter(); effacer(); } }
 
     // « Écouter » à la main : plus d'objectif de tours en cours.
     bJouer.onclick = function () { if (parcours) arreterParcours(); if (etat.objectif) { etat.objectif = 0; majCompteur(); } lancer(true); pupitre.maj(); };

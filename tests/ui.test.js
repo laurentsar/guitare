@@ -277,9 +277,26 @@ function verifie(nom, cond, detail) {
     const etapes = bloc.querySelectorAll('.etape');
     etapes[3].querySelector('button').click();
     const txt = $('detailMorceau').textContent;
-    verifie('pas à pas : « Mesures 1 à 4 » règle la section et 60 %', /Jusqu’à la mesure\s*−\s*4 \/ 8/.test(txt) && /♩ = 48/.test(txt), txt.match(/♩ = \d+/));
+    verifie('pas à pas : « Partie 1 — mesures 1 à 4 » règle la section et 60 %', /Partie 1 — mesures 1 à 4/.test(etapes[3].textContent) && /Jusqu’à la mesure\s*−\s*4 \/ 8/.test(txt) && /♩ = 48/.test(txt), txt.match(/♩ = \d+/));
     w.Tablature.arreter();
-    etapes[0].querySelector('input').click();
+    // Répétitions comptées : 3 tours, puis « Étape réussie, la suivante ».
+    {
+      let fin = null; const jouerAvant = w.Tablature.jouer;
+      w.Tablature.jouer = (pp, o) => { fin = o.surFin; };
+      bloc.querySelectorAll('.etape')[3].querySelector('button').click();
+      const cpt = () => $('detailMorceau').querySelector('.compteur-tours');
+      verifie('répétitions : « Tour 1 / 3 · mesures 1 à 4 · 60 % »', cpt() && !cpt().hidden && /Tour 1 \/ 3 · mesures 1 à 4 · 60 %/.test(cpt().textContent), cpt() && cpt().textContent);
+      fin(); fin();
+      verifie('répétitions : le tour avance à chaque boucle (tour 3 / 3)', /Tour 3 \/ 3/.test(cpt().textContent) && !/Étape réussie/.test(cpt().textContent), cpt().textContent);
+      fin();
+      verifie('répétitions : au 3e tour, proposition de valider l’étape', /✓ Tour 3 \/ 3 fait/.test(cpt().textContent) && /Étape réussie, la suivante/.test(cpt().textContent), cpt().textContent);
+      [...cpt().querySelectorAll('button')].find((x) => /Étape réussie/.test(x.textContent)).click();
+      verifie('étape validée depuis le compteur : cochée dans le pas à pas, compteur caché', w.Store.etapesFaites('mary-agneau').indexOf(3) !== -1 && cpt().hidden &&
+              $('detailMorceau').querySelectorAll('.etapes-morceau .etape')[3].classList.contains('faite'));
+      w.Store.marquerEtape('mary-agneau', 3, false);
+      w.Tablature.jouer = jouerAvant; w.Tablature.arreter();
+    }
+    bloc.querySelectorAll('.etape')[0].querySelector('input').click();
     verifie('pas à pas : étape cochée, mémorisée, la suivante mise en avant',
             /1 \/ 8/.test(bloc.querySelector('summary').textContent) && w.Store.etapesFaites('mary-agneau').join() === '0' &&
             bloc.querySelectorAll('.etape')[1].classList.contains('prochaine'));
@@ -301,8 +318,8 @@ function verifie(nom, cond, detail) {
     w.Store.reglage('aides', false);
     w.AppGuitare.ouvrirMorceau('zombie');
     const d = $('detailMorceau');
-    verifie('aides éteintes par défaut : ni mains, ni pas à pas, ni guide, ni légende',
-            !d.querySelector('.mains-morceau') && !d.querySelector('.etapes-morceau') && !d.querySelector('.guide-mains') &&
+    verifie('aides éteintes par défaut : ni mains, ni guide, ni légende ; le pas à pas replié en un bandeau',
+            !d.querySelector('.mains-morceau') && d.querySelector('.etapes-morceau') && !d.querySelector('.etapes-morceau').open && !d.querySelector('.guide-mains') &&
             ![...d.querySelectorAll('summary')].some((x) => /Comment lire/.test(x.textContent)));
     verifie('la tablature est dessinée en entier', d.querySelectorAll('.tab-note').length === w.Morceaux.get('zombie').notes.length);
     const css = fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8');

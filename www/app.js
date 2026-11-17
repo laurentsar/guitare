@@ -1827,7 +1827,11 @@
     /* Zone réellement visible : sous l'en-tête collant (ou la barre du plein
      * écran), au-dessus de la barre d'onglets. */
     function bornesVisibles() {
-      if (pleinEcranOuvert()) return { haut: peBarre.offsetHeight, bas: window.innerHeight };
+      if (pleinEcranOuvert()) {
+        // La ligne d'apprentissage, fixée sous la barre, cache aussi le haut.
+        var ct = typeof compteurTours !== 'undefined' && compteurTours && !compteurTours.hidden && compteurTours.classList.contains('en-pe') ? compteurTours.offsetHeight : 0;
+        return { haut: peBarre.offsetHeight + ct, bas: window.innerHeight };
+      }
       var en = document.querySelector('.entete'), on = $('onglets');
       // Pendant l'écoute, le panneau colle sous l'en-tête : la ligne suivie
       // doit rester visible SOUS lui.
@@ -1855,9 +1859,11 @@
     var peTempo = el('b');
     var pePlus = el('button', 'btn', '+');
     var peQuitter = el('button', 'btn', '✕');
+    var peApprendre = el('button', 'btn', '🎯');
     peJouer.setAttribute('aria-label', 'Jouer'); peStop.setAttribute('aria-label', 'Arrêter');
     peQuitter.setAttribute('aria-label', 'Quitter le plein écran');
-    [peTitre, peJouer, peStop, peMoins, peTempo, pePlus, groupeZoom(), peQuitter].forEach(function (x) { peBarre.appendChild(x); });
+    peApprendre.setAttribute('aria-label', 'Apprendre par parties');
+    [peTitre, peJouer, peStop, peApprendre, peMoins, peTempo, pePlus, groupeZoom(), peQuitter].forEach(function (x) { peBarre.appendChild(x); });
     boitePartition.appendChild(peBarre);
     if (bandeau) boitePartition.appendChild(bandeau);
     var panneauSuite = el('div', 'suite-liste');
@@ -2011,6 +2017,7 @@
       }
       dessiner();
       boitePartition.scrollTop = 0;
+      if (typeof placerCompteur === 'function') placerCompteur();
       // Le focus restait sur « Plein écran », caché sous le calque.
       peJouer.focus();
     }
@@ -2025,6 +2032,7 @@
       var exit = document.exitFullscreen || document.webkitExitFullscreen;
       if (fs && exit) { try { var pr = exit.call(document); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }
       dessiner();
+      if (typeof placerCompteur === 'function') placerCompteur();
       if (bPleinEcran.isConnected) bPleinEcran.focus();
     }
     bPleinEcran.onclick = ouvrirPleinEcran;
@@ -2500,7 +2508,8 @@
     var compteurTours = el('div', 'compteur-tours');
     compteurTours.hidden = true;
     hautLecture.appendChild(compteurTours);
-    function majCompteur() {
+    function majCompteur() { majCompteurContenu(); placerCompteur(); }
+    function majCompteurContenu() {
       vide(compteurTours);
       if (parcours && parcours.fini) {
         compteurTours.hidden = false;
@@ -2559,6 +2568,17 @@
         compteurTours.appendChild(bOk); compteurTours.appendChild(bEncore);
       }
     }
+    /* En plein écran, la ligne d'apprentissage se fixe sous la barre du haut
+     * (la tablature défile dessous) ; hors plein écran, elle revient sur la
+     * page, sous les boutons de lecture. */
+    function placerCompteur() {
+      var pe = pleinEcranOuvert();
+      if (pe && compteurTours.parentNode !== boitePartition) boitePartition.appendChild(compteurTours);
+      if (!pe && compteurTours.parentNode !== hautLecture) hautLecture.appendChild(compteurTours);
+      compteurTours.classList.toggle('en-pe', pe);
+      compteurTours.style.top = pe ? peBarre.offsetHeight + 'px' : '';
+      boitePartition.style.paddingTop = pe && !compteurTours.hidden ? (peBarre.offsetHeight + compteurTours.offsetHeight + 8) + 'px' : '';
+    }
     function tourFini() {
       if (!etat.objectif) return false;
       etat.tours++;
@@ -2580,6 +2600,8 @@
     }
     // Avant de commencer : automatique ou manuel, au choix à chaque fois.
     function choisirParcours() {
+      // L'apprentissage se fait en plein écran, avec la tablature.
+      if (!pleinEcranOuvert()) ouvrirPleinEcran();
       vide(compteurTours); compteurTours.hidden = false;
       compteurTours.appendChild(el('span', 'compteur-texte', '🎯 Apprendre par parties :'));
       var bAuto = el('button', 'btn primaire', '⚡ Automatique');
@@ -2589,7 +2611,8 @@
       bMan.title = 'La partie tourne en boucle ; tu passes à la suivante quand tu veux';
       bMan.onclick = function () { lancerParcours(false); };
       compteurTours.appendChild(bAuto); compteurTours.appendChild(bMan);
-      defiler(compteurTours);
+      placerCompteur();
+      bAuto.focus();
     }
     function lancerParcours(auto) {
       var liste = listeParcours(), faites = Store.etapesFaites(p.id);
@@ -2650,13 +2673,16 @@
       etat.objectif = action.objectif || 0; etat.tours = 0; etat.etapeK = k == null ? null : k;
       majs.forEach(function (f) { f(); });
       majTempo(); marquerSection(); majCompteur();
-      defiler(zone);
+      // En plein écran, la première ligne de la partie juste sous les
+      // bandeaux du haut (barre + ligne d'apprentissage), pas dessous.
+      if (pleinEcranOuvert()) { ligneSuivie = null; amener(ligneDeMesure(action.de)); } else defiler(zone);
       lancer(true); pupitre.maj();
     }
 
     // « Écouter » à la main : plus d'objectif de tours en cours.
     bJouer.onclick = function () { if (parcours) arreterParcours(); if (etat.objectif) { etat.objectif = 0; majCompteur(); } lancer(true); pupitre.maj(); };
     bApprendre.onclick = function () { if (parcours && !parcours.fini) bStop.onclick(); else { parcours = null; choisirParcours(); } };
+    peApprendre.onclick = function () { bApprendre.onclick(); };
     peJouer.onclick = function () { bJouer.onclick(); };
     peStop.onclick = function () { bStop.onclick(); };
     peMoins.onclick = function () { moins.onclick(); };

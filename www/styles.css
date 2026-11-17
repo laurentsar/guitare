@@ -510,6 +510,11 @@ html.en-pupitre body { padding-bottom: 0; }
 .pe-barre .pe-titre { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pe-barre .btn { min-height: 44px; }
 html.plein-ecran-ouvert body { overflow: hidden; }
+/* Apprendre en plein écran : la ligne d'état fixée sous la barre du haut. */
+.compteur-tours.en-pe { position: fixed; left: 0; right: 0; z-index: 901; margin: 0; border-radius: 0;
+  padding: 8px max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left));
+  background: rgba(22, 28, 41, .96); border-bottom: 1px solid #2a3142; }
+html.tv .compteur-tours.en-pe { padding: 10px 48px; font-size: 20px; }
 /* Zoom : le dessin a une largeur fixe, centré quand il ne remplit pas la ligne. */
 .partition svg.tab, .partition svg.portee { margin: 0 auto; }
 .partition-barre { align-items: center; gap: 8px; flex-wrap: wrap; }

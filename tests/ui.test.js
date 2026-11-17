@@ -315,6 +315,9 @@ function verifie(nom, cond, detail) {
     const cpt = () => $('detailMorceau').querySelector('.compteur-tours').textContent;
     const choix = (re) => [...$('detailMorceau').querySelectorAll('.compteur-tours button')].find((x) => re.test(x.textContent)).click();
     verifie('Apprendre : choix automatique ou manuel, rien ne joue encore', /⚡ Automatique/.test(cpt()) && /✋ Manuel/.test(cpt()) && fin === null, cpt());
+    const part = () => $('detailMorceau').querySelector('.partition');
+    const ct = () => $('detailMorceau').querySelector('.compteur-tours');
+    verifie('Apprendre : en plein écran, le choix fixé sous la barre du plein écran', part().classList.contains('plein-ecran') && part().contains(ct()) && ct().classList.contains('en-pe'));
     choix(/Automatique/);
     verifie('Apprendre : démarre tout de suite sur la partie 1, une seule ligne (1 / 7 · partie 1 · tour 1 / 3)', /🎯 1 \/ 7 · Partie 1 · mesures 1 à 4 · tour 1 \/ 3/.test(cpt()) && de === 0, cpt());
     fin(); fin(); fin();
@@ -324,9 +327,14 @@ function verifie(nom, cond, detail) {
     verifie('puis l’enchaînement 1 + 2 (mesures 1 à 8, 70 %)', /🎯 3 \/ 7 · Enchaîne.* · mesures 1 à 8 · tour 1 \/ 3/.test(cpt()) && /♩ = /.test($('detailMorceau').textContent), cpt());
     [...$('detailMorceau').querySelectorAll('.compteur-tours button')].find((x) => /Suivante/.test(x.textContent)).click();
     verifie('« ⏭ Suivante » : passe sans cocher', /🎯 4 \/ 7/.test(cpt()) && w.Store.etapesFaites('carulli-andantino').length === 2, cpt());
+    verifie('en plein écran, la ligne d’apprentissage suit (tour, Encore, Suivante)', part().contains(ct()) && /🎯 4 \/ 7/.test(ct().textContent));
+    part().querySelector('[aria-label="Quitter le plein écran"]').click();
+    verifie('plein écran fermé : la ligne d’apprentissage revient sur la page', !part().classList.contains('plein-ecran') && !part().contains(ct()) && !ct().classList.contains('en-pe') && /🎯 4 \/ 7/.test(ct().textContent));
     bA.click();
     verifie('« ■ Arrêter d’apprendre » : le parcours s’arrête', $('detailMorceau').querySelector('.compteur-tours').hidden && /🎯 Apprendre/.test(bA.textContent));
-    bA.click(); choix(/Automatique/);
+    part().querySelector('[aria-label="Apprendre par parties"]').click();
+    verifie('le bouton 🎯 de la barre du plein écran propose aussi le choix', part().classList.contains('plein-ecran') && /⚡ Automatique/.test(cpt()), cpt());
+    choix(/Automatique/);
     verifie('relancer : reprend à la première étape pas faite (l’enchaînement 1 + 2)', /🎯 3 \/ 7/.test(cpt()), cpt());
     for (let i = 0; i < 5 * 3; i++) fin();
     verifie('toutes les étapes faites : « Toutes les parties sont apprises », proposition de monter en vitesse', /Toutes les parties sont apprises/.test(cpt()) &&

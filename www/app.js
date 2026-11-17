@@ -2525,12 +2525,16 @@
 
     function appliquerEtape(action, k) {
       if (action.type === 'reference') { jouerReference(); return; }
+      // Sans les aides débutant, ces blocs ne sont pas sur la page : le pas à
+      // pas les fait apparaître à la demande, juste sous lui.
       if (action.type === 'accords') {
         var bloc = h.querySelector('.mains-morceau');
+        if (!bloc && p.mains) { bloc = blocMains(p.mains); h.insertBefore(bloc, blocPasAPas.nextSibling); }
         if (bloc) { bloc.open = true; defiler(bloc); }
         return;
       }
       if (action.type === 'guide') {
+        if (!guide.boite.isConnected) h.insertBefore(guide.boite, blocPasAPas.nextSibling);
         guide.aller(0);
         defiler(guide.boite);
         return;

@@ -322,6 +322,19 @@ function verifie(nom, cond, detail) {
             !d.querySelector('.mains-morceau') && d.querySelector('.etapes-morceau') && !d.querySelector('.etapes-morceau').open && !d.querySelector('.guide-mains') &&
             ![...d.querySelectorAll('summary')].some((x) => /Comment lire/.test(x.textContent)));
     verifie('la tablature est dessinée en entier', d.querySelectorAll('.tab-note').length === w.Morceaux.get('zombie').notes.length);
+    // Aides éteintes : les boutons du pas à pas font apparaître ce qu'ils montrent.
+    w.AppGuitare.ouvrirMorceau('acc-am-e');
+    let pa = $('detailMorceau').querySelector('.etapes-morceau');
+    [...pa.querySelectorAll('.etape')].find((x) => /Apprends les 2 accords/.test(x.textContent)).querySelector('button').click();
+    const mm = $('detailMorceau').querySelector('.mains-morceau');
+    verifie('aides éteintes : « Voir les accords » du pas à pas affiche la position des mains (La m, Mi)', !!mm && mm.open && /Am/.test(mm.textContent) && /E/.test(mm.textContent));
+    [...pa.querySelectorAll('.etape')].find((x) => /Passe d’un accord/.test(x.textContent)).querySelector('button').click();
+    verifie('« Voir les passages » : le même bloc, sans doublon', $('detailMorceau').querySelectorAll('.mains-morceau').length === 1);
+    w.AppGuitare.ouvrirMorceau('mary-agneau');
+    pa = $('detailMorceau').querySelector('.etapes-morceau');
+    [...pa.querySelectorAll('.etape')].find((x) => /Place chaque note/.test(x.textContent)).querySelector('button').click();
+    verifie('aides éteintes : « Note par note » du pas à pas affiche le guide des mains', !!$('detailMorceau').querySelector('.guide-mains') && $('detailMorceau').querySelector('.guide-mains').isConnected);
+    w.AppGuitare.ouvrirMorceau('zombie');
     const css = fs.readFileSync(path.join(RACINE, 'styles.css'), 'utf8');
     verifie('plus de largeur minimale qui fait déborder tablature et portée', !/\.tab\s*\{[^}]*min-width:\s*420px/.test(css) && !/\.portee\s*\{[^}]*min-width:\s*420px/.test(css));
     const z = w.Morceaux.get('zombie');

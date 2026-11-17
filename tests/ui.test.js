@@ -313,6 +313,9 @@ function verifie(nom, cond, detail) {
     verifie('« 🎯 Apprendre » à côté de « Écouter »', !!bA);
     bA.click();
     const cpt = () => $('detailMorceau').querySelector('.compteur-tours').textContent;
+    const choix = (re) => [...$('detailMorceau').querySelectorAll('.compteur-tours button')].find((x) => re.test(x.textContent)).click();
+    verifie('Apprendre : choix automatique ou manuel, rien ne joue encore', /⚡ Automatique/.test(cpt()) && /✋ Manuel/.test(cpt()) && fin === null, cpt());
+    choix(/Automatique/);
     verifie('Apprendre : démarre tout de suite sur la partie 1, une seule ligne (1 / 7 · partie 1 · tour 1 / 3)', /🎯 1 \/ 7 · Partie 1 · mesures 1 à 4 · tour 1 \/ 3/.test(cpt()) && de === 0, cpt());
     fin(); fin(); fin();
     verifie('après 3 tours : partie 1 cochée, la partie 2 démarre seule', /🎯 2 \/ 7 · Partie 2 · mesures 5 à 8 · tour 1 \/ 3/.test(cpt()) && de === 4 * w.Tablature.noiresParMesure(w.Morceaux.get('carulli-andantino')) &&
@@ -323,11 +326,27 @@ function verifie(nom, cond, detail) {
     verifie('« ⏭ Suivante » : passe sans cocher', /🎯 4 \/ 7/.test(cpt()) && w.Store.etapesFaites('carulli-andantino').length === 2, cpt());
     bA.click();
     verifie('« ■ Arrêter d’apprendre » : le parcours s’arrête', $('detailMorceau').querySelector('.compteur-tours').hidden && /🎯 Apprendre/.test(bA.textContent));
-    bA.click();
+    bA.click(); choix(/Automatique/);
     verifie('relancer : reprend à la première étape pas faite (l’enchaînement 1 + 2)', /🎯 3 \/ 7/.test(cpt()), cpt());
     for (let i = 0; i < 5 * 3; i++) fin();
     verifie('toutes les étapes faites : « Toutes les parties sont apprises », proposition de monter en vitesse', /Toutes les parties sont apprises/.test(cpt()) &&
             [...$('detailMorceau').querySelectorAll('.compteur-tours button')].some((x) => /Monter en vitesse/.test(x.textContent)), cpt());
+    w.Store.etapesFaites('carulli-andantino').forEach((k) => w.Store.marquerEtape('carulli-andantino', k, false));
+    // Manuel : la boucle continue au-delà de 3 tours ; c'est l'élève qui passe.
+    w.AppGuitare.ouvrirMorceau('carulli-andantino');
+    const bA2 = [...$('detailMorceau').querySelectorAll('.actions button')].find((x) => /🎯 Apprendre/.test(x.textContent));
+    bA2.click(); choix(/Manuel/);
+    verifie('manuel : partie 1, objectif 3, « Précédente » grisée', /🎯 1 \/ 7 · Partie 1 · mesures 1 à 4 · tour 1 · objectif 3/.test(cpt()) &&
+            [...$('detailMorceau').querySelectorAll('.compteur-tours button')].find((x) => /Précédente/.test(x.textContent)).disabled, cpt());
+    fin(); fin(); fin(); fin();
+    verifie('manuel : après 4 tours, toujours la partie 1 (tour 5, objectif atteint), rien n’est coché tout seul', /🎯 1 \/ 7 · Partie 1 · .*tour 5 · ✓ objectif atteint/.test(cpt()) &&
+            w.Store.etapesFaites('carulli-andantino').length === 0, cpt());
+    choix(/Réussie, la suivante/);
+    verifie('manuel : « Réussie, la suivante » coche et lance la partie 2', /🎯 2 \/ 7 · Partie 2/.test(cpt()) && w.Store.etapesFaites('carulli-andantino').length === 1, cpt());
+    choix(/Précédente/);
+    verifie('manuel : « Précédente » revient à la partie 1', /🎯 1 \/ 7 · Partie 1/.test(cpt()), cpt());
+    choix(/Passer/);
+    verifie('manuel : « Passer » va à la partie 2 sans cocher de plus', /🎯 2 \/ 7/.test(cpt()) && w.Store.etapesFaites('carulli-andantino').length === 1, cpt());
     w.Store.etapesFaites('carulli-andantino').forEach((k) => w.Store.marquerEtape('carulli-andantino', k, false));
     w.Tablature.jouer = jouerAvant; w.Tablature.arreter();
   }

@@ -2519,13 +2519,26 @@
       if (parcours) {
         // Une seule ligne : où on en est. Pas d'explication à lire.
         var e = etapesM[etat.etapeK], rang = parcours.liste.indexOf(etat.etapeK) + 1;
-        compteurTours.appendChild(el('span', 'compteur-texte', '🎯 ' + rang + ' / ' + parcours.liste.length + ' · ' +
-          e.titre.replace(/ — mesures? .*$/, '') + ' · mesures ' + etat.de + ' à ' + etat.a + ' · tour ' + Math.min(etat.tours + 1, etat.objectif) + ' / ' + etat.objectif));
-        var bEnc = el('button', 'btn', '↺ Encore');
-        bEnc.onclick = function () { etat.tours = 0; majCompteur(); };
-        var bSuiv = el('button', 'btn', '⏭ Suivante');
-        bSuiv.onclick = function () { etapeSuivanteParcours(false); };
-        compteurTours.appendChild(bEnc); compteurTours.appendChild(bSuiv);
+        var debut = '🎯 ' + rang + ' / ' + parcours.liste.length + ' · ' + e.titre.replace(/ — mesures? .*$/, '') + ' · mesures ' + etat.de + ' à ' + etat.a + ' · ';
+        if (parcours.auto) {
+          compteurTours.appendChild(el('span', 'compteur-texte', debut + 'tour ' + Math.min(etat.tours + 1, etat.objectif) + ' / ' + etat.objectif));
+          var bEnc = el('button', 'btn', '↺ Encore');
+          bEnc.onclick = function () { etat.tours = 0; majCompteur(); };
+          var bSuiv = el('button', 'btn', '⏭ Suivante');
+          bSuiv.onclick = function () { etapeSuivanteParcours(false); };
+          compteurTours.appendChild(bEnc); compteurTours.appendChild(bSuiv);
+        } else {
+          // Manuel : la boucle tourne tant qu'on veut ; c'est l'élève qui passe.
+          compteurTours.appendChild(el('span', 'compteur-texte', debut + 'tour ' + (etat.tours + 1) + (fait ? ' · ✓ objectif atteint' : ' · objectif ' + etat.objectif)));
+          var bPrec = el('button', 'btn', '⏮ Précédente');
+          bPrec.disabled = rang <= 1;
+          bPrec.onclick = function () { allerEtapeParcours(-1); };
+          var bOkM = el('button', 'btn' + (fait ? ' primaire' : ''), '✓ Réussie, la suivante');
+          bOkM.onclick = function () { etapeSuivanteParcours(true); };
+          var bPas = el('button', 'btn', '⏭ Passer');
+          bPas.onclick = function () { etapeSuivanteParcours(false); };
+          compteurTours.appendChild(bPrec); compteurTours.appendChild(bOkM); compteurTours.appendChild(bPas);
+        }
         return;
       }
       compteurTours.appendChild(el('span', 'compteur-texte', (fait ? '✓ ' : '🔁 ') + 'Tour ' + Math.min(etat.tours + 1, etat.objectif) + ' / ' + etat.objectif +
@@ -2551,7 +2564,7 @@
       etat.tours++;
       // Parcours « Apprendre » : l'objectif atteint, l'étape est cochée et la
       // suivante démarre d'elle-même.
-      if (parcours && etat.tours >= etat.objectif) { etapeSuivanteParcours(true); return true; }
+      if (parcours && parcours.auto && etat.tours >= etat.objectif) { etapeSuivanteParcours(true); return true; }
       majCompteur();
       return false;
     }
@@ -2565,12 +2578,25 @@
         var e = etapesM[k]; return e.partie || e.chaine || (e.action.type === 'section' && e.action.objectif);
       });
     }
-    function lancerParcours() {
+    // Avant de commencer : automatique ou manuel, au choix à chaque fois.
+    function choisirParcours() {
+      vide(compteurTours); compteurTours.hidden = false;
+      compteurTours.appendChild(el('span', 'compteur-texte', '🎯 Apprendre par parties :'));
+      var bAuto = el('button', 'btn primaire', '⚡ Automatique');
+      bAuto.title = 'L’étape suivante démarre seule après 3 tours';
+      bAuto.onclick = function () { lancerParcours(true); };
+      var bMan = el('button', 'btn', '✋ Manuel');
+      bMan.title = 'La partie tourne en boucle ; tu passes à la suivante quand tu veux';
+      bMan.onclick = function () { lancerParcours(false); };
+      compteurTours.appendChild(bAuto); compteurTours.appendChild(bMan);
+      defiler(compteurTours);
+    }
+    function lancerParcours(auto) {
       var liste = listeParcours(), faites = Store.etapesFaites(p.id);
       if (!liste.length) return;
       var k = liste.filter(function (x) { return faites.indexOf(x) === -1; })[0];
       if (k == null) k = liste[0];               // tout est fait : on repart du début
-      parcours = { liste: liste };
+      parcours = { liste: liste, auto: !!auto };
       bApprendre.textContent = '■ Arrêter d’apprendre'; bApprendre.classList.add('primaire');
       appliquerEtape(etapesM[k].action, k);
     }
@@ -2578,6 +2604,10 @@
       parcours = null;
       bApprendre.textContent = '🎯 Apprendre'; bApprendre.classList.remove('primaire');
       etat.objectif = 0; majCompteur();
+    }
+    function allerEtapeParcours(sens) {
+      var i = parcours.liste.indexOf(etat.etapeK), k = parcours.liste[i + sens];
+      if (k != null) appliquerEtape(etapesM[k].action, k);
     }
     function etapeSuivanteParcours(reussie) {
       if (!parcours) return;
@@ -2626,7 +2656,7 @@
 
     // « Écouter » à la main : plus d'objectif de tours en cours.
     bJouer.onclick = function () { if (parcours) arreterParcours(); if (etat.objectif) { etat.objectif = 0; majCompteur(); } lancer(true); pupitre.maj(); };
-    bApprendre.onclick = function () { if (parcours && !parcours.fini) bStop.onclick(); else lancerParcours(); };
+    bApprendre.onclick = function () { if (parcours && !parcours.fini) bStop.onclick(); else { parcours = null; choisirParcours(); } };
     peJouer.onclick = function () { bJouer.onclick(); };
     peStop.onclick = function () { bStop.onclick(); };
     peMoins.onclick = function () { moins.onclick(); };

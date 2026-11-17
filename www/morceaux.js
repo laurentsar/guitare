@@ -1068,9 +1068,9 @@
   /* Idées de l'app pour prolonger le cours (groupe « Pour aller plus loin »
    * de l'écran Travail récurrent) : pas données par le professeur. */
   ajoute({
-    id: 'ent-riff-la-3', titre: 'Riff en La n° 3 (idée de l’app)', sous_titre: 'Entraînement · Ve position · 1er, 3e et 4e doigts · pouce buté',
+    id: 'ent-riff-la-3', titre: 'Riff en La « 1 3 4 » (idée de l’app)', sous_titre: 'Entraînement · Ve position · 1er, 3e et 4e doigts · pouce buté',
     niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5, sections: SECTIONS_RIFF,
-    description: 'Imaginé par l’app, pas donné en cours : le chemin des riffs n° 1 et 2 avec un schéma qui monte, case V (1er doigt), VII (3e), VIII (4e), puis V sur la corde suivante. La – Si – Do – Ré depuis la 6e corde, Ré – Mi – Fa – Sol depuis la 5e : la gamme de La mineur. Ne lâche pas un doigt tant que le suivant n’est pas posé.',
+    description: 'Imaginé par l’app, pas donné en cours (ce n’est pas le riff n° 3 de Françoise) : le chemin des riffs n° 1 et 2 avec un schéma qui monte, case V (1er doigt), VII (3e), VIII (4e), puis V sur la corde suivante. La – Si – Do – Ré depuis la 6e corde, Ré – Mi – Fa – Sol depuis la 5e : la gamme de La mineur. Ne lâche pas un doigt tant que le suivant n’est pas posé.',
     notes: riffLa([1, 3, 4])
   });
   ajoute({

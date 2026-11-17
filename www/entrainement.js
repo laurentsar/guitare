@@ -15,7 +15,8 @@
  *  - tempos : les tempos du métronome donnés en cours (boutons qui le lancent
  *    sur place) ; rythme : { style: 'rock', tempos } pour la boîte à rythmes.
  * Pour la semaine suivante, on modifie ce fichier. Version actuelle : le mail
- * de suivi de Françoise après le cours (pouce buté, Ve position, riffs en La).
+ * de suivi de Françoise après le cours (pouce buté, Ve position, riffs en La
+ * n° 1 à 3, 0 4 0 4, 1 4 1 4).
  */
 (function (global) {
   'use strict';
@@ -69,9 +70,13 @@
         { id: 'v-1414', titre: 'Ve position : 1 4 1 4, pouce buté', etat: 'nouveau', morceau: 'ent-v-1414',
           consignes: ['1er doigt à la Ve case, 4e doigt à la VIIIe, sur chaque corde.',
                       'Ne lâche pas le 1er doigt tant que le 4e n’est pas posé.'] },
-        { id: 'riff-la-2', titre: 'Riff en La n° 2 (avec 1 et 4)', etat: 'nouveau', morceau: 'ent-riff-la-2', tempos: [60],
-          consignes: ['Le même chemin que le riff n° 1, avec le 4e doigt (case VIII) au lieu du 3e, et le pouce buté.',
-                      'Départ en Ve position. Voir l’audio envoyé par Françoise.'] }
+        { id: 'riff-la-2', titre: 'Riff en La n° 2 (avec 1 et 4)', etat: 'continuer', morceau: 'ent-riff-la-2', tempos: [60],
+          consignes: ['À continuer : le même chemin que le riff n° 1, avec le 4e doigt (case VIII) au lieu du 3e, et le pouce buté.',
+                      'Départ en Ve position. Voir l’audio déjà envoyé par Françoise.'] },
+        { id: 'riff-la-3', titre: 'Riff en La n° 3', etat: 'nouveau',
+          consignes: ['Pars de la basse et inverse les 3 notes du riff n° 1.',
+                      'Ne lâche pas un doigt tant que le suivant n’est pas posé !',
+                      'Voir l’audio envoyé par Françoise avec le mail (la tablature arrive dans l’app dès qu’il y est relevé).'] }
       ]
     },
     {
@@ -117,8 +122,8 @@
           consignes: ['Les trois doigts de la semaine ensemble : 1er à la Ve case, 3e à la VIIe, 4e à la VIIIe, puis retour au 3e.',
                       'Pars du 1er doigt posé, et ne lâche pas un doigt tant que le suivant n’est pas posé.',
                       'Bien fléchir le 4e doigt ; le pouce gauche reste derrière la 6e case.'] },
-        { id: 'idee-riff-la-3', titre: 'Riff en La n° 3 (avec 1, 3 et 4)', etat: 'idee', morceau: 'ent-riff-la-3', tempos: [50], rythme: { style: 'rock', tempos: [55] },
-          consignes: ['Le chemin des riffs n° 1 et 2 (4 fois depuis la 6e corde, 2 fois depuis la 5e, 2 fois depuis la 6e, La grave pour finir), avec un schéma qui monte : case V, VII, VIII, puis V sur la corde suivante.',
+        { id: 'idee-riff-la-3', titre: 'Riff en La « 1 3 4 » (avec 1, 3 et 4)', etat: 'idee', morceau: 'ent-riff-la-3', tempos: [50], rythme: { style: 'rock', tempos: [55] },
+          consignes: ['Pas le riff n° 3 de Françoise : une idée de l’app. Le chemin des riffs n° 1 et 2 (4 fois depuis la 6e corde, 2 fois depuis la 5e, 2 fois depuis la 6e, La grave pour finir), avec un schéma qui monte : case V, VII, VIII, puis V sur la corde suivante.',
                       'Ça donne La – Si – Do – Ré, puis Ré – Mi – Fa – Sol : les notes de la gamme de La mineur.',
                       'Pouce buté, d’abord lentement (50), puis au rock groove à 55.'] }
       ]

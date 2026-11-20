@@ -1,6 +1,6 @@
 {
   "name": "guitare",
-  "version": "1.55",
+  "version": "1.56",
   "private": true,
   "description": "Apprendre la guitare classique en partant de zéro : parcours de leçons, accordeur au micro, métronome, bibliothèque d'accords, arpèges et morceaux joués par l'app — hors ligne, avec un mode télévision",
   "scripts": {
@@ -9,10 +9,10 @@
     "test": "node tests/theorie.test.js && node tests/ui.test.js"
   },
   "dependencies": {
-    "@capacitor/android": "^6.2.1",
-    "@capacitor/cli": "^6.2.1",
-    "@capacitor/core": "^6.2.1",
-    "@capacitor/app": "^6.0.2"
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/app": "^8.0.0"
   },
   "devDependencies": {
     "jsdom": "^24.1.0"

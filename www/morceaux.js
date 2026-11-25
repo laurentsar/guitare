@@ -1030,6 +1030,13 @@
     notes: cinquiemePosition([1, 4, 1, 4])
   });
 
+  ajoute({
+    id: 'ent-v-0202', titre: 'Ve position : 0 2 0 2', sous_titre: 'Entraînement · main gauche · pouce buté',
+    niveau: 2, tempo: 50, signature: [4, 4], categorie: 'entrainement', position: 5,
+    description: 'Corde à vide, puis le 2e doigt à la case VI, sur chaque corde de la 6e à la 2e puis retour. Bien placer le pouce gauche derrière le 2e doigt.',
+    notes: cinquiemePosition([0, 2, 0, 2])
+  });
+
   /* Riffs en La du cours, en Ve position, au pouce buté. Schéma de 4 notes
    * à partir d'une corde : case V, case V, case VII (3e doigt, riff n° 1) ou
    * VIII (4e doigt, riff n° 2), puis case V sur la corde au-dessus. 4 fois

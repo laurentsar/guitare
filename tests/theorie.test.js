@@ -372,7 +372,10 @@ console.log('\n— Entraînement (tablatures du cours) —');
   const rf3 = Entrainement.tous().find((e) => e.id === 'riff-la-3'), rf2 = Entrainement.tous().find((e) => e.id === 'riff-la-2');
   verifie('dernier mail : riff n° 3 NOUVEAU (consignes de Françoise, tablature en attente de l’audio), riff n° 2 à continuer', rf3 && rf3.etat === 'nouveau' && /inverse les 3 notes du riff n° 1/.test(rf3.consignes.join(' ')) && !rf3.morceau && rf2.etat === 'continuer' &&
           !/n° 3/.test(Morceaux.get('ent-riff-la-3').titre));
-  verifie('travail du jour = le dernier mail ; les semaines précédentes en révision facultative', Entrainement.tous().length === 15 &&
+  const v02 = Morceaux.get('ent-v-0202');
+  verifie('dernier mail : 0 2 0 2 (nouveau), 2e doigt case VI, même chemin que 0 3 0 3', Entrainement.tous().some((e) => e.id === 'v-0202' && e.etat === 'nouveau') &&
+          v02 && v02.notes.slice(0, 4).map((n) => n.frette).join() === '0,6,0,6' && v02.notes.filter((n) => n.frette).every((n) => n.doigt === 2));
+  verifie('travail du jour = le dernier mail ; les semaines précédentes en révision facultative', Entrainement.tous().length === 16 &&
           Entrainement.facultatifs().map((e) => e.id).join() === 'sd-pouce-bute-1,sd-main-droite,noms-cordes' &&
           Entrainement.facultatifs().every((e) => e.etat === 'semaine') && Entrainement.tous().some((e) => e.id === 'riff-la-2') &&
           Entrainement.facultatifs()[0].variantes.join() === '♩ = 40,♩ = 45,♩ = 50,♩ = 55,♩ = 60');
